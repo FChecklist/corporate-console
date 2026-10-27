@@ -1,0 +1,1 @@
+{"id": "bridge-ai-key-allowed", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "|| ![\"master\", \"host\", \"cohost\"].includes(a.kind)) return null;", "replace": ") return null;", "test": "tests/bridge.test.ts", "note": "an AI work-link key could open the console doors"}

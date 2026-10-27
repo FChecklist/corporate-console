@@ -1,4 +1,4 @@
-// FALSIFIED BY: bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person
+// FALSIFIED BY: bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person, bridge-ai-key-allowed
 import { test, expect } from "bun:test";
 import { handleConsole, endRoles, keyFitsGame, keyIsAccountWide, KEY_LIFE_MS } from "../packages/bridge/src/bridge";
 import { makeHost, seed, type Host } from "./support/fake-host";
@@ -88,6 +88,16 @@ test("the owner's platform key (ORGANIZER_SECRET) is never accepted on a console
       const r = await t.post(p, b, { "x-organizer": "platform-secret" });
       expect([p, r.status]).toEqual([p, 403]);
     }
+  } finally { t.stop(); }
+});
+
+test("an AI work-link key (cba_) of the right account is refused on the console routes too", async () => {
+  const t = await up();
+  try {
+    const key = "cba_" + "e".repeat(48);
+    const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("key|" + key)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    t.h.raw.run("INSERT INTO organizer_key(hash,org,kind,revoked,created_ms) VALUES (?,?,?,0,1)", [hash, "orgA", "ai"]);
+    for (const [p, b] of [["/api/console/handoff", { eid: "READY01", target: "organizer" }], ["/api/console/preview", { eid: "READY01" }], ["/api/console/role", { op: "list", eid: "READY01" }]] as const) expect([p, (await t.post(p, b, { "x-organizer": key })).status]).toEqual([p, 403]);
   } finally { t.stop(); }
 });
 

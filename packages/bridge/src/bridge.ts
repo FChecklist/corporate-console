@@ -6,6 +6,7 @@
 //  * Every assertion is for this game's address, for the right purpose, short-lived, and used once.
 import type { D1 } from "./d1";
 import { parseKeyList, verifyAssertion, type Act, type Payload } from "./assertion";
+import { ensureBridgeSchema } from "./schema";
 
 export const BRIDGE_VERSION = 1; // the contract number (contract/VERSION)
 export const BRIDGE_SCHEMA_NUMBER = 2; // the build of the bridge itself; the Versions page warns when a game is behind
@@ -83,6 +84,7 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
 
   const db = ad.db(env), nowMs = ad.nowMs(), nowS = Math.floor(nowMs / 1000), aud = ad.origin(env);
+  await ensureBridgeSchema(db);
   const body = req.method === "POST" ? await req.json().catch(() => null) : null;
 
   /** verify an assertion, check its purpose and use it up */
@@ -99,7 +101,7 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
   const rolesOf = async (sub: string): Promise<RoleRow[]> => (await db.prepare("SELECT role_id, eid, role, state, invited_by FROM game_role WHERE email_hash=? ORDER BY invited_ms").bind(sub).all<any>()).results.map((r) => ({ roleId: r.role_id, eid: r.eid, role: r.role, state: r.state, invitedBy: r.invited_by }));
   /** may this key act on this game? Organizer of the owning account, or a key tied to exactly this game */
   const mayUse = async (a: KeyAuth | null, eid: string) => {
-    if (!a || !a.org) return null;
+    if (!a || !a.org || !["master", "host", "cohost"].includes(a.kind)) return null; // never the owner's platform key, never an AI key
     const e = await ad.engagement(env, eid);
     if (!e || e.org !== a.org) return null;
     return keyFitsGame(a, eid) ? e : null;

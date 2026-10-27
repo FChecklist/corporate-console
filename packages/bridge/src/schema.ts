@@ -10,3 +10,11 @@ export const BRIDGE_SCHEMA: string[] = [
   // one-time handoff links from the console to the game's own screens
   "CREATE TABLE IF NOT EXISTS console_handoff (token_hash TEXT PRIMARY KEY, eid TEXT NOT NULL, kind TEXT NOT NULL, org TEXT NOT NULL, created_by TEXT NOT NULL, expires_ms INTEGER NOT NULL)",
 ];
+
+const ready = new WeakSet<object>();
+/** creates the tables once per database connection (a game's live database token cannot run CREATE TABLE in a migration, so the Worker does it like its other lazy tables) */
+export async function ensureBridgeSchema(db: { prepare(sql: string): { run(): Promise<unknown> } }): Promise<void> {
+  if (ready.has(db)) return;
+  for (const s of BRIDGE_SCHEMA) await db.prepare(s).run();
+  ready.add(db);
+}
