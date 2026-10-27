@@ -1,0 +1,1 @@
+{"id": "tictactoe-handoff-page-off", "repo": "../tictactoe-console", "file": "apps/web/public/signin.js", "find": "if (consoleEid && t) {", "replace": "if (false && consoleEid && t) {", "test": "apps/web/test/console-handoff.test.ts", "note": "the hand-off link would do nothing"}

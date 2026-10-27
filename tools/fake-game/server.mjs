@@ -137,6 +137,11 @@ export async function handle(S, req) {
     const m = mint(h.sub, h.kind, h.eid, HANDOFF_KEY_MS);
     return ok({ key: m.key, kind: h.kind, eid: h.eid, expiresMs: m.expiresMs });
   }
+  if (req.method === "POST" && p === "/api/console/signout") {
+    const k = keyOf(); if (!k) return err(403, "forbidden", "Only a key made by the console can be ended here.");
+    for (const [key, v] of S.authKeys) if (v.sub === k.sub && v.kind === k.kind && v.eid === k.eid) S.authKeys.delete(key);
+    return ok({});
+  }
   if (req.method === "POST" && p === "/api/console/preview") {
     if (S.persona === "old") return err(404, "not_found", "This game does not offer the player's screen view yet.");
     const k = keyOf(); if (!k) return err(403, "forbidden", "Please sign in again.");

@@ -61,7 +61,7 @@ test("dark: with the bridge switched off EVERY console route answers 404 with an
   const ctx = await makeCtx();
   const g = await fake("normal", ctx, (S) => { S.bridgeOn = false; });
   try {
-    for (const [m, p] of [["GET", "/api/console/capabilities"], ["GET", "/api/console/live"], ["POST", "/api/console/session"], ["POST", "/api/console/games"], ["POST", "/api/console/billing"], ["POST", "/api/console/role"], ["POST", "/api/console/handoff"], ["POST", "/api/console/handoff/redeem"], ["POST", "/api/console/purge-email"], ["POST", "/api/console/preview"]]) {
+    for (const [m, p] of [["GET", "/api/console/capabilities"], ["GET", "/api/console/live"], ["POST", "/api/console/session"], ["POST", "/api/console/games"], ["POST", "/api/console/billing"], ["POST", "/api/console/role"], ["POST", "/api/console/handoff"], ["POST", "/api/console/handoff/redeem"], ["POST", "/api/console/purge-email"], ["POST", "/api/console/signout"], ["POST", "/api/console/preview"]]) {
       const r = await fetch(g.origin + p, { method: m, body: m === "POST" ? "{}" : undefined });
       expect([m, p, r.status, await r.text()]).toEqual([m, p, 404, "{}"]);
     }

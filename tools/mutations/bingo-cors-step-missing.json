@@ -1,1 +1,0 @@
-{"id": "bingo-cors-step-missing", "repo": "../bingo-console", "file": "apps/edge/src/worker.ts", "find": ", x-cb-vs, x-console-step\"", "replace": ", x-cb-vs\"", "test": "apps/edge/test/console-bridge.test.ts", "note": "the browser would refuse the confirmation header"}

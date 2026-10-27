@@ -1,1 +1,0 @@
-{"id": "bingo-checkout-eid-skipped", "repo": "../bingo-console", "file": "apps/edge/src/pay.ts", "find": "if (k.label === \"console\" && k.eid && k.eid !== b.eid) return json(", "replace": "if (false) return json(", "test": "apps/edge/test/console-bridge.test.ts", "note": "a Host key of one game could start a payment for another game"}

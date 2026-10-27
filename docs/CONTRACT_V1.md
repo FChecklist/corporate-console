@@ -3,7 +3,7 @@
 This is the agreement between the master console and every game. The console and the games are built separately; both are tested against the same files:
 
 - `contract/schemas.json` - the exact shape of every request and answer. An object with a field that is not listed is wrong (a game must never send more than the contract says: that is how a mobile number could leak).
-- `contract/fixtures.json` - 38 golden cases (request, expected status, expected shape). They run against the fake game today (`tools/fake-game`) and against each real game's bridge later.
+- `contract/fixtures.json` - 40 golden cases (request, expected status, expected shape). They run against the fake game today (`tools/fake-game`) and against each real game's bridge later.
 - `packages/bridge/` - the ONE bridge module that is copied byte for byte into each game.
 
 Changing any of these is a contract change: raise `contract/VERSION`, tell every game session by message.
@@ -55,6 +55,7 @@ After a good `session` assertion the game mints ordinary game keys (they work wi
 | `POST /api/console/role` | `op`: `list`, `invite`, `remove` with the Organizer key (`invite` and `remove` also need a step-up); `accept`, `decline` with assertion `role` | Who helps with a game. An invitation goes only to the typed e-mail address. Accepting needs the assertion of exactly that e-mail, otherwise `not_yours`. |
 | `POST /api/console/handoff` | a key for that game | A one-time address (valid 60 seconds) that opens the game's own Organizer / Host / big-screen / tournament page: `.../signin.html?t=<48 hex>&go=console&e=<game>` |
 | `POST /api/console/handoff/redeem` | the token | Called by the game's own sign-in page. Single use. Gives a 16 hour key for that game and role. A scanner that only opens the link (GET) uses up nothing. |
+| `POST /api/console/signout` | a key made by the console | Ends that key and every other console key made for the same person in this game (organizer key, hand-off keys). The console calls it once for each key it holds when the person signs out. |
 | `POST /api/console/preview` | a key for that game | Address of the Player's screen view with a short-lived token (15 minutes). Only that path may be shown inside the console, and only by the console. |
 | `POST /api/console/purge-email` | assertion `purge` | Removes this person's e-mail and role rows (the 365-day rule). Invoices and legal records stay. |
 | `POST /api/z/{id}/upgrade-quote` | a key for that game | `{toPack}` gives price of the new size, what was paid, credit used and the difference to pay. Only a bigger size, only before the game starts (`too_late` otherwise). |

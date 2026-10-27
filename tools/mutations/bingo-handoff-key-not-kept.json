@@ -1,1 +1,0 @@
-{"id": "bingo-handoff-key-not-kept", "repo": "../bingo-console", "file": "apps/web/public/signin.js", "find": "try { CTK.set(\"cbz-org\", j.key); } catch {}\n      location.replace(go);", "replace": "location.replace(go);", "test": "apps/web/test/console-handoff.test.ts", "note": "the game's own screen would open without a key"}

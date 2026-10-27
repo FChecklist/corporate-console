@@ -1,4 +1,4 @@
-// FALSIFIED BY: bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person, bridge-ai-key-allowed
+// FALSIFIED BY: bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person, bridge-ai-key-allowed, bridge-signout-no-revoke
 import { test, expect } from "bun:test";
 import { handleConsole, endRoles, keyFitsGame, keyIsAccountWide, KEY_LIFE_MS } from "../packages/bridge/src/bridge";
 import { makeHost, seed, type Host } from "./support/fake-host";
@@ -29,7 +29,7 @@ for (const fx of FIXTURES.filter((f: any) => !f.gameRoute)) {
 test("DARK: with CONSOLE_PUBKEYS unset the bridge hands EVERY console request back to the game (null) - the game answers its ordinary 404", async () => {
   const t = await up({ pubkeys: "off" });
   try {
-    for (const [m, p] of [["GET", "/api/console/capabilities"], ["GET", "/api/console/live"], ["OPTIONS", "/api/console/games"], ["POST", "/api/console/session"], ["POST", "/api/console/games"], ["POST", "/api/console/billing"], ["POST", "/api/console/invited"], ["POST", "/api/console/role"], ["POST", "/api/console/handoff"], ["POST", "/api/console/handoff/redeem"], ["POST", "/api/console/purge-email"], ["POST", "/api/console/preview"]]) {
+    for (const [m, p] of [["GET", "/api/console/capabilities"], ["GET", "/api/console/live"], ["OPTIONS", "/api/console/games"], ["POST", "/api/console/session"], ["POST", "/api/console/games"], ["POST", "/api/console/billing"], ["POST", "/api/console/invited"], ["POST", "/api/console/role"], ["POST", "/api/console/handoff"], ["POST", "/api/console/handoff/redeem"], ["POST", "/api/console/purge-email"], ["POST", "/api/console/signout"], ["POST", "/api/console/preview"]]) {
       const res = await handleConsole(t.h.adapter, new Request("http://x" + p, { method: m, body: m === "POST" ? "{}" : undefined }), t.h.env);
       expect([m, p, res]).toEqual([m, p, null]);
     }
@@ -213,5 +213,24 @@ test("purge-email forgets the person: role rows, invitation cards, and their key
     expect(r.removed).toBe(3); // one invitation card, two role rows
     expect(t.h.raw.query("SELECT COUNT(*) c FROM game_role").get()).toEqual({ c: 0 });
     expect((await t.post("/api/console/preview", { eid: "BOBS001" }, { "x-organizer": host })).status).toBe(403);
+  } finally { t.stop(); }
+});
+
+test("signout: the key and every other console key made for the same person stop at once; other people's keys are untouched", async () => {
+  const t = await up();
+  try {
+    const alice = await t.session("alice"), bob = await t.session("bob");
+    const ho = await (await t.post("/api/console/handoff", { eid: "PLAY001", target: "organizer" }, { "x-organizer": alice.organizer.key })).json();
+    const redeemed = await (await t.post("/api/console/handoff/redeem", { t: /t=([0-9a-f]{48})/.exec(ho.url)![1] })).json();
+    const alive = async (key: string) => (await t.post("/api/console/preview", { eid: "PLAY001" }, { "x-organizer": key })).status === 200;
+    expect(await alive(alice.organizer.key)).toBe(true); expect(await alive(redeemed.key)).toBe(true);
+    expect((await t.post("/api/console/signout", {}, { "x-organizer": alice.organizer.key })).status).toBe(200);
+    expect(await alive(alice.organizer.key)).toBe(false);
+    expect(await alive(redeemed.key)).toBe(false); // the hand-off key came from the same sign-in
+    const bobAlive = (await t.post("/api/console/handoff", { eid: "BOBS001", target: "organizer" }, { "x-organizer": bob.organizer.key })).status;
+    expect(bobAlive).toBe(200);
+    // an old long-lived key and the platform key cannot use this door
+    expect((await t.post("/api/console/signout", {}, { "x-organizer": "platform-secret" })).status).toBe(403);
+    expect((await t.post("/api/console/signout", {})).status).toBe(403);
   } finally { t.stop(); }
 });

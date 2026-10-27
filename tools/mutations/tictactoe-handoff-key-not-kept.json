@@ -1,0 +1,1 @@
+{"id": "tictactoe-handoff-key-not-kept", "repo": "../tictactoe-console", "file": "apps/web/public/signin.js", "find": "try { sessionStorage.setItem(\"cbz-org\", j.key); } catch {}", "replace": "", "test": "apps/web/test/console-handoff.test.ts", "note": "the game's own screen would open without a key"}

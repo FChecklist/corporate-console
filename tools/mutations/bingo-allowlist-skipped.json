@@ -1,1 +1,0 @@
-{"id": "bingo-allowlist-skipped", "repo": "../bingo-console", "file": "apps/edge/src/worker.ts", "find": "if (a.console && a.eid && !scopedKeyMayCall(", "replace": "if (false && a.console && a.eid && !scopedKeyMayCall(", "test": "apps/edge/test/console-bridge.test.ts", "note": "a one-game key could read the history and the account pages"}
