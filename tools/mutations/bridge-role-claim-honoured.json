@@ -1,0 +1,1 @@
+{"id": "bridge-role-claim-honoured", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "let acct = await ad.organizerOf(env, sub), created = false;", "replace": "let acct = r.pl.hint === \"organizer\" ? { org: \"orgA\" } : await ad.organizerOf(env, sub), created = false;", "test": "tests/bridge.test.ts", "note": "the role written in the note would be believed"}

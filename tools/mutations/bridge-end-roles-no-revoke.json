@@ -1,0 +1,1 @@
+{"id": "bridge-end-roles-no-revoke", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "for (const r of rows) await ad.revokeKeys(env, \"r:\" + r.role_id);\n  await db.prepare(\"UPDATE game_role SET state='ended'", "replace": "await db.prepare(\"UPDATE game_role SET state='ended'", "test": "tests/bridge.test.ts", "note": "keys would keep working after the game ended"}

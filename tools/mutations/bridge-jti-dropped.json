@@ -1,0 +1,1 @@
+{"id": "bridge-jti-dropped", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "if (used.meta.changes !== 1) return { res: err(401, \"replayed\"", "replace": "if (false) return { res: err(401, \"replayed\"", "test": "tests/bridge.test.ts", "note": "a note could be used again and again"}

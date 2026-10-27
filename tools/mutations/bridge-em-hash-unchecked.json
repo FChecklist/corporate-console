@@ -1,0 +1,1 @@
+{"id": "bridge-em-hash-unchecked", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "&& (await emailHashOf(r.pl.em)) === sub && EMAIL_RE.test(r.pl.em)", "replace": "&& EMAIL_RE.test(r.pl.em)", "test": "tests/bridge.test.ts", "note": "an account could be made for an e-mail that is not the person's"}

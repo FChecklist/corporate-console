@@ -1,0 +1,1 @@
+{"id": "bridge-accept-wrong-person", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "if (row.email_hash !== r.pl.sub) return err(403, \"not_yours\"", "replace": "if (false) return err(403, \"not_yours\"", "test": "tests/bridge.test.ts", "note": "anybody could accept anybody's invitation"}

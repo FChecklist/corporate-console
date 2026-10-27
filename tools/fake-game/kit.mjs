@@ -35,6 +35,9 @@ export async function buildAssertion(ctx, spec, origin, nowMs) {
   if (m.iatOffsetS) payload.iat += m.iatOffsetS;
   if (m.expOffsetS) payload.exp += m.expOffsetS;
   if (m.kid) payload.kid = m.kid;
+  if (m.sub) payload.sub = ctx.people[m.sub].sub;
+  if (m.em) payload.em = m.em;
+  if (spec.hint) payload.hint = spec.hint;
   for (const f of m.drop || []) delete payload[f];
   if (m.reuseJti) payload.jti = m.reuseJti;
   const token = await signAssertion(payload, m.forge ? ctx.otherKey : ctx.privateKey);
@@ -57,9 +60,10 @@ function evalChecks(res, checks) {
 }
 
 /** run one fixture; ctx from makeCtx(); 'keys' is a cache person->kind->key so that several fixtures share a session */
-export async function runFixture(fx, { ctx, origin, nowMs, keyCache = {}, fake = true }) {
+export async function runFixture(fx, { ctx, origin, nowMs, keyCache = {}, fake = true, skipGameRoutes = false }) {
   const problems = [];
   if (fx.fakeOnly && !fake) return { skipped: true, problems };
+  if (fx.gameRoute && skipGameRoutes) return { skipped: true, problems };
   const call = async (method, path, headers, body) => {
     const r = await fetch(origin + path, { method, headers: { "content-type": "application/json", ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
     let json = null; try { json = await r.json(); } catch { /* not json */ }

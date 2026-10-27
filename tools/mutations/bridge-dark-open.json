@@ -1,0 +1,1 @@
+{"id": "bridge-dark-open", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "if (!keys.length) return null; // DARK", "replace": "", "test": "tests/bridge.test.ts", "note": "the bridge would answer even with no key configured"}

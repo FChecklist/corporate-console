@@ -1,0 +1,1 @@
+{"id": "bridge-invite-to-wrong-address", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "await ad.sendRoleInvite(env, { to: email, eid, role: body.role, gameName: e.name });", "replace": "await ad.sendRoleInvite(env, { to: a.org || email, eid, role: body.role, gameName: e.name });", "test": "tests/bridge.test.ts", "note": "the invitation would go to someone else"}

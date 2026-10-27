@@ -1,0 +1,1 @@
+{"id": "bridge-handoff-reusable", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "DELETE FROM console_handoff WHERE token_hash=?", "replace": "UPDATE console_handoff SET eid=eid WHERE token_hash=?", "test": "tests/bridge.test.ts", "note": "a handoff link could be opened twice"}

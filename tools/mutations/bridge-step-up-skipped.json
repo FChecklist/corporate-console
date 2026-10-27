@@ -1,0 +1,1 @@
+{"id": "bridge-step-up-skipped", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "const s = await step(\"role-add\", eid); if (\"res\" in s) return s.res;", "replace": "const s = { pl: { sub: a.createdBy!.slice(2) } } as any;", "test": "tests/bridge.test.ts", "note": "inviting someone would not need the extra confirmation"}
