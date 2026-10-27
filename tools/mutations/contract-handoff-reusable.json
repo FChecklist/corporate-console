@@ -1,0 +1,1 @@
+{"id": "contract-handoff-reusable", "repo": ".", "file": "tools/fake-game/server.mjs", "find": "S.handoffs.delete(body.t);", "replace": "", "test": "tests/contract.test.ts", "note": "a handoff link could be used twice"}

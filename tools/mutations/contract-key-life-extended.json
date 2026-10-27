@@ -1,0 +1,1 @@
+{"id": "contract-key-life-extended", "repo": ".", "file": "tools/fake-game/server.mjs", "find": "const KEY_LIFE_MS = 2 * 3600_000", "replace": "const KEY_LIFE_MS = 24 * 3600_000", "test": "tests/contract.test.ts", "note": "console keys would live a day"}
