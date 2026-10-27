@@ -63,7 +63,9 @@ Verify: `/api/console/capabilities` prints the game's name and version. Rollback
 
 ## Step 6. Custom domain `console.corporatetambola.com`
 
-Attach the domain to the Pages project; check on a real phone that the app installs; test the Host and Co-host invitations with two real addresses. Rollback: detach the domain.
+Attach the domain to the Pages project; check on a real phone that the app installs; test the Host and Co-host invitations with two real addresses.
+
+Verify: `https://console.corporatetambola.com/` shows the sign-in screen with the privacy strip; the install prompt appears on the phone; both invitation mails arrive and Accept works. Rollback: detach the domain.
 
 ## Step 7. The Tambola move to `housie.corporatetambola.com` (riskiest, last, quiet hour, no game booked that day)
 
