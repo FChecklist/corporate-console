@@ -1,0 +1,1 @@
+{"id": "auth-purge-boundary", "repo": ".", "file": "functions/_lib/purge.ts", "find": "const due = rows.filter((r) => now >= deleteAtMs(r.last_seen_ms));", "replace": "const due = rows.filter((r) => now > deleteAtMs(r.last_seen_ms));", "test": "tests/console-auth.test.ts", "note": "off by one at the exact moment"}

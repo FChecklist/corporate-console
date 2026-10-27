@@ -1,0 +1,1 @@
+{"id": "auth-demo-always-on", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "const demo = env.TEST_MODE === \"1\" && DEMO.has(email);", "replace": "const demo = DEMO.has(email);", "test": "tests/console-auth.test.ts", "note": "demo logins would work in production"}

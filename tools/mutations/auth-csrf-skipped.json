@@ -1,0 +1,1 @@
+{"id": "auth-csrf-skipped", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "if (req.headers.get(\"x-console\") !== \"1\") return", "replace": "if (false) return", "test": "tests/console-auth.test.ts", "note": "a POST from another site would be accepted"}

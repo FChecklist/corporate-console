@@ -1,0 +1,1 @@
+{"id": "auth-attempt-limit-raised", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "export const MAX_TRIES = 5;", "replace": "export const MAX_TRIES = 500;", "test": "tests/console-auth.test.ts", "note": "wrong codes would never lock"}

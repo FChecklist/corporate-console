@@ -1,0 +1,16 @@
+# Daily purge for the console. Deployed only after the owner's go (see docs-games/GO_LIVE_RUNBOOK.md). Secrets are set with `wrangler secret put`, never written here.
+name = "corporate-console-cron"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[triggers]
+crons = ["30 18 * * *"]   # 00:00 IST
+
+[[d1_databases]]
+binding = "DB"
+database_name = "corporate-console"
+database_id = "REPLACE_AFTER_THE_DATABASE_EXISTS"
+
+[vars]
+CONSOLE_ORIGIN = "https://console.corporatetambola.com"
+GAME_ORIGINS = '{"tambola":"https://housie.corporatetambola.com","bingo":"https://bingo.corporatetambola.com","tictactoe":"https://tictactoe.corporatetambola.com","snakesladders":"https://snakes.corporatetambola.com","luckbychance":"https://luck.corporatetambola.com","luckydraw":"https://lucky.corporatetambola.com"}'

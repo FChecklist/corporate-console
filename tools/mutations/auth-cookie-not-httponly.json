@@ -1,0 +1,1 @@
+{"id": "auth-cookie-not-httponly", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "`${COOKIE}=${sid}; HttpOnly; Secure;", "replace": "`${COOKIE}=${sid}; Secure;", "test": "tests/console-auth.test.ts", "note": "the session cookie would be readable by page scripts"}
