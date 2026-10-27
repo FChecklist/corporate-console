@@ -13,6 +13,7 @@ CONSOLE = os.path.abspath(os.path.join(HERE, "..", ".."))
 BINGO = r"C:\ct\test-sites\bingo-console"
 
 GAMES = {
+    "tambola": dict(id="tambola", name="Corporate Tambola", keep_demo_cap=True, free_expr="DEMO_CAP", free_expr_num=10, base_cap=10, call=12, pay_import_extra="", prefix=("ctk_", "cth_", "ctc_"), cors_tail='x-ct-vid, x-ct-vs"', secrets_after="PAY_HOP_URL"),
     "tictactoe": dict(id="tictactoe", name="Corporate Tic Tac Toe", free_import='', free_expr='FREE_GAME_CAP', pay_import_extra=', FREE_GAME_CAP', free_expr_num=10, base_cap=10, call=9, secrets_after="PAY_HOP_URL"),
     "snakesladders": dict(id="snakesladders", name="Corporate Snakes and Ladders", free_import='', free_expr='0', free_expr_num=0, base_cap=100, call=20, pay_import_extra='', secrets_after="PAY_HOP_URL"),
     "luckbychance": dict(id="luckbychance", name="Corporate Luck by Chance", free_import='', free_expr='0', free_expr_num=0, base_cap=100, call=20, pay_import_extra='', secrets_after="PAY_HOP_URL"),
@@ -30,6 +31,9 @@ def rep(s, old, new, what, count=1):
         sys.exit(f"STOP: {what}: expected {count} match(es) of the text below, found {s.count(old)}:\n{old[:200]}")
     return s.replace(old, new)
 
+def pfx(g, i):
+    return g.get("prefix", ("cbk_", "cbh_", "cbc_"))[i]
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--game", required=True); ap.add_argument("--repo", required=True)
     a = ap.parse_args(); g = GAMES[a.game]; repo = a.repo
@@ -39,7 +43,9 @@ def main():
     # 2 adapter from Bingo
     s, nl = read(os.path.join(BINGO, "apps", "edge", "src", "console-adapter.ts"))
     s = s.replace('"bingo"', f'"{g["id"]}"').replace("Corporate Bingo", g["name"])
-    s = rep(s, 'import { DEMO_CAP } from "../../../packages/beacon/src/config";\n', "", "adapter import of DEMO_CAP")
+    if not g.get("keep_demo_cap"):
+        s = rep(s, 'import { DEMO_CAP } from "../../../packages/beacon/src/config";\n', "", "adapter import of DEMO_CAP")
+    s = rep(s, 'const PREFIX = { master: "cbk_", host: "cbh_", cohost: "cbc_" } as const;', f'const PREFIX = {{ master: "{pfx(g,0)}", host: "{pfx(g,1)}", cohost: "{pfx(g,2)}" }} as const;', "adapter key prefixes")
     s = rep(s, "import { MAX_DRAFTS, sendMail, type PayEnv } from \"./pay\";", f"import {{ MAX_DRAFTS, sendMail, type PayEnv{g['pay_import_extra']} }} from \"./pay\";", "adapter pay import")
     s = rep(s, "const FREE_DEMO: number = DEMO_CAP;", f"const FREE_DEMO: number = {g['free_expr']};", "adapter free size")
     write(os.path.join(src, "console-adapter.ts"), s, nl)
@@ -47,7 +53,8 @@ def main():
     p = os.path.join(src, "worker.ts"); w, nl = read(p)
     w = rep(w, 'import { PAY_SCHEMA, payRoute,', 'import { handleConsole } from "./console-bridge/bridge";\nimport { BRIDGE_SCHEMA } from "./console-bridge/schema";\nimport { consoleAdapter, CONSOLE_KEY_LABEL, keyGameEnded, scopedKeyMayCall } from "./console-adapter";\nimport { PAY_SCHEMA, payRoute,', "worker import")
     w = rep(w, '  GOOGLE_CLIENT_ID?: string;\n}', '  GOOGLE_CLIENT_ID?: string;\n  /** Master console (console-bridge/): the console\'s public signing keys as "k1:<key>,k2:<key>" (a plain setting, not a secret). Empty means the bridge is dark and every /api/console/ address answers 404. CONSOLE_ORIGIN: where invited helpers are sent to accept. */\n  CONSOLE_PUBKEYS?: string; CONSOLE_ORIGIN?: string;\n}', "worker Env")
-    w = rep(w, 'x-cb-vid, x-cb-vs"', 'x-cb-vid, x-cb-vs, x-console-step"', "CORS")
+    ct = g.get("cors_tail", 'x-cb-vid, x-cb-vs"')
+    w = rep(w, ct, ct[:-1] + ', x-console-step"', "CORS")
     w = rep(w, '  ...GAME_RECORD_SCHEMA,\n];', '  ...GAME_RECORD_SCHEMA,\n  // the master console bridge (migration game_role): who may do what in one game by e-mail, assertion ids used, one-time hand-off links\n  ...BRIDGE_SCHEMA,\n];', "SCHEMA tail")
     w = rep(w, 'interface Auth { plat: boolean; org: string | null; kind: "platform" | "master" | "ai" | "host" | "cohost" | null; viaLink?: boolean; eid?: string | null;', 'interface Auth { plat: boolean; org: string | null; kind: "platform" | "master" | "ai" | "host" | "cohost" | null; viaLink?: boolean; eid?: string | null; /** a key made by the master console (label "console"): when it is tied to one game it works for that game only */ console?: boolean;', "Auth")
     w = rep(w, 'SELECT org, kind, eid, host_id, expires_ms FROM organizer_key WHERE hash=? AND revoked=0 AND (expires_ms IS NULL OR expires_ms>?)', 'SELECT org, kind, eid, host_id, expires_ms, label FROM organizer_key WHERE hash=? AND revoked=0 AND (expires_ms IS NULL OR expires_ms>?)', "authOfKey select")
@@ -84,6 +91,7 @@ def main():
     print("migration written:", mig, "(add it to the FILES list of apps/edge/test/migrations.test.ts and its title)")
     # tests from Bingo
     t, nl = read(os.path.join(BINGO, "apps", "edge", "test", "console-bridge.test.ts"))
+    t = t.replace("cbk_", pfx(g, 0))
     t = t.replace("const CALL_SECONDS = 9;", f"const CALL_SECONDS = {g['call']};")
     t = t.replace("const FREE = 10, BASE_CAP = 10;", f"const FREE = {g['free_expr_num']}, BASE_CAP = {g['base_cap']};")
     t = t.replace("Corporate Bingo", g["name"]).replace('"bingo"', f'"{g["id"]}"').replace("toBe(\"bingo\")", f'toBe("{g["id"]}")').replace("Bingo", g["name"].replace("Corporate ", ""))
