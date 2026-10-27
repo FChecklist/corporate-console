@@ -1,0 +1,1 @@
+{"id": "runbook-rollback-missing", "repo": ".", "file": "docs/GO_LIVE_RUNBOOK.md", "find": "Rollback: detach the domain.", "replace": "Detach if needed.", "test": "tests/runbook.test.ts", "note": "a step loses its way back"}
