@@ -1,1 +1,1 @@
-{"id": "contract-fixture-lost-aud", "repo": ".", "file": "tools/fake-game/kit.mjs", "find": "kid: ctx.kid, aud: origin, sub:", "replace": "kid: ctx.kid, sub:", "test": "tests/contract.test.ts", "note": "the fixture assertion loses its audience"}
+{"id": "contract-fixture-lost-aud", "repo": ".", "file": "packages/bridge/test-kit/kit.mjs", "find": "kid: ctx.kid, aud: origin, sub:", "replace": "kid: ctx.kid, sub:", "test": "tests/contract.test.ts", "note": "the fixture assertion loses its audience"}

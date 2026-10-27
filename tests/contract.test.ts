@@ -1,7 +1,7 @@
 // FALSIFIED BY: contract-undocumented-field, contract-fixture-lost-aud, contract-key-life-extended, contract-handoff-reusable
 import { test, expect } from "bun:test";
 import { handle, newGame, seedGames } from "../tools/fake-game/server.mjs";
-import { FIXTURES, SCHEMAS, makeCtx, runFixture, validate, buildAssertion } from "../tools/fake-game/kit.mjs";
+import { FIXTURES, SCHEMAS, makeCtx, runFixture, validate, buildAssertion } from "../packages/bridge/test-kit/kit.mjs";
 
 const NOW = Date.UTC(2026, 9, 28, 6, 0, 0);
 

@@ -2,7 +2,7 @@
 import { test, expect } from "bun:test";
 import { handleConsole, endRoles, keyFitsGame, keyIsAccountWide, KEY_LIFE_MS } from "../packages/bridge/src/bridge";
 import { makeHost, seed, type Host } from "./support/fake-host";
-import { FIXTURES, makeCtx, runFixture, buildAssertion } from "../tools/fake-game/kit.mjs";
+import { FIXTURES, makeCtx, runFixture, buildAssertion } from "../packages/bridge/test-kit/kit.mjs";
 
 /** the bridge in front of the mini game, served on a real port; anything the bridge hands back (null) becomes the game's normal 404 */
 async function up(o: { pubkeys?: "on" | "off" } = {}) {

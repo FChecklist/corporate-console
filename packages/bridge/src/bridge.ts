@@ -90,7 +90,7 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
   /** verify an assertion, check its purpose and use it up */
   const assertion = async (token: unknown, act: Act, eid?: string): Promise<{ pl: Payload } | { res: Response }> => {
     const v = await verifyAssertion(token, { keys, aud, nowS, act });
-    if (!v.ok) { const m = ASSERT_MSG[v.error]; return { res: err(m[0], m[1], m[2]) }; }
+    if (!v.ok) { const m = ASSERT_MSG[v.error] as [number, string, string]; return { res: err(m[0], m[1], m[2]) }; }
     if (eid !== undefined && v.payload.eid !== eid) return { res: err(401, "wrong_act", "This sign-in is for another game.") };
     const used = await db.prepare("INSERT OR IGNORE INTO console_jti(jti, exp_s) VALUES(?,?)").bind(v.payload.jti, v.payload.exp).run();
     if (used.meta.changes !== 1) return { res: err(401, "replayed", "This sign-in was already used. Please try again.") };

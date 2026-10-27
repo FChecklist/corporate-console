@@ -1,16 +1,18 @@
-// Contract kit: builds signed assertions for the fixtures, checks fixtures against contract/schemas.json, and runs a fixture against ANY base URL
-// (the fake game now, each real game's bridge later). Run under Bun.
-import { readFileSync } from "node:fs";
-import { signAssertion, makeKeyPair, parseKeyList } from "../../packages/bridge/src/assertion.ts";
-import { check } from "../schema-check.mjs";
-import { emailHash } from "./server.mjs";
+// Contract kit: builds signed assertions for the fixtures, checks fixtures against the contract schemas, and runs a fixture against ANY base URL
+// (the fake game, and each real game's bridge). Run under Bun. Copied byte for byte into every game (tools/vendor-bridge.mjs) together with fixtures.json and schemas.json.
+import { readFileSync, existsSync } from "node:fs";
+import { signAssertion, makeKeyPair, parseKeyList } from "../src/assertion.ts";
+import { check } from "./schema-check.mjs";
 
-export const SCHEMAS = JSON.parse(readFileSync(new URL("../../contract/schemas.json", import.meta.url), "utf8"));
-export const FIXTURES = JSON.parse(readFileSync(new URL("../../contract/fixtures.json", import.meta.url), "utf8"));
+const here = (p) => new URL(p, import.meta.url);
+const contract = (name) => JSON.parse(readFileSync(existsSync(here("./" + name)) ? here("./" + name) : here("../../../contract/" + name), "utf8")); // in a game the files sit next to the kit; in the console repo they live in contract/
+const sha256hex = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+export const emailHash = (email) => sha256hex("email|" + email.trim().toLowerCase());
+export const SCHEMAS = contract("schemas.json");
+export const FIXTURES = contract("fixtures.json");
 const defs = SCHEMAS.$defs;
 /** validate value against a named schema of the contract; returns problems */
 export const validate = (name, value) => { if (!defs[name]) throw new Error("no schema " + name); return check({ ...defs[name], $defs: defs }, value); };
-export { emailHash };
 
 export const PEOPLE = { alice: "alice@acme.example", bob: "bob@bob.example", carol: "carol@carol.example", dave: "dave@new.example", nobody: "nobody@nowhere.example" };
 

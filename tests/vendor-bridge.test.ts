@@ -3,7 +3,7 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { vendor, drift, DEST_REL, hashText, sourceFiles, SRC_DIR } from "../tools/vendor-bridge.mjs";
+import { vendor, drift, DEST_REL, KIT_DEST_REL, hashText, sourceFiles, SRC_DIR } from "../tools/vendor-bridge.mjs";
 
 const game = () => mkdtempSync(join(tmpdir(), "vb-"));
 
@@ -23,6 +23,18 @@ test("changing ONE byte in ONE vendored file turns the drift check red and names
   const p = drift(g);
   expect(p.length).toBe(1);
   expect(p[0]).toContain("bridge.ts differs");
+});
+
+test("the contract tests travel with the bridge: kit, schemas and fixtures are copied too, with their one import path rewritten", () => {
+  const g = game();
+  vendor(g);
+  const kit = join(g, KIT_DEST_REL);
+  for (const f of ["kit.mjs", "schema-check.mjs", "schemas.json", "fixtures.json", "MANIFEST.json"]) expect(readFileSync(join(kit, f), "utf8").length).toBeGreaterThan(10);
+  expect(readFileSync(join(kit, "kit.mjs"), "utf8")).toContain('"../../src/console-bridge/assertion.ts"');
+  expect(readFileSync(join(kit, "kit.mjs"), "utf8")).not.toContain('"../src/assertion.ts"');
+  expect(drift(g)).toEqual([]);
+  writeFileSync(join(kit, "fixtures.json"), readFileSync(join(kit, "fixtures.json"), "utf8").replace('"status": 200', '"status": 201'));
+  expect(drift(g).some((x: string) => x.includes("fixtures.json differs"))).toBe(true);
 });
 
 test("a file removed, an extra file added, a stale manifest: each is drift", () => {

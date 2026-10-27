@@ -1,1 +1,1 @@
-{"id": "vendor-drift-unchecked", "repo": ".", "file": "tools/vendor-bridge.mjs", "find": "if (hashText(readFileSync(join(dest, f))) !== h) problems.push(`${f} differs from the console source`);", "replace": "", "test": "tests/vendor-bridge.test.ts", "note": "an edited copy would pass"}
+{"id": "vendor-drift-unchecked", "repo": ".", "file": "tools/vendor-bridge.mjs", "find": "if (hashText(readFileSync(join(dest, f))) !== h) problems.push(`${d}/${f} differs from the console source`);", "replace": "", "test": "tests/vendor-bridge.test.ts", "note": "an edited copy would pass"}

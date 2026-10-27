@@ -1,5 +1,5 @@
 {
-  "_about": "Contract v1 between the console and every game. Checked by tools/schema-check.mjs: a field that is not listed here is an error (closed objects). Changing this file is a contract change: bump contract/VERSION and tell every game session.",
+  "_about": "Contract v1 between the console and every game. Checked by packages/bridge/test-kit/schema-check.mjs: a field that is not listed here is an error (closed objects). Changing this file is a contract change: bump contract/VERSION and tell every game session.",
   "$defs": {
     "Hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
     "GameId": { "type": "string", "enum": ["tambola", "bingo", "tictactoe", "snakesladders", "luckbychance", "luckydraw"] },

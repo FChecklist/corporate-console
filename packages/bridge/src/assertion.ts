@@ -50,7 +50,7 @@ export function parseKeyList(text: string | undefined | null): Array<{ kid: stri
   for (const part of String(text ?? "").split(",")) {
     const m = /^\s*([a-z0-9]{1,12}):([A-Za-z0-9_-]{43})\s*$/.exec(part);
     if (!m) continue;
-    try { const x = b64uDecode(m[2]); if (x.length === 32) out.push({ kid: m[1], x }); } catch { /* skip */ }
+    try { const x = b64uDecode(m[2] as string); if (x.length === 32) out.push({ kid: m[1] as string, x }); } catch { /* skip */ }
   }
   return out;
 }
@@ -60,14 +60,14 @@ export async function verifyAssertion(token: unknown, o: { keys: Array<{ kid: st
   const parts = token.split(".");
   if (parts.length !== 3 || parts[0] !== "v1") return { ok: false, error: "bad_assertion" };
   let payload: Payload;
-  try { payload = JSON.parse(td.decode(b64uDecode(parts[1]))); } catch { return { ok: false, error: "bad_assertion" }; }
+  try { payload = JSON.parse(td.decode(b64uDecode(parts[1] as string))); } catch { return { ok: false, error: "bad_assertion" }; }
   if (!payload || typeof payload !== "object" || payload.v !== 1 || typeof payload.kid !== "string") return { ok: false, error: "bad_assertion" };
   const key = o.keys.find((k) => k.kid === payload.kid);
   if (!key) return { ok: false, error: "unknown_kid" };
   let good = false;
   try {
-    const pub = await crypto.subtle.importKey("raw", key.x, { name: "Ed25519" }, false, ["verify"]);
-    good = await crypto.subtle.verify("Ed25519", pub, b64uDecode(parts[2]), te.encode("cgv1." + parts[1]));
+    const pub = await crypto.subtle.importKey("raw", key.x as unknown as BufferSource, { name: "Ed25519" }, false, ["verify"]);
+    good = await crypto.subtle.verify("Ed25519", pub, b64uDecode(parts[2] as string) as unknown as BufferSource, te.encode("cgv1." + (parts[1] as string)));
   } catch { good = false; }
   if (!good) return { ok: false, error: "bad_assertion" };
   // from here on the payload is authentic: check what it says
