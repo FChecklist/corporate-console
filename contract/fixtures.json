@@ -46,7 +46,8 @@
      "eq": "console"
     }
    ]
-  }
+  },
+  "fakeOnly": true
  },
  {
   "name": "session: Host keys come back bound to one game",

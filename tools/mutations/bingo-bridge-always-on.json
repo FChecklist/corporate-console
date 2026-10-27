@@ -1,0 +1,1 @@
+{"id": "bingo-bridge-always-on", "repo": "../bingo-console", "file": "apps/edge/src/console-adapter.ts", "find": "pubkeys: (env) => (env as any).CONSOLE_PUBKEYS,", "replace": "pubkeys: (env) => (env as any).CONSOLE_PUBKEYS ?? \"k1:\" + \"A\".repeat(43),", "test": "apps/edge/test/console-bridge.test.ts", "note": "the bridge would answer even when it was never switched on"}

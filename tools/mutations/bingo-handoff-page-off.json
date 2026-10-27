@@ -1,0 +1,1 @@
+{"id": "bingo-handoff-page-off", "repo": "../bingo-console", "file": "apps/web/public/signin.js", "find": "if (consoleEid && t) return handoff();", "replace": "if (false) return handoff();", "test": "apps/web/test/console-handoff.test.ts", "note": "the hand-off link would do nothing"}
