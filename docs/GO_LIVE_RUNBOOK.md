@@ -75,4 +75,4 @@ Verify: each of the five old links (personal, host, big screen, sign-in, pay) op
 
 ## Step 8. After one quiet week
 
-Switch on the per-game screens (Host / Co-host screens, log tab, upgrade button, participant invitations). Rollback: per-feature switch. At +90 days check the old-link proxy hit log; at +365 days watch the first e-mail purge.
+Switch on the per-game screens (Host / Co-host screens, log tab, upgrade button, participant invitations). Verify: each switch shows its screen only for the games where it was turned on. Rollback: per-feature switch. At +90 days check the old-link proxy hit log; at +365 days watch the first e-mail purge.
