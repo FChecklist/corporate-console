@@ -1,0 +1,1 @@
+{"id": "guard-ignores-starting-soon", "repo": ".", "file": "tools/deploy/guard.mjs", "find": "if (j.playing > 0 || soon > 0 ||", "replace": "if (j.playing > 0 ||", "test": "tests/deploy.test.ts", "note": "a game starting in 30 minutes would not stop a deploy"}

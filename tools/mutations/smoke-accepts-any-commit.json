@@ -1,0 +1,1 @@
+{"id": "smoke-accepts-any-commit", "repo": ".", "file": "tools/deploy/smoke.mjs", "find": "if (!same) return", "replace": "if (false) return", "test": "tests/deploy.test.ts", "note": "a wrong version would pass the smoke check"}

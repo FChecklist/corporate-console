@@ -1,0 +1,1 @@
+{"id": "guard-ignores-unreachable", "repo": ".", "file": "tools/deploy/guard.mjs", "find": "return { ok, quiet, lines, code: !ok ? 2 : quiet ? 0 : 1 };", "replace": "return { ok, quiet, lines, code: quiet ? 0 : 1 };", "test": "tests/deploy.test.ts", "note": "an unreachable game would count as quiet"}
