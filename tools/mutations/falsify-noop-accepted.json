@@ -1,0 +1,1 @@
+{ "id": "falsify-noop-accepted", "repo": ".", "file": "tools/falsify-run.mjs", "find": "if (mut.code === 0) {", "replace": "if (false) {", "test": "tests/falsify-run.test.ts", "note": "falsify-run would call a test that stays green 'caught'" }

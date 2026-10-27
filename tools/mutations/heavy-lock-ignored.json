@@ -1,0 +1,1 @@
+{ "id": "heavy-lock-ignored", "repo": ".", "file": "tools/heavy-run.mjs", "find": "if (e && e.code === \"EEXIST\") {", "replace": "if (false) {", "test": "tests/heavy-run.test.ts", "note": "heavy-run would not notice that another job holds the lock" }

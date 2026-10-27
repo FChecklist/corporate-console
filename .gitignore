@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+dist/
+*.log
+.tmp/
+.dev.vars
+.env*
+data-local/
+.tmp-*

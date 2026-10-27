@@ -1,0 +1,9 @@
+{
+  "name": "corporate-console",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test tests packages",
+    "falsify": "node tools/falsify-run.mjs"
+  }
+}
