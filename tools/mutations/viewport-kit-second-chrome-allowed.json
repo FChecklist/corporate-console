@@ -1,0 +1,1 @@
+{ "id": "viewport-kit-second-chrome-allowed", "repo": ".", "file": "tools/browser-tests/viewport-kit.mjs", "find": "if (other && other !== pid && alive(other)) throw", "replace": "if (false) throw", "test": "tests/viewport-kit.test.ts", "note": "the kit would start a second Chrome while one is running" }
