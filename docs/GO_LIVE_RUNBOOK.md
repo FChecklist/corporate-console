@@ -69,7 +69,9 @@ Verify: `https://console.corporatetambola.com/` shows the sign-in screen with th
 
 ## Step 7. The Tambola move to `housie.corporatetambola.com` (riskiest, last, quiet hour, no game booked that day)
 
-As written in the build plan (Deploy order, Step 6): add housie. to Tambola's Pages project and verify; deploy the housie links; attach the bare address and www to the showcase with the redirect and proxy live in the same minute; check five old links and that a seated participant keeps the seat; reconcile payments before and after. Rollback: re-attach the bare address to Tambola's project and redeploy Tambola's previous deployment.
+As written in the build plan (Deploy order, Step 6): add housie. to Tambola's Pages project and verify; deploy the housie links; attach the bare address and www to the showcase with the redirect and proxy live in the same minute; check five old links and that a seated participant keeps the seat; reconcile payments before and after.
+
+Verify: each of the five old links (personal, host, big screen, sign-in, pay) opens the same page on housie.; a seated participant still has the seat; the payment ledger has no paid-but-unfulfilled order. Rollback: re-attach the bare address to Tambola's project and redeploy Tambola's previous deployment.
 
 ## Step 8. After one quiet week
 
