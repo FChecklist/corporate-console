@@ -1,0 +1,1 @@
+{"id": "tambola-bridge-always-on", "repo": "../tambola-console", "file": "apps/edge/src/console-adapter.ts", "find": "pubkeys: (env) => (env as any).CONSOLE_PUBKEYS,", "replace": "pubkeys: (env) => (env as any).CONSOLE_PUBKEYS ?? \"k1:\" + \"A\".repeat(43),", "test": "apps/edge/test/console-bridge.test.ts", "note": "the bridge would answer even when never switched on"}

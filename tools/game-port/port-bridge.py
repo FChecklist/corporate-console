@@ -13,7 +13,7 @@ CONSOLE = os.path.abspath(os.path.join(HERE, "..", ".."))
 BINGO = r"C:\ct\test-sites\bingo-console"
 
 GAMES = {
-    "tambola": dict(id="tambola", name="Corporate Tambola", keep_demo_cap=True, free_expr="DEMO_CAP", free_expr_num=10, base_cap=10, call=12, pay_import_extra="", prefix=("ctk_", "cth_", "ctc_"), cors_tail='x-ct-vid, x-ct-vs"', secrets_after="PAY_HOP_URL"),
+    "tambola": dict(id="tambola", name="Corporate Tambola", keep_demo_cap=True, free_expr="DEMO_CAP", free_expr_num=10, base_cap=10, call=12, pay_import_extra="", prefix=("ctk_", "cth_", "ctc_"), orgkey="ctz-org", cors_tail='x-ct-vid, x-ct-vs"', secrets_after="PAY_HOP_URL"),
     "tictactoe": dict(id="tictactoe", name="Corporate Tic Tac Toe", free_import='', free_expr='FREE_GAME_CAP', pay_import_extra=', FREE_GAME_CAP', free_expr_num=10, base_cap=10, call=9, secrets_after="PAY_HOP_URL"),
     "snakesladders": dict(id="snakesladders", name="Corporate Snakes and Ladders", free_import='', free_expr='0', free_expr_num=0, base_cap=100, call=20, pay_import_extra='', secrets_after="PAY_HOP_URL"),
     "luckbychance": dict(id="luckbychance", name="Corporate Luck by Chance", free_import='', free_expr='0', free_expr_num=0, base_cap=100, call=20, pay_import_extra='', secrets_after="PAY_HOP_URL"),
@@ -76,7 +76,7 @@ def main():
     p = os.path.join(repo, "apps", "web", "public", "signin.js"); w, nl = read(p)
     bs, _ = read(os.path.join(BINGO, "apps", "web", "public", "signin.js"))
     w = rep(w, 't = q.get("t") || hs.t || "", go = (q.get("go") || hs.go) === "ai" ? "/ai-link.html" : "/zc.html";\n  try { history.replaceState({ t, go: go === "/ai-link.html" ? "ai" : "" }, "", location.pathname); } catch {}', re.search(r't = q\.get\("t"\) \|\| hs\.t[^\n]*\n[^\n]*\n[^\n]*\n  try \{ history\.replaceState[^\n]*', bs).group(0), "signin top")
-    hand = bs[bs.index("  const handoff = async"):bs.index("  const draw = (msg) => {")].replace("Corporate Bingo", g["name"])
+    hand = bs[bs.index("  const handoff = async"):bs.index("  const draw = (msg) => {")].replace("Corporate Bingo", g["name"]).replace("cbz-org", g.get("orgkey", "cbz-org"))
     w = rep(w, "  const draw = (msg) => {\n", hand + "  const draw = (msg) => {\n    if (consoleEid && t) return handoff();\n", "signin draw")
     write(p, w, nl)
     # secrets list + migrations list

@@ -1,0 +1,1 @@
+{"id": "tambola-cors-step-missing", "repo": "../tambola-console", "file": "apps/edge/src/worker.ts", "find": ", x-ct-vs, x-console-step\"", "replace": ", x-ct-vs\"", "test": "apps/edge/test/console-bridge.test.ts", "note": "the browser would refuse the confirmation header"}

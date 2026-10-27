@@ -1,0 +1,1 @@
+{"id": "tambola-ended-key-lives", "repo": "../tambola-console", "file": "apps/edge/src/worker.ts", "find": "if (row.eid && (await keyGameEnded(env, row.eid, now))) return", "replace": "if (false) return", "test": "apps/edge/test/console-bridge.test.ts", "note": "a Host key would keep working after the game ended"}

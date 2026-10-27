@@ -1,0 +1,1 @@
+{"id": "tambola-handoff-key-not-kept", "repo": "../tambola-console", "file": "apps/web/public/signin.js", "find": "try { sessionStorage.setItem(\"ctz-org\", j.key); } catch {}", "replace": "", "test": "apps/web/test/console-handoff.test.ts", "note": "the game's own screen would open without a key"}

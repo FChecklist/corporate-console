@@ -71,7 +71,9 @@ export async function runMutation(m, o = {}) {
   } finally {
     try { rmSync(tmp, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp is not important */ }
     const after = snapshot(repo, m.file);
-    res.treeUntouched = JSON.stringify(before) === JSON.stringify(after);
+    // the tool only ever reads the repo; what it must prove is that the file it mutated is still exactly as it was. Someone else committing during the run (HEAD or status moved) is noted, not blamed.
+    res.treeUntouched = before.fileHash === after.fileHash;
+    if (before.head !== after.head || before.status !== after.status) res.repoMovedDuringRun = true;
     if (!res.treeUntouched) { res.status = "TREE CHANGED"; res.detail = "the working tree differs after the run: something else is editing it, or this tool is broken"; }
   }
 }
