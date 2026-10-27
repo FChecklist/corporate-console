@@ -1,0 +1,1 @@
+{"id": "core-waits-for-all", "repo": ".", "file": "public/core/api.js", "find": "if (onGame) onGame(res);\n      return res;", "replace": "return res;", "test": "tests/core-api.test.ts", "note": "games would show only after the slowest one answered (callback dropped)"}

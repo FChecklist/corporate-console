@@ -1,0 +1,1 @@
+{"id": "core-extra-header", "repo": ".", "file": "public/core/api.js", "find": "const h = { \"content-type\": \"application/json\", \"x-organizer\": k.key };", "replace": "const h = { \"content-type\": \"application/json\", \"x-organizer\": k.key, \"x-console\": \"1\" };", "test": "tests/core-api.test.ts", "note": "an unlisted header would reach the games (preflight failure)"}

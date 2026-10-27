@@ -1,0 +1,1 @@
+{"id": "core-key-in-storage", "repo": ".", "file": "public/core/session.js", "find": "put(game, kind, eid, key, expiresMs) { keys.set(", "replace": "put(game, kind, eid, key, expiresMs) { try { localStorage.setItem(\"k-\" + game, key); } catch {} keys.set(", "test": "tests/core-api.test.ts", "note": "a key would be written to the device"}

@@ -1,0 +1,1 @@
+{"id": "core-signout-keeps-keys", "repo": ".", "file": "public/core/api.js", "find": "vault.clear();\n      return own", "replace": "return own", "test": "tests/core-api.test.ts", "note": "signing out would not end the keys in the games"}

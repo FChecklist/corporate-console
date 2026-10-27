@@ -1,0 +1,1 @@
+{"id": "core-price-hardcoded", "repo": ".", "file": "public/core/prices.js", "find": "if (f.fromInrMinor != null) parts.push(`From ${rs(f.fromInrMinor)}.`);", "replace": "parts.push(`From ${rs(149300)}.`);", "test": "tests/core-api.test.ts", "note": "the price would be a number held in the console"}
