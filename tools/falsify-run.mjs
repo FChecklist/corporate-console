@@ -14,6 +14,7 @@ import { spawn, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { killTree } from "./heavy-run.mjs";
+import { cleanCopy } from "./cleancopy.mjs";
 
 const GIT = existsSync("C:/Program Files/Git/mingw64/bin/git.exe") ? "C:/Program Files/Git/mingw64/bin/git.exe" : "git";
 const git = (repo, args, o = {}) => execFileSync(GIT, ["-C", repo, ...args], { encoding: "utf8", maxBuffer: 1 << 28, ...o });
@@ -28,18 +29,6 @@ export function loadMutations(store) {
 /** snapshot that must be identical before and after a run */
 function snapshot(repo, file) {
   return { head: git(repo, ["rev-parse", "HEAD"]).trim(), status: git(repo, ["status", "--porcelain"]), fileHash: existsSync(join(repo, file)) ? sha(join(repo, file)) : "(absent)" };
-}
-
-function findNodeModules(root, depth = 0, acc = []) {
-  if (depth > 3) return acc;
-  for (const name of readdirSync(root)) {
-    if (name === ".git") continue;
-    const p = join(root, name);
-    let st; try { st = statSync(p); } catch { continue; }
-    if (!st.isDirectory()) continue;
-    if (name === "node_modules") acc.push(p); else findNodeModules(p, depth + 1, acc);
-  }
-  return acc;
 }
 
 function runCmd(cmd, cwd, timeoutMs) {
@@ -60,12 +49,8 @@ export async function runMutation(m, o = {}) {
   const before = snapshot(repo, m.file);
   const tmp = mkdtempSync(join(tmpdir(), "falsify-"));
   try {
-    // 1. a clean copy of the last commit (tar extraction; the repo itself is only read)
-    const tar = join(tmp, "src.tar");
-    execFileSync(GIT, ["-C", repo, "archive", "--format=tar", "-o", tar, "HEAD"]);
-    const dir = join(tmp, "copy"); mkdirSync(dir);
-    execFileSync("tar", ["-xf", "src.tar", "-C", "copy"], { cwd: tmp }); // relative names: GNU tar reads "C:" as a host name
-    for (const nm of findNodeModules(repo)) { const rel = relative(repo, nm); const dest = join(dir, rel); mkdirSync(dirname(dest), { recursive: true }); try { symlinkSync(nm, dest, "junction"); } catch { /* best effort */ } }
+    // 1. a clean copy of the last commit (the repo itself is only read)
+    const dir = cleanCopy(repo, tmp);
     const cmd = (m.cmd || ["bun", "test", "{file}"]).map((x) => x.replace("{file}", m.test));
     // 2. baseline must be green
     const base = await runCmd(cmd, dir, timeoutMs);
@@ -74,9 +59,11 @@ export async function runMutation(m, o = {}) {
     const target = join(dir, m.file);
     if (!existsSync(target)) { res.status = "mutation not applicable"; res.detail = `file ${m.file} is not in the last commit`; return res; }
     const src = readFileSync(target, "utf8");
-    const n = m.find === "" ? 0 : src.split(m.find).length - 1;
+    const crlf = src.includes("\r\n"), eol = (s) => (crlf ? s.replace(/\r?\n/g, "\r\n") : s); // the copy may have Windows line ends; a mutation is written with \n
+    const find = eol(m.find), repl = eol(m.replace);
+    const n = find === "" ? 0 : src.split(find).length - 1;
     if (n !== 1) { res.status = "mutation not applicable"; res.detail = `the text to change occurs ${n} times in ${m.file} (must be exactly 1)`; return res; }
-    writeFileSync(target, src.replace(m.find, () => m.replace));
+    writeFileSync(target, src.replace(find, () => repl));
     const mut = await runCmd(cmd, dir, timeoutMs);
     if (mut.code === 0) { res.status = "mutation not caught"; res.detail = "the test stayed GREEN with the code broken: it proves nothing about this change"; }
     else { res.status = "caught"; res.detail = `went RED (exit ${mut.code}${mut.timedOut ? ", timed out" : ""})`; res.redTail = mut.out.slice(-400); }

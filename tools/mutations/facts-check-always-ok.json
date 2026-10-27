@@ -1,0 +1,1 @@
+{ "id": "facts-check-always-ok", "repo": ".", "file": "tools/facts-check.mjs", "find": "const ok = f.absent ? !hit : hit;", "replace": "const ok = true;", "test": "tests/facts-check.test.ts", "note": "the facts check would pass whatever the code says" }

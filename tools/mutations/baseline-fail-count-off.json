@@ -1,0 +1,1 @@
+{ "id": "baseline-fail-count-off", "repo": ".", "file": "tools/baseline.mjs", "find": "fail: n(/^\s*(\d+) fail\s*$/m)", "replace": "fail: n(/^\s*(\d+) pass\s*$/m)", "test": "tests/baseline.test.ts", "note": "the baseline would report passes as failures" }

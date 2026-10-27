@@ -62,6 +62,12 @@ test("the real files are not changed by a run (same file, same git status, nothi
   expect(r.treeUntouched).toBe(true);
 }, 60000);
 
+test("a mutation that spans two lines is found whatever line ends the copy has", async () => {
+  const d = fixture();
+  const r = await runMutation(mut(d, { find: "export const limit = 5;\nexport const ok = (n) => n <= limit;", replace: "export const limit = 5;\nexport const ok = (n) => true;" }));
+  expect(r.status).toBe("caught");
+}, 60000);
+
 test("lint: a test file without 'FALSIFIED BY' or with an unknown mutation id is listed", () => {
   const root = mkdtempSync(join(tmpdir(), "lint-"));
   const store = join(root, "store"); mkdirSync(store);
