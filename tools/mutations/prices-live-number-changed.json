@@ -1,0 +1,1 @@
+{ "id": "prices-live-number-changed", "repo": ".", "file": "tools/prices/price-list.json", "find": "\"100\": 2399, \"250\"", "replace": "\"100\": 2398, \"250\"", "test": "tests/prices.test.ts", "note": "one price in the list differs from what the games charge" }

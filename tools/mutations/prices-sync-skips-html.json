@@ -1,0 +1,1 @@
+{ "id": "prices-sync-skips-html", "repo": ".", "file": "tools/prices/lib.mjs", "find": "  \"apps/web/public/pricing.html\",\n", "replace": "", "test": "tests/prices.test.ts", "note": "the generator forgets one price page" }
