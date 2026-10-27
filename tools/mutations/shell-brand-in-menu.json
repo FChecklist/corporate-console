@@ -1,0 +1,1 @@
+{"id": "shell-brand-in-menu", "repo": ".", "file": "public/copy/en.json", "find": "\"menu\": { \"home\": \"Home\"", "replace": "\"menu\": { \"home\": \"Corporate Home\"", "test": "tests/shell.test.ts", "note": "a brand word in the menu"}

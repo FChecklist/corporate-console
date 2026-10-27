@@ -1,0 +1,1 @@
+{"id": "shell-sw-caches-auth", "repo": ".", "file": "public/sw.js", "find": " && !url.pathname.startsWith(\"/auth/\")", "replace": "", "test": "tests/shell.test.ts", "note": "sign-in answers would be kept on the device"}

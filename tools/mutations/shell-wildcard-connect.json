@@ -1,0 +1,1 @@
+{"id": "shell-wildcard-connect", "repo": ".", "file": "build.mjs", "find": "`connect-src 'self' ${origins.join(\" \")}`", "replace": "`connect-src 'self' * ${origins.join(\" \")}`", "test": "tests/shell.test.ts", "note": "the browser could talk to any address"}

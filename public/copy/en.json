@@ -1,0 +1,18 @@
+{
+  "menu": { "home": "Home", "billing": "Billing" },
+  "mobileBar": { "home": "Home", "mygames": "My games", "billing": "Billing", "more": "More" },
+  "privacy": {
+    "phrases": [
+      "100% data deletion of player data",
+      "built to follow India's DPDP Act, the EU GDPR, US privacy law and a global data policy",
+      "built for corporate close-group online games"
+    ],
+    "more": "Invoices and legal records are kept for the time the law requires.",
+    "moreButton": "More",
+    "lessButton": "Less"
+  },
+  "loading": "One moment.",
+  "updateReady": "A new version is ready.",
+  "updateButton": "Update now",
+  "offline": "You are offline. Showing what was saved on this device."
+}

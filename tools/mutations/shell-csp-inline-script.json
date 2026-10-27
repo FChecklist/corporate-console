@@ -1,0 +1,1 @@
+{"id": "shell-csp-inline-script", "repo": ".", "file": "build.mjs", "find": "\"script-src 'self'\",", "replace": "\"script-src 'self' 'unsafe-inline'\",", "test": "tests/shell.test.ts", "note": "inline scripts would be allowed"}
