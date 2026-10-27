@@ -1,0 +1,1 @@
+{"id": "bridge-signature-ignored", "repo": ".", "file": "packages/bridge/src/assertion.ts", "find": "if (!good) return", "replace": "if (false) return", "test": "tests/bridge-assertion.test.ts", "note": "the signature would not be checked"}

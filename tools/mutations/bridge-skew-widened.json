@@ -1,0 +1,1 @@
+{"id": "bridge-skew-widened", "repo": ".", "file": "packages/bridge/src/assertion.ts", "find": "export const SKEW_S = 30;", "replace": "export const SKEW_S = 3000;", "test": "tests/bridge-assertion.test.ts", "note": "clock tolerance of 50 minutes"}

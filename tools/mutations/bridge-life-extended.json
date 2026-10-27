@@ -1,0 +1,1 @@
+{"id": "bridge-life-extended", "repo": ".", "file": "packages/bridge/src/assertion.ts", "find": "export const MAX_LIFE_S = 60;", "replace": "export const MAX_LIFE_S = 6000;", "test": "tests/bridge-assertion.test.ts", "note": "assertions could live for 100 minutes"}

@@ -1,0 +1,1 @@
+{"id": "bridge-aud-check-removed", "repo": ".", "file": "packages/bridge/src/assertion.ts", "find": "if (payload.aud !== o.aud) return", "replace": "if (false) return", "test": "tests/bridge-assertion.test.ts", "note": "an assertion made for another game would be accepted"}
