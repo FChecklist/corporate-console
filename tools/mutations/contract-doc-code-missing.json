@@ -1,0 +1,1 @@
+{"id": "contract-doc-code-missing", "repo": ".", "file": "docs/CONTRACT_V1.md", "find": "`rate_limited` 429, ", "replace": "", "test": "tests/contract-doc.test.ts", "note": "an error code is used by the games but not described"}
