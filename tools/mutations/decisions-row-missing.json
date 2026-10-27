@@ -1,0 +1,1 @@
+{ "id": "decisions-row-missing", "repo": ".", "file": "docs/CONSOLE_DECISIONS.md", "find": "| D13 | Tic Tac Toe format", "replace": "| D1X | Tic Tac Toe format", "test": "tests/decisions-doc.test.ts", "note": "a decision row gets lost" }
