@@ -1,5 +1,7 @@
 // FALSIFIED BY: contract-undocumented-field, contract-fixture-lost-aud, contract-key-life-extended, contract-handoff-reusable
-import { test, expect } from "bun:test";
+import { test, expect, setDefaultTimeout } from "bun:test";
+
+setDefaultTimeout(30_000);
 import { handle, newGame, seedGames } from "../tools/fake-game/server.mjs";
 import { FIXTURES, SCHEMAS, makeCtx, runFixture, validate, buildAssertion } from "../packages/bridge/test-kit/kit.mjs";
 

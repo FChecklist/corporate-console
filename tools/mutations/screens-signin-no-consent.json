@@ -1,0 +1,1 @@
+{"id": "screens-signin-no-consent", "repo": ".", "file": "public/screens/signin.js", "find": "if (!consent.checked) return say(\"Please tick the box to continue.\", true);", "replace": "", "test": "tests/screens.test.ts", "note": "sign-in without the consent box"}

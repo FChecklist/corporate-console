@@ -9,10 +9,13 @@ const ICON = {
 };
 const icon = (d) => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", "26"); s.setAttribute("height", "26"); s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", "1.9"); s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round"); s.setAttribute("aria-hidden", "true"); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", d); s.append(p); return s; };
 
-export function mountShell(root, { copy, items, strip, route }) {
-  const title = items.find((i) => i.id === route)?.label || copy.menu.home;
-  const bar = copy.mobileBar;
-  const tab = (id, label, ico) => el("a", { href: "#/" + id, class: route === id ? "on" : "", "aria-current": route === id ? "page" : false }, icon(ico), el("span", { text: label }));
-  root.append(el("div", { class: "mtop" }, el("h2", { id: "screen-title", text: title })), strip, el("main", { id: "main", tabindex: "-1" }, el("div", { class: "wrap" }, el("div", { class: "page" }))),
-    el("nav", { class: "tabbar", "aria-label": "Main" }, tab("home", bar.home, ICON.home), tab("mygames", bar.mygames, ICON.mygames), tab("billing", bar.billing, ICON.billing), tab("more", bar.more, ICON.more)));
+export function mountShell(root, { copy, items, strip, route, signedIn }) {
+  const outlet = el("div", { id: "outlet" });
+  const first = route.split("/")[0];
+  const title = signedIn ? (items.find((i) => i.id === first)?.label || { mygames: "My games", create: "Create a new game", play: "Play as a participant", more: "More", game: "Game", account: "Account", versions: "Versions" }[first] || copy.menu.home) : "Sign in";
+  const bar = copy.mobileBar, on = (...ids) => ids.includes(first);
+  const tab = (id, label, ico, ...also) => el("a", { href: "#/" + id, class: on(id, ...also) ? "on" : "", "aria-current": on(id, ...also) ? "page" : false }, icon(ico), el("span", { text: label }));
+  root.append(el("div", { class: "mtop" }, el("h2", { id: "screen-title", text: title })), strip, el("main", { id: "main", tabindex: "-1" }, outlet),
+    ...(signedIn ? [el("nav", { class: "tabbar", "aria-label": "Main" }, tab("home", bar.home, ICON.home, "create"), tab("mygames", bar.mygames, ICON.mygames, "game"), tab("billing", bar.billing, ICON.billing), tab("more", bar.more, ICON.more, "play", "versions", "account"))] : []));
+  return outlet;
 }

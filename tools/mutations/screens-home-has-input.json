@@ -1,0 +1,1 @@
+{"id": "screens-home-has-input", "repo": ".", "file": "public/screens/home.js", "find": "el(\"div\", { class: \"tiles3\" },", "replace": "el(\"div\", { class: \"tiles3\" }, el(\"input\", { type: \"text\", placeholder: \"Enter code\" }),", "test": "tests/screens.test.ts", "note": "a code box on Home"}

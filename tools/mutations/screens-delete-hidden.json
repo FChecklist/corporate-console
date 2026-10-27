@@ -1,0 +1,1 @@
+{"id": "screens-delete-hidden", "repo": ".", "file": "public/screens/mygames.js", "find": "if (g.status === \"draft\" && g.role === \"organizer\") btns.push", "replace": "if (false) btns.push", "test": "tests/screens.test.ts", "note": "Delete draft would disappear"}

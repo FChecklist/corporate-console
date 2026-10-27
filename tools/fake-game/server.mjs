@@ -27,7 +27,7 @@ export async function handle(S, req) {
   if (S.persona === "slow") await new Promise((r) => setTimeout(r, S.slowMs ?? 7000));
   const p = url.pathname;
   if (p === "/version.json") return new Response(JSON.stringify({ commit: "fake", dirty: false, builtAt: "2026-10-27T00:00:00Z", game: "corporate-" + S.game, gameVersion: S.gameVersion, bridgeSchema: S.persona === "old" ? 1 : 2 }), { headers: { ...H, ...CORS } });
-  if (!p.startsWith("/api/console/") && !/^\/api\/z\/[^/]+\/(log|upgrade-quote)$/.test(p)) return err(404, "not_found", "There is nothing at this address.");
+  if (!p.startsWith("/api/console/") && !/^\/api\/z\/[^/]+\/(log|upgrade-quote|discard|clone)$/.test(p)) return err(404, "not_found", "There is nothing at this address.");
   if (!S.bridgeOn) return new Response("{}", { status: 404, headers: { "content-type": "application/json" } }); // dark: no reason given, no CORS
   const body = req.method === "POST" ? await req.json().catch(() => null) : null;
   const now = S.nowMs;
@@ -148,6 +148,14 @@ export async function handle(S, req) {
     const g = S.games.find((x) => x.eid === body?.eid);
     if (!g || !(k.kind === "master" ? g.orgSub === k.sub : k.eid === g.eid)) return err(403, "forbidden", "You do not have a role in this game.");
     return ok({ url: `${S.origin}/screenview/${g.eid}?t=${hex(30)}`, expiresMs: now + 15 * 60_000 });
+  }
+  const md = /^\/api\/z\/([^/]+)\/(discard|clone)$/.exec(p);
+  if (md && req.method === "POST") { // the two ordinary game actions the console's list uses (Delete draft, Clone)
+    const k = keyOf(); if (!k || k.kind !== "master") return err(403, "forbidden", "Please sign in again.");
+    const g = S.games.find((x) => x.eid === md[1]);
+    if (!g || g.orgSub !== k.sub) return err(403, "forbidden", "You do not have a role in this game.");
+    if (md[2] === "discard") { if (g.status !== "draft") return err(409, "conflict", "Only a game that is not published yet can be deleted here."); S.games = S.games.filter((x) => x !== g); return ok({}); }
+    const id = "CLONE" + hex(2).toUpperCase(); S.games.push({ ...g, eid: id, status: "draft", nextAction: "publish", payment: { state: "none" }, pack: 0, createdMs: S.nowMs }); return ok({ id });
   }
   const mq = /^\/api\/z\/([^/]+)\/(log|upgrade-quote)$/.exec(p);
   if (mq) {

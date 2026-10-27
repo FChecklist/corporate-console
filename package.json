@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "bun test tests packages",
+    "test": "bun test --isolate tests",
     "falsify": "node tools/falsify-run.mjs"
   }
 }

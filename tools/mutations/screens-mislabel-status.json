@@ -1,0 +1,1 @@
+{"id": "screens-mislabel-status", "repo": ".", "file": "public/screens/ui.js", "find": "waiting_payment: \"Waiting for payment\"", "replace": "waiting_payment: \"Awaiting payment\"", "test": "tests/screens.test.ts", "note": "a status word changes"}
