@@ -1,12 +1,76 @@
 {
-  "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'ready:false' shows an honest 'coming soon' tile instead of a game.",
-  "games": [
-    { "id": "tambola", "name": "Tambola", "short": "Tambola", "accent": "#7A1C33", "freeCap": 10, "ready": true, "live": "https://housie.corporatetambola.com", "preview": "https://corporate-tambola.pages.dev" },
-    { "id": "bingo", "name": "Bingo", "short": "Bingo", "accent": "#0B3D91", "freeCap": 10, "ready": true, "live": "https://bingo.corporatetambola.com", "preview": "https://corporate-bingo.pages.dev" },
-    { "id": "tictactoe", "name": "Tic-Tac-Toe", "short": "Tic-Tac-Toe", "accent": "#1B6B4A", "freeCap": 5, "ready": true, "live": "https://tictactoe.corporatetambola.com", "preview": "https://corporate-tic-tac-toe.pages.dev" },
-    { "id": "snakesladders", "name": "Snakes and Ladders", "short": "Snakes and Ladders", "accent": "#A9741F", "freeCap": 5, "ready": true, "live": "https://snakes.corporatetambola.com", "preview": "https://corporate-snakes-and-ladders.pages.dev" },
-    { "id": "luckbychance", "name": "Luck by Chance", "short": "Luck by Chance", "accent": "#6B3FA0", "freeCap": 5, "ready": true, "live": "https://luck.corporatetambola.com", "preview": "https://corporate-luck-by-chance.pages.dev" },
-    { "id": "luckydraw", "name": "Lucky Draw", "short": "Lucky Draw", "accent": "#C2570C", "freeCap": 5, "ready": false, "live": "https://lucky.corporatetambola.com", "preview": "https://corporate-lucky-draw.pages.dev" }
-  ],
-  "consoleOrigin": { "live": "https://console.corporatetambola.com", "preview": "https://corporate-console.pages.dev" }
+ "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'ready:false' shows an honest 'coming soon' tile instead of a game.",
+ "games": [
+  {
+   "id": "tambola",
+   "name": "Tambola",
+   "short": "Tambola",
+   "accent": "#7A1C33",
+   "freeCap": 10,
+   "ready": true,
+   "live": "https://housie.corporatetambola.com",
+   "preview": "https://corporate-tambola.pages.dev",
+   "test": "http://127.0.0.1:9"
+  },
+  {
+   "id": "bingo",
+   "name": "Bingo",
+   "short": "Bingo",
+   "accent": "#0B3D91",
+   "freeCap": 10,
+   "ready": true,
+   "live": "https://bingo.corporatetambola.com",
+   "preview": "https://corporate-bingo.pages.dev",
+   "test": "http://127.0.0.1:9"
+  },
+  {
+   "id": "tictactoe",
+   "name": "Tic-Tac-Toe",
+   "short": "Tic-Tac-Toe",
+   "accent": "#1B6B4A",
+   "freeCap": 5,
+   "ready": true,
+   "live": "https://tictactoe.corporatetambola.com",
+   "preview": "https://corporate-tic-tac-toe.pages.dev",
+   "test": "http://127.0.0.1:9"
+  },
+  {
+   "id": "snakesladders",
+   "name": "Snakes and Ladders",
+   "short": "Snakes and Ladders",
+   "accent": "#A9741F",
+   "freeCap": 5,
+   "ready": true,
+   "live": "https://snakes.corporatetambola.com",
+   "preview": "https://corporate-snakes-and-ladders.pages.dev",
+   "test": "http://127.0.0.1:9"
+  },
+  {
+   "id": "luckbychance",
+   "name": "Luck by Chance",
+   "short": "Luck by Chance",
+   "accent": "#6B3FA0",
+   "freeCap": 5,
+   "ready": true,
+   "live": "https://luck.corporatetambola.com",
+   "preview": "https://corporate-luck-by-chance.pages.dev",
+   "test": "http://127.0.0.1:9"
+  },
+  {
+   "id": "luckydraw",
+   "name": "Lucky Draw",
+   "short": "Lucky Draw",
+   "accent": "#C2570C",
+   "freeCap": 5,
+   "ready": false,
+   "live": "https://lucky.corporatetambola.com",
+   "preview": "https://corporate-lucky-draw.pages.dev",
+   "test": "http://127.0.0.1:9"
+  }
+ ],
+ "consoleOrigin": {
+  "live": "https://console.corporatetambola.com",
+  "preview": "https://corporate-console.pages.dev",
+  "test": "http://127.0.0.1:9"
+ }
 }

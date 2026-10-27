@@ -13,14 +13,14 @@ import { launchChrome, sweep, noSidewaysScroll, tapTargets, WIDTHS, SWITCH_WIDTH
 const out = (() => { const i = process.argv.indexOf("--out"); return i >= 0 ? process.argv[i + 1] : join(tmpdir(), "console-shell-shots"); })();
 mkdirSync(out, { recursive: true });
 const dist = mkdtempSync(join(tmpdir(), "shell-dist-"));
-build({ env: "preview", out: dist });
-const srv = await startServer({ dir: dist });
+build({ env: "test", out: dist }); // game addresses point at a closed port: the browser never reaches the real games
+const srv = await startServer({ dir: dist, extra: async (req, res, url) => { if (url.pathname === "/auth/me") { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: true, signedIn: true, email: "asha@acme.com" })); return true; } if (url.pathname.startsWith("/auth/")) { res.writeHead(401, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: false, error: "signed_out", message: "Please sign in again." })); return true; } return false; } });
 const chrome = await launchChrome();
 const results = [];
 const errors = [];
 try {
   const check = async (page, w) => {
-    await page.waitForSelector("#screen-title", { timeout: 15000 });
+    await page.waitForSelector("#outlet h1, #outlet .hero", { timeout: 15000 });
     const design = await page.evaluate(() => document.documentElement.dataset.design);
     const menu = await page.evaluate(() => [...document.querySelectorAll(".top nav a, .tabbar a")].map((a) => a.textContent.trim()));
     const strip = await page.evaluate(() => document.querySelector(".priv")?.textContent || "");
@@ -37,7 +37,7 @@ try {
   const run = async (widths, label) => {
     for (const w of widths) {
       const r = await sweep(chrome.browser, srv.origin + "/", async (page, ww) => {
-        page.on("console", (m) => { if (m.type() === "error") errors.push(`${ww}px: ${m.text().slice(0, 160)}`); });
+        page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource|net::ERR_/.test(m.text())) errors.push(`${ww}px: ${m.text().slice(0, 160)}`); });
         page.on("pageerror", (e) => errors.push(`${ww}px: ${String(e).slice(0, 160)}`));
         const res = await check(page, ww);
         await page.screenshot({ path: join(out, `shell-${ww}.png`) });
@@ -49,10 +49,10 @@ try {
   await run(WIDTHS, "ten widths");
   await run(SWITCH_WIDTHS, "switch");
   // landscape phone
-  { const ctx = await chrome.browser.newContext({ viewport: { width: LANDSCAPE.w, height: LANDSCAPE.h }, hasTouch: true }); const page = await ctx.newPage(); await page.goto(srv.origin + "/"); await page.waitForSelector("#screen-title");
+  { const ctx = await chrome.browser.newContext({ viewport: { width: LANDSCAPE.w, height: LANDSCAPE.h }, hasTouch: true }); const page = await ctx.newPage(); await page.goto(srv.origin + "/"); await page.waitForSelector("#outlet h1, #outlet .hero");
     results.push({ w: LANDSCAPE.w, set: "landscape", name: "no sideways scroll", ...(await noSidewaysScroll(page)) }); await ctx.close(); }
   // manifest and worker
-  { const ctx = await chrome.browser.newContext({ viewport: { width: 1280, height: 800 } }); const page = await ctx.newPage(); await page.goto(srv.origin + "/"); await page.waitForSelector("#screen-title");
+  { const ctx = await chrome.browser.newContext({ viewport: { width: 1280, height: 800 } }); const page = await ctx.newPage(); await page.goto(srv.origin + "/"); await page.waitForSelector("#outlet h1, #outlet .hero");
     const href = await page.evaluate(() => document.querySelector("link[rel=manifest]")?.href);
     const m = href ? await (await fetch(href)).json() : null;
     results.push({ w: 1280, set: "pwa", name: "manifest found and installable fields present", ok: !!m && m.display === "standalone" && m.start_url === "/?source=pwa" && m.icons.length === 3, detail: href });
@@ -61,7 +61,7 @@ try {
     results.push({ w: 1280, set: "pwa", name: "offline worker registered", ok: reg, detail: "" });
     await ctx.close(); }
   // FALSIFICATION: a 340 px wide element must make the sideways-scroll check fail at 320
-  { const r = await sweep(chrome.browser, srv.origin + "/", async (page) => { await page.waitForSelector("#screen-title"); await page.evaluate(() => { const d = document.createElement("div"); d.id = "toowide"; d.style.cssText = "width:340px;height:4px;background:red"; document.querySelector("main").append(d); }); return { "no sideways scroll": await noSidewaysScroll(page) }; }, [320]);
+  { const r = await sweep(chrome.browser, srv.origin + "/", async (page) => { await page.waitForSelector("#outlet h1, #outlet .hero"); await page.evaluate(() => { const d = document.createElement("div"); d.id = "toowide"; d.style.cssText = "width:340px;height:4px;background:red"; document.querySelector("main").append(d); }); return { "no sideways scroll": await noSidewaysScroll(page) }; }, [320]);
     results.push({ w: 320, set: "falsify", name: "a 340 px element is caught", ok: r[0].ok === false, detail: r[0].detail }); }
 } finally { await chrome.close(); await srv.close(); }
 
