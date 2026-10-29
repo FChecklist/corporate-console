@@ -284,10 +284,13 @@ test("Player's screen view: shows the game's own preview address in a frame, wit
     await until(() => !!o.querySelector(".pvbox.phone"));
     // a game without the feature shows a calm note and no frame
     w.states.tambola.persona = "old";
+    const before = w.states.tambola.calls.filter((c: string) => c === "POST /api/console/preview").length;
     const o2 = fresh();
     await renderPlayerView(o2, ctxOf(w), "tambola", "READY01");
     await until(() => !!o2.querySelector(".calmempty"));
     expect(o2.querySelector("iframe")).toBe(null);
+    expect(o2.querySelector(".calmempty")!.textContent).toContain("This game cannot show that yet."); // said from what the game announced, before any preview is asked for
+    expect(w.states.tambola.calls.filter((c: string) => c === "POST /api/console/preview").length).toBe(before); // no preview request was even made
   } finally { w.stop(); }
 });
 
