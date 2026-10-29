@@ -1,0 +1,1 @@
+{"id": "flow-pack-reh-pending", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "const REH_PENDING = \"Payment is pending. Your rehearsals open as soon as the payment is done.\";", "replace": "const REH_PENDING = \"Not ready yet.\";", "test": "tests/flow-pack.test.ts", "note": "the rehearsal-before-payment message is wrong"}

@@ -1,0 +1,1 @@
+{"id": "flow-pack-coming-soon", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "text: \"Everybody waits for you. You let each person in from the Game dashboard.\"", "replace": "text: \"Everybody waits for you. Coming soon: matching with your list.\"", "test": "tests/flow-pack.test.ts", "note": "a coming soon line is back"}

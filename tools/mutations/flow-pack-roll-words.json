@@ -1,0 +1,1 @@
+{"id": "flow-pack-roll-words", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "return lockLeftMs > 0 ? \"Wait \" + Math.ceil(lockLeftMs / 1000) + \" s\" : \"Press to Roll Out the Next Number\";", "replace": "return lockLeftMs > 0 ? \"Wait\" : \"Next number\";", "test": "tests/flow-pack.test.ts", "note": "the roll button words changed"}
