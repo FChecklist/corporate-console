@@ -92,18 +92,18 @@ export function seed(h: Host) {
     h.raw.run("INSERT INTO engagement(id,org,name,status,start_ms,cap,pack,created_ms,pay_state,pay_minor,org_label,next_action) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", [id, org, name, status, start, cap, pack, created, pay, minor, label, next]);
   g("DRAFT01", "orgA", "DRAFT01 party", "draft", T0 + 3 * DAY, 100, 0, T0 - 5 * DAY, "none", null, "Acme Corp", "publish");
   g("WAIT001", "orgA", "WAIT001 party", "waiting_payment", T0 + 3 * DAY, 250, 0, T0 - 5 * DAY, "waiting", null, "Acme Corp", "pay");
-  g("READY01", "orgA", "READY01 party", "ready", T0 + 2 * 3600_000, 100, 100, T0 - 5 * DAY, "paid", 238700, "Acme Corp", "share");
-  g("PLAY001", "orgA", "PLAY001 party", "playing", T0 - 600_000, 100, 250, T0 - 5 * DAY, "paid", 348100, "Acme Corp", "run");
-  g("DONE001", "orgA", "DONE001 party", "finished", T0 - 2 * DAY, 100, 100, T0 - 5 * DAY, "paid", 238700, "Acme Corp", "none");
+  g("READY01", "orgA", "READY01 party", "ready", T0 + 2 * 3600_000, 100, 100, T0 - 5 * DAY, "paid", 239900, "Acme Corp", "share");
+  g("PLAY001", "orgA", "PLAY001 party", "playing", T0 - 600_000, 100, 250, T0 - 5 * DAY, "paid", 349900, "Acme Corp", "run");
+  g("DONE001", "orgA", "DONE001 party", "finished", T0 - 2 * DAY, 100, 100, T0 - 5 * DAY, "paid", 239900, "Acme Corp", "none");
   g("CANC001", "orgA", "CANC001 party", "cancelled", T0 + 3 * DAY, 100, 100, T0 - 5 * DAY, "credit", null, "Acme Corp", "none");
-  g("NOST001", "orgA", "NOST001 party", "not_started", T0 - DAY, 100, 100, T0 - 5 * DAY, "paid", 238700, "Acme Corp", "none");
-  g("BOBS001", "orgB", "Bob's quiz night", "ready", T0 + DAY, 100, 100, T0 - 2 * DAY, "paid", 238700, "Bob Industries", "none");
-  g("CARO001", "orgC", "Carol's launch", "ready", T0 + 2 * DAY, 250, 250, T0 - DAY, "paid", 348100, "Carol & Co", "none");
+  g("NOST001", "orgA", "NOST001 party", "not_started", T0 - DAY, 100, 100, T0 - 5 * DAY, "paid", 239900, "Acme Corp", "none");
+  g("BOBS001", "orgB", "Bob's quiz night", "ready", T0 + DAY, 100, 100, T0 - 2 * DAY, "paid", 239900, "Bob Industries", "none");
+  g("CARO001", "orgC", "Carol's launch", "ready", T0 + 2 * DAY, 250, 250, T0 - DAY, "paid", 349900, "Carol & Co", "none");
   h.raw.run("INSERT INTO game_role VALUES ('aaaaaaaaaa','BOBS001','host',?,?, 'accepted',?,?, 'orgB')", [alice, "sealed:" + btoa("alice@acme.example"), T0 - DAY, T0 - DAY]);
   h.raw.run("INSERT INTO game_role VALUES ('bbbbbbbbbb','CARO001','cohost',?,?, 'invited',?,NULL, 'orgC')", [alice, "sealed:" + btoa("alice@acme.example"), T0 - DAY]);
-  h.raw.run("INSERT INTO bill VALUES (?,?,?,?,?,?,?,?,?)", ["orgA", T0 - 3 * DAY, "READY01", "READY01 party", "pack", 238700, "paid", "organizer", "/api/invoice/inv_" + "a".repeat(32)]);
-  h.raw.run("INSERT INTO bill VALUES (?,?,?,?,?,?,?,?,?)", ["orgA", T0 - 2 * DAY, "PLAY001", "PLAY001 party", "pack", 348100, "paid", "host", "/api/invoice/inv_" + "b".repeat(32)]);
-  h.raw.run("INSERT INTO bill VALUES (?,?,?,?,?,?,?,?,?)", ["orgA", T0 - DAY, "WAIT001", "WAIT001 party", "pack", 348100, "waiting", "organizer", null]);
-  h.raw.run("INSERT INTO credit VALUES (?,?,?,?)", ["orgA", 238700, "INR", T0 + 300 * DAY]);
+  h.raw.run("INSERT INTO bill VALUES (?,?,?,?,?,?,?,?,?)", ["orgA", T0 - 3 * DAY, "READY01", "READY01 party", "pack", 239900, "paid", "organizer", "/api/invoice/inv_" + "a".repeat(32)]);
+  h.raw.run("INSERT INTO bill VALUES (?,?,?,?,?,?,?,?,?)", ["orgA", T0 - 2 * DAY, "PLAY001", "PLAY001 party", "pack", 349900, "paid", "host", "/api/invoice/inv_" + "b".repeat(32)]);
+  h.raw.run("INSERT INTO bill VALUES (?,?,?,?,?,?,?,?,?)", ["orgA", T0 - DAY, "WAIT001", "WAIT001 party", "pack", 349900, "waiting", "organizer", null]);
+  h.raw.run("INSERT INTO credit VALUES (?,?,?,?)", ["orgA", 239900, "INR", T0 + 300 * DAY]);
   h.raw.run("INSERT INTO invited VALUES (?,?,?)", [alice, "BOBS001", h.origin + "/z.html?e=BOBS001#p=personal"]);
 }

@@ -13,6 +13,8 @@ export const BRIDGE_SCHEMA_NUMBER = 2; // the build of the bridge itself; the Ve
 export const KEY_LIFE_MS = 2 * 3600_000;
 export const HANDOFF_KEY_MS = 16 * 3600_000;
 export const HANDOFF_LINK_MS = 60_000;
+/** the address word a hand-off carries when it is for "Start a new game": no game exists yet, and the key made for it belongs to no single game */
+export const NEW_EID = "_new_";
 
 export type GameId = "tambola" | "bingo" | "tictactoe" | "snakesladders" | "luckbychance" | "luckydraw";
 export type KeyKind = "master" | "host" | "cohost";
@@ -211,13 +213,18 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
   }
 
   if (req.method === "POST" && path === "/api/console/handoff") {
-    if (!body || typeof body.eid !== "string" || !EID_RE.test(body.eid) || !["organizer", "host", "big", "tournament"].includes(body.target)) return err(400, "invalid", "The request is not complete.");
-    const a = await keyOf(); const e = await mayUse(a, body.eid);
-    if (!e || !a) return err(403, "forbidden", "You do not have a role in this game.");
+    const isNew = !!body && body.target === "new"; // "Start a new game": no game exists yet, so no eid; only the Organizer may ask
+    if (!body || !(isNew ? body.eid === undefined : typeof body.eid === "string" && EID_RE.test(body.eid)) || !["organizer", "host", "big", "tournament", "new"].includes(body.target)) return err(400, "invalid", "The request is not complete.");
+    const a = await keyOf();
+    let org: string | undefined;
+    if (isNew) { if (a && a.kind === "master" && a.org && !a.eid) org = a.org; }
+    else org = (await mayUse(a, body.eid))?.org;
+    if (!org || !a) return err(403, "forbidden", isNew ? "Only the organizer can start a new game." : "You do not have a role in this game.");
+    const eid = isNew ? NEW_EID : body.eid;
     const kind: KeyKind = a.kind === "master" ? "master" : a.kind === "host" ? "host" : "cohost";
     const t = randHex(24);
-    await db.prepare("INSERT INTO console_handoff(token_hash,eid,kind,org,created_by,expires_ms) VALUES(?,?,?,?,?,?)").bind(await sha256hex("handoff|" + t), body.eid, kind, e.org, a.createdBy || "c:?", nowMs + HANDOFF_LINK_MS).run();
-    return ok({ url: `${aud}/signin.html?t=${t}&go=console&e=${body.eid}`, expiresMs: nowMs + HANDOFF_LINK_MS });
+    await db.prepare("INSERT INTO console_handoff(token_hash,eid,kind,org,created_by,expires_ms) VALUES(?,?,?,?,?,?)").bind(await sha256hex("handoff|" + t), eid, kind, org, a.createdBy || "c:?", nowMs + HANDOFF_LINK_MS).run();
+    return ok({ url: `${aud}/signin.html?t=${t}&go=console&e=${eid}`, expiresMs: nowMs + HANDOFF_LINK_MS });
   }
   if (req.method === "POST" && path === "/api/console/handoff/redeem") {
     if (!body || typeof body.t !== "string" || !/^[0-9a-f]{48}$/.test(body.t)) return err(401, "expired", "This link has run out. Please open the game again from your console.");
@@ -225,8 +232,9 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
     const row = await db.prepare("SELECT eid, kind, org, created_by, expires_ms FROM console_handoff WHERE token_hash=?").bind(th).first<any>();
     const used = row ? await db.prepare("DELETE FROM console_handoff WHERE token_hash=?").bind(th).run() : null; // single use
     if (!row || !used || used.meta.changes !== 1 || row.expires_ms < nowMs) return err(401, "expired", "This link has run out. Please open the game again from your console.");
-    const key = await ad.mintKey(env, { kind: row.kind, org: row.org, eid: row.eid, expiresMs: nowMs + HANDOFF_KEY_MS, createdBy: row.created_by });
-    return ok({ key, kind: row.kind, eid: row.eid, expiresMs: nowMs + HANDOFF_KEY_MS });
+    const life = row.eid === NEW_EID ? KEY_LIFE_MS : HANDOFF_KEY_MS; // a key for "start a new game" belongs to no single game yet, so it lives only as long as an ordinary console key
+    const key = await ad.mintKey(env, { kind: row.kind, org: row.org, eid: row.eid === NEW_EID ? null : row.eid, expiresMs: nowMs + life, createdBy: row.created_by });
+    return ok({ key, kind: row.kind, eid: row.eid, expiresMs: nowMs + life });
   }
 
   if (req.method === "POST" && path === "/api/console/signout") { // 'Sign out': every console key made for this person in this game stops at once (the console calls it for each key it holds)

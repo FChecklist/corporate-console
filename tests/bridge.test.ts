@@ -1,4 +1,4 @@
-// FALSIFIED BY: bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person, bridge-ai-key-allowed, bridge-signout-no-revoke
+// FALSIFIED BY: bridge-new-handoff-any-key, bridge-new-handoff-long-key, bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person, bridge-ai-key-allowed, bridge-signout-no-revoke
 import { test, expect } from "bun:test";
 import { handleConsole, endRoles, keyFitsGame, keyIsAccountWide, KEY_LIFE_MS } from "../packages/bridge/src/bridge";
 import { makeHost, seed, type Host } from "./support/fake-host";
@@ -108,6 +108,29 @@ test("a key tied to one game is refused for another game, and for account-wide u
   expect(keyFitsGame({ eid: null }, "ANY1")).toBe(true);
   expect(keyIsAccountWide({ eid: "ONE1" })).toBe(false);
   expect(keyIsAccountWide({ eid: null })).toBe(true);
+});
+
+test("hand-off for 'Start a new game': Organizer only, no game named, 2 hour key that belongs to no single game, once", async () => {
+  const t = await up();
+  try {
+    const key = (await t.session("alice")).organizer.key;
+    const host = (await t.session("alice")).scoped[0].key;
+    const ask = (b: unknown, k: string) => t.post("/api/console/handoff", b, { "x-organizer": k });
+    const ok = await ask({ target: "new" }, key);
+    expect(ok.status).toBe(200);
+    const url = (await ok.json()).url as string;
+    expect(url).toMatch(/\/signin\.html\?t=[0-9a-f]{48}&go=console&e=_new_$/);
+    expect((await ask({ target: "new" }, host)).status).toBe(403); // a Host key is tied to one game
+    expect((await ask({ target: "new", eid: "PLAY001" }, key)).status).toBe(400); // "new" names no game
+    expect((await ask({ target: "organizer" }, key)).status).toBe(400); // every other target must name its game
+    const tok = /t=([0-9a-f]{48})/.exec(url)![1];
+    const r = await (await t.post("/api/console/handoff/redeem", { t: tok })).json();
+    expect(r.expiresMs - t.h.clock.ms).toBe(KEY_LIFE_MS);
+    expect([r.kind, r.eid]).toEqual(["master", "_new_"]);
+    const row = t.h.raw.query("SELECT eid FROM organizer_key ORDER BY created_ms DESC, rowid DESC LIMIT 1").get() as any;
+    expect(row.eid).toBeNull();
+    expect((await t.post("/api/console/handoff/redeem", { t: tok })).status).toBe(401); // once
+  } finally { t.stop(); }
 });
 
 test("a Host key of one game cannot hand off or preview another game of the same organizer", async () => {

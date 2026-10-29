@@ -1,0 +1,1 @@
+{"id": "bridge-new-handoff-long-key", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "const life = row.eid === NEW_EID ? KEY_LIFE_MS : HANDOFF_KEY_MS;", "replace": "const life = HANDOFF_KEY_MS;", "test": "tests/bridge.test.ts", "note": "the account-wide key for a new game would live 16 hours"}

@@ -125,6 +125,11 @@ export async function handle(S, req) {
   }
   if (req.method === "POST" && p === "/api/console/handoff") {
     const k = keyOf(); if (!k) return err(403, "forbidden", "Please sign in again.");
+    if (body?.target === "new") { // start a new game: no game yet, only the Organizer's own key
+      if (body.eid !== undefined || k.kind !== "master" || k.eid) return err(403, "forbidden", "Only the organizer can start a new game.");
+      const t = hex(24); S.handoffs.set(t, { sub: k.sub, kind: "master", eid: "_new_", expiresMs: now + 60_000 });
+      return ok({ url: `${S.origin}/signin.html?t=${t}&go=console&e=_new_`, expiresMs: now + 60_000 });
+    }
     const g = S.games.find((x) => x.eid === body?.eid);
     if (!g || !(k.kind === "master" ? g.orgSub === k.sub : k.eid === g.eid)) return err(403, "forbidden", "You do not have a role in this game.");
     const t = hex(24); S.handoffs.set(t, { sub: k.sub, kind: k.kind, eid: g.eid, expiresMs: now + 60_000 });
@@ -134,7 +139,7 @@ export async function handle(S, req) {
     const h = body && S.handoffs.get(body.t);
     if (!h || h.expiresMs < now) return err(401, "expired", "This link has run out. Please open the game again from your console.");
     S.handoffs.delete(body.t);
-    const m = mint(h.sub, h.kind, h.eid, HANDOFF_KEY_MS);
+    const m = h.eid === "_new_" ? mint(h.sub, h.kind, null, KEY_LIFE_MS) : mint(h.sub, h.kind, h.eid, HANDOFF_KEY_MS);
     return ok({ key: m.key, kind: h.kind, eid: h.eid, expiresMs: m.expiresMs });
   }
   if (req.method === "POST" && p === "/api/console/signout") {

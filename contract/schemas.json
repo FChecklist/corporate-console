@@ -174,7 +174,7 @@
     "RoleDoneResponse": { "type": "object", "required": ["ok"], "properties": { "ok": { "const": true } } },
     "RoleAcceptResponse": { "type": "object", "required": ["ok", "scoped"], "properties": { "ok": { "const": true }, "scoped": { "$ref": "#/$defs/ScopedKey" } } },
 
-    "HandoffRequest": { "type": "object", "required": ["eid", "target"], "properties": { "eid": { "$ref": "#/$defs/Eid" }, "target": { "type": "string", "enum": ["organizer", "host", "big", "tournament"] } } },
+    "HandoffRequest": { "type": "object", "required": ["target"], "properties": { "eid": { "$ref": "#/$defs/Eid" }, "target": { "type": "string", "enum": ["organizer", "host", "big", "tournament", "new"] } } },
     "HandoffResponse": { "type": "object", "required": ["ok", "url", "expiresMs"], "properties": { "ok": { "const": true }, "url": { "type": "string", "pattern": "^https?://[^ ]+/signin\\.html\\?t=[0-9a-f]{48}&go=console&e=[A-Za-z0-9_-]{4,40}$" }, "expiresMs": { "type": "integer" } } },
     "HandoffRedeemRequest": { "type": "object", "required": ["t"], "properties": { "t": { "type": "string", "pattern": "^[0-9a-f]{48}$" } } },
     "HandoffRedeemResponse": { "type": "object", "required": ["ok", "key", "kind", "eid", "expiresMs"], "properties": { "ok": { "const": true }, "key": { "$ref": "#/$defs/Key" }, "kind": { "type": "string", "enum": ["master", "host", "cohost"] }, "eid": { "$ref": "#/$defs/Eid" }, "expiresMs": { "type": "integer" } } },

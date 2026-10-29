@@ -1,0 +1,1 @@
+{"id": "bridge-new-handoff-any-key", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "if (a && a.kind === \"master\" && a.org && !a.eid) org = a.org;", "replace": "if (a && a.org) org = a.org;", "test": "tests/bridge.test.ts", "note": "a Host key could start a new game"}
