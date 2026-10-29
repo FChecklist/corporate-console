@@ -1,0 +1,1 @@
+{"id": "gamesbar-copy-edited", "repo": ".", "file": "public/gamesbar.css", "find": ".cgb{position:relative;", "replace": ".cgb{position:absolute;", "test": "tests/gamesbar.test.ts", "note": "the shared bar's copy is edited by hand"}
