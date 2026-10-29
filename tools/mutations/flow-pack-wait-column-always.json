@@ -1,0 +1,1 @@
+{"id": "flow-pack-wait-column-always", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "return all.filter((c) => c.always || rows.some((w) => c.get(w)));", "replace": "return all;", "test": "tests/flow-pack.test.ts", "note": "flow-pack-wait-column-always"}

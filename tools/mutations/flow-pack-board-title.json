@@ -1,0 +1,1 @@
+{"id": "flow-pack-board-title", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "text: \"\u2605 \" + G.boardTitle + \" \u2605\"", "replace": "text: \"\u2605 BOARD \u2605\"", "test": "tests/flow-pack.test.ts", "note": "flow-pack-board-title"}

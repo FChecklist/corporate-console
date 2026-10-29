@@ -1,0 +1,1 @@
+{"id": "flow-pack-share-no-gameid", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "(eid ? \" Game ID: \" + eid + \".\" : \"\")", "replace": "\"\"", "test": "tests/flow-pack.test.ts", "note": "flow-pack-share-no-gameid"}
