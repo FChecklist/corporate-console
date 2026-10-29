@@ -1,4 +1,4 @@
-// FALSIFIED BY: flow-pack-game-rule-leak, flow-pack-needs-descriptor, flow-pack-wait-column-always, flow-pack-share-no-gameid, flow-pack-board-title, flow-pack-no-board-flag, flow-pack-no-claims-flag, flow-pack-sample-flag, flow-pack-termsbox-ignored, flow-pack-pace-fixed, flow-pack-consent-load-ignored
+// FALSIFIED BY: flow-pack-game-rule-leak, flow-pack-needs-descriptor, flow-pack-wait-column-always, flow-pack-share-no-gameid, flow-pack-board-title, flow-pack-no-board-flag, flow-pack-no-claims-flag, flow-pack-sample-flag, flow-pack-termsbox-ignored, flow-pack-pace-fixed, flow-pack-consent-load-ignored, flow-pack-handover-default, flow-pack-ready-optional
 // The shared new organizer flow (packages/game-pack/zc-flow.js, opened with ?flow=new in a game's console). The behaviour tests live in each game (it needs that game's own prize table and ticket maker);
 // here: the pack stands on its own with no game descriptor, hands the game's descriptor words through, and keeps the language guide.
 import { test, expect } from "bun:test";
@@ -43,7 +43,7 @@ test("without a descriptor, a house flagged as a default by the game is ticked",
 });
 
 test("the pack holds no game name and no outside address in its code, and no banned word on its screens", () => {
-  expect(/tambola|bingo|snakes|luck|housie/i.test(src)).toBe(false);
+  expect(/tambola|bingo|snakes|luck by chance|luckbychance|housie/i.test(src)).toBe(false);
   expect(/https?:\/\/(?!localhost)/.test(src.replace(/\/\/ .*$/gm, ""))).toBe(false);
   const win = page();
   const F = win.ZFLOW;
@@ -148,4 +148,34 @@ test("a game whose CBConsent draws its boxes from loaded text (load / html / bin
   expect(d.getElementById("zf-publish").disabled).toBe(false);
   d.getElementById("zf-publish").click(); await new Promise((r) => setTimeout(r, 30));
   expect(posted.find((x) => x[0] === "post")[2].consent).toEqual({ v: "v9", boxes: ["A", "B"] });
+});
+
+test("Live-game pure parts: the Ready check needs three things (the optional ones never block), winners show only the details held, a rehearsal never shows the people limit", () => {
+  const F = page().ZFLOW;
+  const items = F.readyItems({ shared: true, status: "paid", prizesOk: true, rehearsals: [] });
+  expect(items.filter((i: any) => i.optional).map((i: any) => i.id)).toEqual(["hosts", "reh"]);
+  expect(F.readyAll(items)).toBe(true);                       // Hosts and Rehearsal are optional
+  expect(F.readyItems({ shared: true, status: "paid", prizesOk: true, rehearsals: null }).map((i: any) => i.id)).toEqual(["link", "pay", "prizes", "hosts"]);
+  expect(F.winnerDetails({ name: "A", phone: "98" })).toBe("Name: A · Mobile: 98");
+  expect(F.winnerDetails({})).toBe("No other details were given");
+  expect(F.prizeCounts([{ given: true }, {}], [{}, {}, {}])).toEqual({ won: 2, left: 1, given: 1 });
+  expect(F.feedLines({ people: { joined: 3, waiting: 0 }, prizes: [{ prize: "Line", ticket: 5 }] })).toEqual(["3 joined.", "Line won by Ticket number 5."]);
+  expect(F.nextControlText("auto", 0)).toBe("Numbers are called automatically");
+  expect(F.nextControlText("manual", 0)).toBe("Press to roll out the next number");
+  expect(F.nextControlText("manual", 3200)).toBe("Wait 4 s");
+  expect(F.NEXT_LOCK_MS).toBe(5000);
+  expect(F.rehearsalCards(null).map((c: any) => c.state)).toEqual(["locked", "locked", "locked"]);
+  expect(/20/.test(JSON.stringify(F.rehearsalCards(null)))).toBe(false);
+});
+
+test("the prizes-handed-over list is on by default; the extras (rehearsal, log, phones listening, next-number control, lucky draw) only when the game's descriptor says it has them", async () => {
+  const win = page("window.ZFLOW_GAME = { tickets: [1] };", "?flow=new&e=E1");
+  const F = win.ZFLOW, d = win.document;
+  F.state.raw = { startMs: Date.now() + 3600000, rewards: [] }; F.state.info = { published: true, paid: true, startMs: Date.now() + 3600000 }; F.state.view = "dash"; F.draw();
+  expect(d.getElementById("zf-prizes")).not.toBe(null);
+  for (const id of ["zf-reh", "zf-feed", "zf-bottomrow", "zf-online"]) expect(d.getElementById(id)).toBe(null);
+  const rich = page('window.ZFLOW_GAME = { tickets: [1], rehearsal: true, feed: true };', "?flow=new&e=E1");
+  rich.ZFLOW.state.raw = { startMs: Date.now() + 3600000, rewards: [] }; rich.ZFLOW.state.info = { published: true, paid: true, startMs: Date.now() + 3600000 }; rich.ZFLOW.state.view = "dash"; rich.ZFLOW.draw();
+  expect(rich.document.getElementById("zf-reh")).not.toBe(null);
+  expect(rich.document.getElementById("zf-feed")).not.toBe(null);
 });

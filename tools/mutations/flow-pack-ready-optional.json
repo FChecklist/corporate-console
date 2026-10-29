@@ -1,0 +1,1 @@
+{"id": "flow-pack-ready-optional", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "{ id: \"hosts\", label: \"Hosts added\", optional: true, soon: true, done: false }", "replace": "{ id: \"hosts\", label: \"Hosts added\", optional: false, soon: true, done: false }", "test": "tests/flow-pack.test.ts", "note": "flow-pack-ready-optional"}

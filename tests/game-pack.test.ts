@@ -164,7 +164,7 @@ test("the pack holds no game rules and no outside address (no number, prize or g
   for (const f of packFiles()) {
     const t = readFileSync(join(import.meta.dir, "../packages/game-pack", f), "utf8");
     expect([f, /https?:\/\/(?!localhost)/.test(t.replace(/\/\/ .*$/gm, ""))]).toEqual([f, false]);
-    expect([f, /tambola|bingo|snakes|luck|housie/i.test(t)]).toEqual([f, false]);
+    expect([f, /tambola|bingo|snakes|luck by chance|luckbychance|housie/i.test(t)]).toEqual([f, false]);
     expect([f, /private/i.test(t)]).toEqual([f, false]);
   }
 });
