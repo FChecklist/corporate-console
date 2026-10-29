@@ -1,4 +1,4 @@
-// FALSIFIED BY: flow-pack-game-rule-leak, flow-pack-needs-descriptor, flow-pack-wait-column-always, flow-pack-share-no-gameid, flow-pack-board-title, flow-pack-no-board-flag, flow-pack-no-claims-flag, flow-pack-sample-flag
+// FALSIFIED BY: flow-pack-game-rule-leak, flow-pack-needs-descriptor, flow-pack-wait-column-always, flow-pack-share-no-gameid, flow-pack-board-title, flow-pack-no-board-flag, flow-pack-no-claims-flag, flow-pack-sample-flag, flow-pack-termsbox-ignored
 // The shared new organizer flow (packages/game-pack/zc-flow.js, opened with ?flow=new in a game's console). The behaviour tests live in each game (it needs that game's own prize table and ticket maker);
 // here: the pack stands on its own with no game descriptor, hands the game's descriptor words through, and keeps the language guide.
 import { test, expect } from "bun:test";
@@ -82,4 +82,26 @@ test("a game with no numbered ticket, board or claims says so in its descriptor:
   expect(d.getElementById("zf-preview").textContent).toContain("Coming soon");
   F.state.open = 3; F.draw();
   expect(d.querySelector("[data-tix]")).toBe(null);
+});
+
+test("a game that has the TermsBox instead of CBConsent: Publish waits for its box, mounts kind K1, and sends the ticks it gives", async () => {
+  const posted: any[] = [];
+  const win: any = new Window({ url: "http://localhost/zc.html?flow=new&e=E1" });
+  win.document.body.innerHTML = '<main id="app"></main>';
+  win.TermsBox = { mount: async (el: any, kind: string, o: any) => { posted.push(["mount", kind]); el.innerHTML = '<input type="checkbox" data-box="A">'; const c = el.querySelector("input"); c.addEventListener("change", () => { o.btn.disabled = !c.checked; }); o.btn.disabled = true; return { ok: () => c.checked, terms: () => ({ v: "7", boxes: c.checked ? ["A"] : [] }) }; } };
+  win.sessionStorage.setItem("ctz-org", "x");
+  const fetchFake = async (u: string, o: any = {}) => { if (o.method === "POST") posted.push(["post", u, JSON.parse(o.body)]); return { ok: true, json: async () => ({ ok: true, paid: false }) }; };
+  new Function("window", "document", "location", "fetch", "sessionStorage", src)(win, win.document, win.location, fetchFake, win.sessionStorage);
+  const F = win.ZFLOW, d = win.document;
+  for (const n of [1, 2, 3, 4]) F.state.done[n] = true; F.state.open = 5; F.state.eid = "E1"; F.draw();
+  await new Promise((r) => setTimeout(r, 20));
+  expect(posted[0]).toEqual(["mount", "K1"]);
+  expect(d.getElementById("zf-publish").disabled).toBe(true);
+  const em = d.getElementById("zf-pemail"); em.value = "a@b.co"; em.dispatchEvent(new win.Event("input"));
+  const ph = d.getElementById("zf-pphone"); ph.value = "98765 43210"; ph.dispatchEvent(new win.Event("input"));
+  const box = d.querySelector("#zf-consent input"); box.checked = true; box.dispatchEvent(new win.Event("change"));
+  expect(d.getElementById("zf-publish").disabled).toBe(false);
+  d.getElementById("zf-publish").click(); await new Promise((r) => setTimeout(r, 30));
+  const post = posted.find((x) => x[0] === "post");
+  expect(post[2].consent).toEqual({ v: "7", boxes: ["A"] });
 });
