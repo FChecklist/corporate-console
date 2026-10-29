@@ -1,0 +1,1 @@
+{"id": "contrast-dark-link-too-dark", "repo": ".", "file": "public/core/tokens.css", "find": "--btn: #2F5FC4; --btn-hover: #3C6FD8; --accent: #9DBAFF;", "replace": "--btn: #2F5FC4; --btn-hover: #3C6FD8; --accent: #3A4F85;", "test": "tests/contrast.test.ts", "note": "a colour too pale to read"}

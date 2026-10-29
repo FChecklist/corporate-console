@@ -1,0 +1,1 @@
+{"id": "contrast-muted-too-pale", "repo": ".", "file": "public/core/tokens.css", "find": "--muted: #5F5359;", "replace": "--muted: #A09499;", "test": "tests/contrast.test.ts", "note": "a colour too pale to read"}
