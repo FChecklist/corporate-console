@@ -1,4 +1,4 @@
-// FALSIFIED BY: shell-brand-in-menu, shell-wildcard-connect, shell-sw-caches-auth, shell-breakpoint-901, shell-csp-inline-script
+// FALSIFIED BY: shell-brand-in-menu, shell-version-line-missing, shell-wildcard-connect, shell-sw-caches-auth, shell-breakpoint-901, shell-csp-inline-script
 import { test, expect } from "bun:test";
 import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -123,4 +123,18 @@ test("games.config.js is generated from config/games.json: six games, Lucky Draw
   expect(c.GAMES.map((g: any) => [g.id, g.status, g.ready])).toEqual([["tambola", "live", true], ["bingo", "live", true], ["tictactoe", "opening", false], ["snakesladders", "opening", false], ["luckbychance", "opening", false], ["luckydraw", "planned", false]]);
   expect(c.GAMES[0].origin).toBe("https://corporate-tambola.pages.dev");
   expect(c.ENV).toBe("preview");
+});
+
+test("version.json has version, releasedAt and releasedAtIST from releases.json, and the footer script shows 'Version X, released DD Mon YYYY, HH:MM IST'", async () => {
+  const rel = JSON.parse(readFileSync(new URL("../releases.json", import.meta.url), "utf8"))[0];
+  const dir = mkdtempSync(join(tmpdir(), "ver-"));
+  const { istText } = await import("../build.mjs");
+  build({ env: "preview", out: dir, version: rel.version, releasedAt: rel.releasedAt });
+  const v = JSON.parse(readFileSync(join(dir, "version.json"), "utf8"));
+  expect(v.version).toBe("0.1.0");
+  expect(v.releasedAt).toBe(rel.releasedAt);
+  expect(v.releasedAtIST).toMatch(/^\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}, \d{2}:\d{2} IST$/);
+  expect(istText("2026-10-29T10:45:00.000Z")).toBe("29 Oct 2026, 16:15 IST");
+  expect(istText("2026-12-31T20:00:00.000Z")).toBe("01 Jan 2027, 01:30 IST");
+  expect(readFileSync(join(import.meta.dir, "../public/core/boot.js"), "utf8")).toContain("`Version ${v.version}, released ${");
 });

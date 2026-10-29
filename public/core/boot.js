@@ -56,6 +56,7 @@ export async function mount(root, copy, design) {
   const outlet = mod.mountShell(root, { copy, items: menuItems(copy), strip: privacyStrip(copy), route: menuFor(route), email: app.email, signedIn: app.signedIn });
   const help = el("p", { class: "helpline" }, copy.help.text + " ", el("a", { href: "mailto:" + copy.help.email + "?subject=" + encodeURIComponent("Help with my game") }, copy.help.email), " ", copy.help.eventDay);
   root.querySelector("main").after(help);
+  fetch("/version.json").then((r) => r.json()).then((v) => { if (v && v.version && v.releasedAtIST) help.append(el("br"), el("span", { id: "version-line", text: `Version ${v.version}, released ${v.releasedAtIST.replace(/^(\d+ \w+ \d+), /, "$1, ")}` })); }).catch(() => {}); // the version and release time, as the owner asked
   await screenFor(route, outlet, copy);
   const main = document.getElementById("main"); if (main && main.focus && mountedOnce) main.focus({ preventScroll: true }); // after a move to another screen keyboard users land at the top of it (not on the first load: there they start at the bar and menu)
   mountedOnce = true;

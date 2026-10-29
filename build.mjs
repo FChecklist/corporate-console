@@ -61,7 +61,10 @@ export function lintHeaders(text) {
   return bad;
 }
 
-export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.0.0", commit = "dev" } = {}) {
+/** "29 Oct 2026, 16:15 IST" from an ISO time */
+export const istText = (iso) => { const d = new Date(new Date(iso).getTime() + 19_800_000), m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getUTCMonth()], p = (n) => String(n).padStart(2, "0"); return `${p(d.getUTCDate())} ${m} ${d.getUTCFullYear()}, ${p(d.getUTCHours())}:${p(d.getUTCMinutes())} IST`; };
+
+export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.0.0", commit = "dev", releasedAt = "" } = {}) {
   const cfg = JSON.parse(readFileSync(join(ROOT, "config/games.json"), "utf8"));
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
@@ -71,13 +74,13 @@ export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.
   const problems = lintHeaders(headers);
   if (problems.length) throw new Error("the generated _headers breaks a rule: " + problems.join("; "));
   writeFileSync(join(out, "_headers"), headers);
-  writeFileSync(join(out, "version.json"), JSON.stringify({ commit, env, consoleVersion: version, builtAt: new Date().toISOString() }));
+  writeFileSync(join(out, "version.json"), JSON.stringify({ version, releasedAt, releasedAtIST: releasedAt ? istText(releasedAt) : "", commit, env, consoleVersion: version, builtAt: new Date().toISOString() }));
   return { out, headers };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const a = process.argv.slice(2), get = (n, d) => { const i = a.indexOf(n); return i >= 0 ? a[i + 1] : d; };
-  const rel = existsSync(join(ROOT, "releases.json")) ? JSON.parse(readFileSync(join(ROOT, "releases.json"), "utf8"))[0]?.version : undefined;
-  const r = build({ env: get("--env", "preview"), out: resolve(get("--out", join(ROOT, "dist"))), version: rel || "0.0.0" });
+  const rel = existsSync(join(ROOT, "releases.json")) ? JSON.parse(readFileSync(join(ROOT, "releases.json"), "utf8"))[0] : undefined;
+  const r = build({ env: get("--env", "preview"), out: resolve(get("--out", join(ROOT, "dist"))), version: rel?.version || "0.0.0", releasedAt: rel?.releasedAt || "" });
   console.log("built into " + r.out);
 }

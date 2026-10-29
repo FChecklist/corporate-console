@@ -1,0 +1,1 @@
+{"id": "shell-version-line-missing", "repo": ".", "file": "build.mjs", "find": "releasedAtIST: releasedAt ? istText(releasedAt) : \"\", ", "replace": "", "test": "tests/shell.test.ts", "note": "version.json loses the release time in India time"}
