@@ -132,6 +132,16 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       }
       return this.handoff(game, { target: "new" });
     },
+    /** a pay link anyone can open (the game's own route; works for 7 days): for the finance team */
+    async payLink(game, eid) {
+      const g = byId[game]; const h = await headersFor(game, eid);
+      if (!g || !h) return { ok: false, error: "no-key" };
+      const r = await call(g.origin + "/api/z/" + eid + "/paylink", { method: "POST", headers: h, body: "{}" });
+      if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
+      const url = String(r.json?.url || "");
+      if (!url.startsWith(g.origin + "/paylink.html?t=")) return { ok: false, error: "wrong-address" };
+      return { ok: true, url };
+    },
     /** the Player's screen view address of one game (the game checks the key; the console only frames it) */
     async preview(game, eid) {
       const g = byId[game]; const h = await headersFor(game, eid);

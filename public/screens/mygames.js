@@ -32,7 +32,8 @@ export async function renderMyGames(outlet, ctx) {
     const h = await api.headersFor(g.game, g.eid);
     if (!h) return toast("Please sign in again.");
     const r = await api.call(`${api.byId[g.game].origin}/api/z/${g.eid}/clone`, { method: "POST", headers: h, body: "{}" });
-    if (r.ok) await openGame(ctx, { game: g.game, eid: r.json?.id || g.eid, role: "organizer" }); else toast("That game could not be copied. Please try again.");
+    const id = r.ok && typeof r.json?.id === "string" && EID.test(r.json.id) && r.json.id !== g.eid ? r.json.id : null;
+    if (id) await openGame(ctx, { game: g.game, eid: id, role: "organizer" }); else toast("The copy could not be made, so nothing was opened. Please try again."); // never open the original by mistake
   }
   async function answer(g, op) {
     const r = await api.answerInvitation(g.game, g.eid, g.roleId, op);
@@ -44,14 +45,14 @@ export async function renderMyGames(outlet, ctx) {
     if (g.nextAction === "accept") {
       if (g.roleId) btns.push(button("Accept", { main: true, sm: true, label: `Accept the invitation to ${g.name}`, onclick: () => answer(g, "accept") }), button("Decline", { sm: true, label: `Decline the invitation to ${g.name}`, onclick: () => answer(g, "decline") }));
       else btns.push(el("span", { class: "hintline", text: "Open the game itself to answer this invitation." }));
-    } else btns.push(button("Open", { main: true, sm: true, label: `Open ${g.name}`, onclick: () => openGame(ctx, g) }));
+    } else btns.push(button(["finished", "not_started", "cancelled"].includes(g.status) ? "Results and game log" : "Open", { main: true, sm: true, label: `Open ${g.name}`, onclick: () => openGame(ctx, g) }));
     if (caps[g.game]?.features?.preview && g.nextAction !== "accept") btns.push(el("a", { class: "btn sm", href: `#/view/${g.game}/${g.eid}`, text: "See what players see" }));
-    if (g.role === "organizer") btns.push(button("Create one like this", { sm: true, label: `Create one like ${g.name}`, onclick: () => copyOf(g) }));
+    if (g.role === "organizer") btns.push(button("Make a copy", { sm: true, label: `Make a copy of ${g.name}`, onclick: () => copyOf(g) }));
     if (g.status === "draft" && g.role === "organizer") btns.push(button("Delete draft", { sm: true, danger: true, label: `Delete the draft ${g.name}`, onclick: () => removeDraft(g, c) }));
     const c = withColor(el("article", { class: "gcard", dataset: { game: g.game, eid: g.eid } },
       el("div", { class: "gname", text: names[g.game] || g.game }), el("h3", { text: g.name }),
       el("div", { class: "chips" }, roleChip(g.role), g.nextAction === "accept" ? el("span", { class: "chip ready", text: "Invitation" }) : chip(g.status)),
-      el("ul", { class: "facts" }, el("li", { text: whenText(g.startMs) }), el("li", { text: `up to ${g.cap} people` })),
+      el("ul", { class: "facts" }, el("li", { text: whenText(g.startMs) }), el("li", { text: `up to ${g.cap} people${Number.isInteger(g.joined) ? `, ${g.joined} joined` : ""}${Number.isInteger(g.yourLimit) ? `, you can add up to ${g.yourLimit}` : ""}` })),
       g.role !== "organizer" && g.invitedBy ? el("p", { class: "by", text: `Invited by ${g.invitedBy}` }) : null,
       el("div", { class: "btns" }, btns)), colors[g.game] || "#0B3D91");
     return c;

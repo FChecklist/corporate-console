@@ -51,6 +51,8 @@ body.has-tabbar { padding-bottom: 86px; }
 .priv { background: var(--strip); color: var(--strip-ink); font-size: 13px; line-height: 1.5; padding: 3px 0; }
 .priv .wrap { padding: 0 32px; }
 .priv .more-btn { background: none; border: 0; padding: 0 12px; color: var(--strip-ink); font-weight: 700; text-decoration: underline; font-size: inherit; min-height: var(--tap); min-width: var(--tap); vertical-align: middle; }
+.priv-rest { }
+@media (max-width: 899px) { .priv:not(.open) .priv-rest { display: none; } }
 .helpline { text-align: center; font-size: 14px; color: var(--muted); margin: 8px 16px 28px; }
 .helpline a { color: var(--accent); }
 
@@ -117,6 +119,10 @@ body.has-tabbar { padding-bottom: 86px; }
 body.has-tabbar .updatebar { bottom: 92px; }
 .updatebar button { min-height: var(--tap); border-radius: 8px; border: 0; padding: 0 16px; font-weight: 600; background: var(--gold); color: #2b1a05; }
 
+.kept { margin: 0; display: grid; gap: 4px 16px; grid-template-columns: minmax(0, 1fr); }
+.kept dt { font-weight: 700; margin-top: 8px; }
+.kept dd { margin: 0; color: var(--ink2); }
+.copybox { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 90; min-height: 48px; padding: 0 12px; font: 16px var(--sans); border: 2px solid var(--accent); border-radius: 10px; background: var(--card); color: var(--ink); }
 /* sign-in */
 .signin { max-width: 520px; }
 .zform { display: grid; gap: 14px; margin-top: 18px; }

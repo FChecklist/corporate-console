@@ -19,7 +19,11 @@ export function privacyStrip(copy) {
   const p = copy.privacy;
   const more = el("span", { class: "priv-more hide", text: " " + p.more });
   const btn = el("button", { class: "more-btn", type: "button", "aria-expanded": "false", text: p.moreButton, onclick: () => { const open = more.classList.toggle("hide") === false; btn.setAttribute("aria-expanded", String(open)); btn.textContent = open ? p.lessButton : p.moreButton; } });
-  return el("div", { class: "priv", role: "note" }, el("div", { class: "wrap" }, el("span", { text: p.phrases.join(" · ") + "." }), more, btn));
+  const rest = el("span", { class: "priv-rest", text: " · " + p.phrases.slice(1).join(" · ") }); // on a phone only the first phrase shows until More is pressed
+  const first = el("span", { text: p.phrases[0] });
+  const bar = el("div", { class: "priv", role: "note" }, el("div", { class: "wrap" }, first, rest, el("span", { text: "." }), more, btn));
+  btn.addEventListener("click", () => bar.classList.toggle("open", btn.getAttribute("aria-expanded") === "true"));
+  return bar;
 }
 
 let current = null, last = "", mountedOnce = false;
@@ -50,7 +54,7 @@ export async function mount(root, copy, design) {
   const mod = await import(design === "laptop" ? "../view-laptop/shell.js" : "../view-mobile/shell.js");
   clear(root);
   const outlet = mod.mountShell(root, { copy, items: menuItems(copy), strip: privacyStrip(copy), route: menuFor(route), email: app.email, signedIn: app.signedIn });
-  const help = el("p", { class: "helpline" }, copy.help.text + " ", el("a", { href: "mailto:" + copy.help.email }, copy.help.email));
+  const help = el("p", { class: "helpline" }, copy.help.text + " ", el("a", { href: "mailto:" + copy.help.email + "?subject=" + encodeURIComponent("Help with my game") }, copy.help.email), " ", copy.help.eventDay);
   root.querySelector("main").after(help);
   await screenFor(route, outlet, copy);
   const main = document.getElementById("main"); if (main && main.focus && mountedOnce) main.focus({ preventScroll: true }); // after a move to another screen keyboard users land at the top of it (not on the first load: there they start at the bar and menu)

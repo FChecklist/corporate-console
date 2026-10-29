@@ -29,6 +29,7 @@
   "offline": "You are offline. Showing what was saved on this device.",
   "help": {
     "text": "Need help?",
-    "email": "hello@corporatetambola.com"
+    "email": "hello@corporatetambola.com",
+    "eventDay": "On the day of your event, write EVENT DAY in the subject."
   }
 }

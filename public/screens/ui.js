@@ -19,7 +19,10 @@ export function whenText(ms) {
   if (ms == null) return "Not scheduled yet";
   const d = new Date(ms), day = d.toLocaleDateString("en-GB", { ...IST, weekday: "short", day: "numeric", month: "short" });
   const t = d.toLocaleTimeString("en-US", { ...IST, hour: "numeric", minute: "2-digit" }).replace(" AM", " am").replace(" PM", " pm");
-  return `${day}, ${t} IST`;
+  const mine = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (!mine || mine === "Asia/Kolkata" || mine === "Asia/Calcutta") return `${day}, ${t} IST`;
+  const own = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(" AM", " am").replace(" PM", " pm");
+  return `${day}, ${t} IST (${own} your time)`;
 }
 export const paidText = (g) => (g.payment.state === "paid" ? (g.payment.amountMinor != null ? "Paid" : "Paid") : g.payment.state === "free" ? "Free game" : g.payment.state === "waiting" ? "Waiting for payment" : g.payment.state === "credit" ? "Paid from credit" : "Not paid yet");
 
@@ -46,4 +49,13 @@ export async function openGame(ctx, g, target) {
   if (!r.ok) { toast(openError(r, (ctx.names && ctx.names[g.game]) || "That game")); return false; }
   (ctx.go || ((u) => location.assign(u)))(r.url);
   return true;
+}
+
+/** put a text on the clipboard; when the browser will not allow it, show it in a box the person can copy by hand. Returns true when copied. */
+export async function copyText(text, ctx) {
+  try { await navigator.clipboard.writeText(text); return true; } catch { /* fall through */ }
+  const box = el("input", { type: "text", readonly: true, value: text, "aria-label": "The link to copy", class: "copybox" });
+  document.body.append(box); box.focus(); box.select();
+  setTimeout(() => box.remove(), 20000);
+  return false;
 }

@@ -36,6 +36,7 @@ export async function renderHome(outlet, ctx) {
   const attn = l.rows.filter((g) => (g.status === "waiting_payment" ? mine(g) : needsAttention(g)) || startsToday(g)); // a helper is never asked to pay
   const live = l.rows.filter((g) => g.status === "playing" && !attn.includes(g));
   clear(strips);
+  if (!l.rows.length && !l.failed.length) strips.append(el("section", { class: "strip", id: "first-game" }, el("h2", { text: "Your first game" }), el("p", { class: "hintline", text: "Keep ready: the date and time, how many people will play, the prizes, and your company name. Then press Create a new game." })));
   if (l.failed.length) strips.append(el("p", { class: "banner", role: "status", text: gamesFailedLine(l.failed.map((id) => names[id] || id)) }));
   const row = (g, label, buttons) => withColor(el("div", { class: "row", dataset: { game: g.game, eid: g.eid } }, el("div", { class: "what" }, el("b", { text: g.name }), el("span", { text: `${label} · ${rowNote(g, names)}` })), el("div", { class: "btns" }, buttons)), colors[g.game] || "#0B3D91");
   async function answer(g, op, rowEl) {

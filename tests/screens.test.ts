@@ -67,11 +67,11 @@ test("Home: exactly three doors and NO input of any kind; the strips show what n
   } finally { w.stop(); }
 });
 
-test("Home: with nothing to show there are no strips at all, only the three doors", async () => {
+test("Home: with nothing to show there is no \"needs attention\" or \"playing now\" strip, only the three doors and one calm first-game line", async () => {
   const api: any = { listGames: async () => ({ rows: [], failed: [] }) };
   const o = fresh();
   await renderHome(o, { api, names: {}, colors: {}, email: "x@y.example" });
-  expect(o.querySelector("#home-strips")!.children.length).toBe(0);
+  expect([...o.querySelector("#home-strips")!.children].map((c: any) => c.id)).toEqual(["first-game"]);
   expect(o.querySelectorAll(".door").length).toBe(3);
 });
 
@@ -106,8 +106,8 @@ test("My games: the seven status words are exactly the console's, each card has 
     expect(Object.values(STATUS_TEXT)).toEqual(["Draft", "Waiting for payment", "Ready", "Playing now", "Finished", "Cancelled", "Did not start"]);
     for (const c of cards) expect(c.querySelector(".role")!.textContent).toMatch(/^(Organizer|Host|Co-host)$/);
     const names = (eid: string) => [...tam.find((c) => c.dataset.eid === eid).querySelectorAll("button, a.btn")].map((b: any) => b.textContent);
-    expect(names("DRAFT01")).toEqual(["Open", "See what players see", "Create one like this", "Delete draft"]);
-    expect(names("READY01")).toEqual(["Open", "See what players see", "Create one like this"]);
+    expect(names("DRAFT01")).toEqual(["Open", "See what players see", "Make a copy", "Delete draft"]);
+    expect(names("READY01")).toEqual(["Open", "See what players see", "Make a copy"]);
     expect(tam.find((c) => c.dataset.eid === "BOBS001").querySelector(".role")!.textContent).toBe("Host");
     expect(names("BOBS001")).toEqual(["Open", "See what players see"]); // a Host cannot copy the organizer's game
     expect(tam.find((c) => c.dataset.eid === "BOBS001").textContent).toContain("Invited by Bob Industries");
@@ -183,7 +183,7 @@ test("Create: a Start button only on games that are live; 'Opening soon' (test m
     for (const t of t2.filter((t) => t.classList.contains("soon"))) { expect(t.querySelectorAll("button, a").length).toBe(0); expect(t.querySelector(".soonword")!.textContent).toMatch(/^(Opening|Coming) soon$/); }
     expect(t2.filter((t) => !t.classList.contains("soon")).map((t) => t.dataset.game)).toEqual(["tambola", "bingo"]);
     await until(() => !!(o.querySelector('[data-price="tambola"]') as any).textContent);
-    expect((o.querySelector('[data-price="tambola"]') as any).textContent).toBe("From Rs 2,399. Free up to 10 people.");
+    expect((o.querySelector('[data-price="tambola"]') as any).textContent).toBe("From Rs 2,399 for up to 100 people, one game. Free up to 10 people.");
   } finally { w.stop(); }
 });
 
@@ -238,7 +238,7 @@ test("Account: Sign out and Sign out on every device end the keys and call back;
     const o = fresh(); let out = 0;
     await renderAccount(o, ctxOf(w, { onSignedOut: () => { out++; } }));
     expect(o.querySelector("#acct-email")!.textContent).toBe("alice@acme.example");
-    expect([...o.querySelectorAll("button")].map((b: any) => b.textContent)).toEqual(["Sign out", "Sign out on every device", "Close my account"]);
+    expect([...o.querySelectorAll("button")].map((b: any) => b.textContent)).toEqual(["Sign out", "Sign out on every device", "Download my payments first (CSV)", "Close my account"]);
     click(byText(o, "button", "Sign out"));
     await until(() => out === 1);
     expect(w.api.vault.size).toBe(0);

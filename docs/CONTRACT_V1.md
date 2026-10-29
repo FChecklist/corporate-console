@@ -90,4 +90,4 @@ Success: `{"ok": true, ...}`. Failure: `{"ok": false, "error": "<code>", "messag
 2. `GET /api/console/capabilities`: optional `previewUrl` = `/screenview/` (the path where the game serves the Player's screen view; present only when `features.preview` is true).
 3. `GET /api/console/live`: optional `story` (one plain sentence up to 160 letters, for example "Running. 30 of 75 called.") and `counts` (`joined`, `waiting`, `done`, `total`: whole numbers). Counts only; never a name.
 4. `POST /api/console/purge-email`: optional `rolesErased` (how many Host / Co-host rows were erased). Close my account in the console reports it.
-5. `POST /api/console/games`: optional `roleId` on an invitation row (section 4).
+5. `POST /api/console/games`: optional `roleId` on an invitation row (section 4); optional `joined` (how many people have joined) and `yourLimit` (how many a Co-host may add) so My games can show them.

@@ -1,0 +1,1 @@
+{"id": "screens-copy-opens-original", "repo": ".", "file": "public/screens/mygames.js", "find": "&& r.json.id !== g.eid ? r.json.id : null;", "replace": "? r.json.id : g.eid;", "test": "tests/wp09-screens.test.ts", "note": "a copy that failed opens the original"}

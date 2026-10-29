@@ -27,7 +27,7 @@ export async function handle(S, req) {
   if (S.persona === "slow") await new Promise((r) => setTimeout(r, S.slowMs ?? 7000));
   const p = url.pathname;
   if (p === "/version.json") return new Response(JSON.stringify({ commit: "fake", dirty: false, builtAt: "2026-10-27T00:00:00Z", game: "corporate-" + S.game, gameVersion: S.gameVersion, bridgeSchema: S.persona === "old" ? 1 : 2 }), { headers: { ...H, ...CORS } });
-  if (!p.startsWith("/api/console/") && !/^\/api\/z\/[^/]+\/(log|upgrade-quote|discard|clone)$/.test(p)) return err(404, "not_found", "There is nothing at this address.");
+  if (!p.startsWith("/api/console/") && !/^\/api\/z\/[^/]+\/(log|upgrade-quote|discard|clone|paylink)$/.test(p)) return err(404, "not_found", "There is nothing at this address.");
   if (!S.bridgeOn) return new Response("{}", { status: 404, headers: { "content-type": "application/json" } }); // dark: no reason given, no CORS
   const body = req.method === "POST" ? await req.json().catch(() => null) : null;
   const now = S.nowMs;
@@ -153,6 +153,13 @@ export async function handle(S, req) {
     const g = S.games.find((x) => x.eid === body?.eid);
     if (!g || !(k.kind === "master" ? g.orgSub === k.sub : k.eid === g.eid)) return err(403, "forbidden", "You do not have a role in this game.");
     return ok({ url: `${S.origin}/screenview/${g.eid}?t=${hex(30)}`, expiresMs: now + 15 * 60_000 });
+  }
+  const mp = /^\/api\/z\/([^/]+)\/paylink$/.exec(p);
+  if (mp && req.method === "POST") { // the game's own pay link route (one open link per game, 7 days)
+    const k = keyOf(); if (!k) return err(403, "forbidden", "Please sign in again.");
+    const g = S.games.find((x) => x.eid === mp[1]);
+    if (!g || !(k.kind === "master" ? g.orgSub === k.sub : k.eid === g.eid)) return err(403, "forbidden", "You do not have a role in this game.");
+    return new Response(JSON.stringify({ url: `${S.origin}/paylink.html?t=${hex(24)}`, expiresMs: now + 7 * 86400_000 }), { status: 200, headers: { ...H, ...CORS } });
   }
   const md = /^\/api\/z\/([^/]+)\/(discard|clone)$/.exec(p);
   if (md && req.method === "POST") { // the two ordinary game actions the console's list uses (Delete draft, Clone)

@@ -1,0 +1,1 @@
+{"id": "screens-csv-not-escaped", "repo": ".", "file": "public/screens/billing.js", "find": "s.replace(/\"/g, '\"\"')", "replace": "s", "test": "tests/wp09-screens.test.ts", "note": "quotes in a CSV are not escaped"}

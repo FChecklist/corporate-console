@@ -1,0 +1,1 @@
+{"id": "screens-fonts-outside", "repo": ".", "file": "public/index.html", "find": "<link rel=\"stylesheet\" href=\"/core/tokens.css\">", "replace": "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Inter\"><link rel=\"stylesheet\" href=\"/core/tokens.css\">", "test": "tests/wp09-screens.test.ts", "note": "an outside font address returns"}

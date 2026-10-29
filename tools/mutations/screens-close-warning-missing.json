@@ -1,0 +1,1 @@
+{"id": "screens-close-warning-missing", "repo": ".", "file": "public/screens/account.js", "find": "if (paidSoon.length) out.push(", "replace": "if (false) out.push(", "test": "tests/wp09-screens.test.ts", "note": "no warning about paid games still to come"}

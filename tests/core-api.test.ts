@@ -75,10 +75,10 @@ test("prices are what each game says about itself, not a number kept in the cons
     const caps = await w.api.capabilities();
     const t = caps.find((c: any) => c.game === "tambola")!;
     expect(t.ok).toBe(true);
-    expect(priceLine(t.caps)).toBe("From Rs 2,399. Free up to 10 people.");
+    expect(priceLine(t.caps)).toBe("From Rs 2,399 for up to 100 people, one game. Free up to 10 people.");
     const changed = { ...t.caps, sizes: t.caps.sizes.map((s: any) => (s.pack === 100 ? { ...s, inrMinor: 250000 } : s)) };
-    expect(priceLine(changed)).toBe("From Rs 2,500. Free up to 10 people.");
-    expect(priceLine({ sizes: [{ pack: 100, inrMinor: 239900, usdMinor: null, free: false }], freeDemoCap: 0 })).toBe("From Rs 2,399.");
+    expect(priceLine(changed)).toBe("From Rs 2,500 for up to 100 people, one game. Free up to 10 people.");
+    expect(priceLine({ sizes: [{ pack: 100, inrMinor: 239900, usdMinor: null, free: false }], freeDemoCap: 0 })).toBe("From Rs 2,399 for up to 100 people, one game.");
   } finally { w.stop(); }
 });
 
