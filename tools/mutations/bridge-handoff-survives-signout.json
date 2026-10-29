@@ -1,0 +1,1 @@
+{"id": "bridge-handoff-survives-signout", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "await ad.db(env).prepare(\"DELETE FROM console_handoff WHERE created_by=?\").bind(group).run();", "replace": "", "test": "tests/bridge.test.ts", "note": "an unopened hand-off link would still open after Sign out"}

@@ -161,7 +161,8 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
     if (!body || typeof body.assertion !== "string") return err(400, "invalid", "The request is not complete.");
     const r = await assertion(body.assertion, "purge"); if ("res" in r) return r.res;
     let n = await ad.purgePerson(env, r.pl.sub);
-    for (const rr of await rolesOf(r.pl.sub)) await ad.revokeKeys(env, "r:" + rr.roleId);
+    for (const rr of await rolesOf(r.pl.sub)) await revoke(ad, env, "r:" + rr.roleId);
+    await revoke(ad, env, "c:" + r.pl.sub); // and every key the console made for this person
     const rolesErased = (await db.prepare("DELETE FROM game_role WHERE email_hash=?").bind(r.pl.sub).run()).meta.changes;
     return ok({ removed: n + rolesErased, rolesErased });
   }
@@ -206,7 +207,7 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
       if (!who || who.org !== a.org) return err(403, "forbidden", "That confirmation belongs to someone else.");
       const gone = await db.prepare("DELETE FROM game_role WHERE role_id=? AND eid=?").bind(String(body.roleId), eid).run();
       if (gone.meta.changes !== 1) return err(404, "not_found", "That person is not on this game.");
-      await ad.revokeKeys(env, "r:" + String(body.roleId)); // their key stops working at the very next request
+      await revoke(ad, env, "r:" + String(body.roleId)); // their key stops working at the very next request
       return ok({});
     }
     return err(400, "invalid", "That action is not known.");
@@ -214,7 +215,7 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
 
   if (req.method === "POST" && path === "/api/console/handoff") {
     const isNew = !!body && body.target === "new"; // "Start a new game": no game exists yet, so no eid; only the Organizer may ask
-    if (!body || !(isNew ? body.eid === undefined : typeof body.eid === "string" && EID_RE.test(body.eid)) || !["organizer", "host", "big", "tournament", "new"].includes(body.target)) return err(400, "invalid", "The request is not complete.");
+    if (!body || !(isNew ? body.eid === undefined : typeof body.eid === "string" && EID_RE.test(body.eid) && body.eid !== NEW_EID) || !["organizer", "host", "big", "tournament", "new"].includes(body.target)) return err(400, "invalid", "The request is not complete.");
     const a = await keyOf();
     let org: string | undefined;
     if (isNew) { if (a && a.kind === "master" && a.org && !a.eid) org = a.org; }
@@ -223,7 +224,8 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
     const eid = isNew ? NEW_EID : body.eid;
     const kind: KeyKind = a.kind === "master" ? "master" : a.kind === "host" ? "host" : "cohost";
     const t = randHex(24);
-    await db.prepare("INSERT INTO console_handoff(token_hash,eid,kind,org,created_by,expires_ms) VALUES(?,?,?,?,?,?)").bind(await sha256hex("handoff|" + t), eid, kind, org, a.createdBy || "c:?", nowMs + HANDOFF_LINK_MS).run();
+    await db.prepare("INSERT INTO console_handoff(token_hash,eid,kind,org,created_by,expires_ms) VALUES(?,?,?,?,?,?)").bind(await sha256hex("handoff|" + t), eid, kind, org, a.createdBy || "c:" + org, nowMs + HANDOFF_LINK_MS).run();
+    await db.prepare("DELETE FROM console_handoff WHERE expires_ms<?").bind(nowMs - 3600_000).run(); // keep the table small
     return ok({ url: `${aud}/signin.html?t=${t}&go=console&e=${eid}${isNew ? "" : "&to=" + body.target}`, expiresMs: nowMs + HANDOFF_LINK_MS }); // the page asked for travels in the address, so the game opens that page and not always the organizer screen
   }
   if (req.method === "POST" && path === "/api/console/handoff/redeem") {
@@ -240,7 +242,7 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
   if (req.method === "POST" && path === "/api/console/signout") { // 'Sign out': every console key made for this person in this game stops at once (the console calls it for each key it holds)
     const a = await keyOf();
     if (!a || !a.createdBy || !/^[cr]:/.test(a.createdBy)) return err(403, "forbidden", "Only a key made by the console can be ended here.");
-    await ad.revokeKeys(env, a.createdBy);
+    await revoke(ad, env, a.createdBy);
     return ok({});
   }
 
@@ -256,11 +258,17 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
   return err(404, "not_found", "There is nothing at this address.");
 }
 
+/** end every key of a group AND any hand-off link that group has made but nobody has opened yet (an unopened link must not outlive the key that made it) */
+async function revoke<Env>(ad: Adapter<Env>, env: Env, group: string): Promise<void> {
+  await ad.revokeKeys(env, group);
+  await ad.db(env).prepare("DELETE FROM console_handoff WHERE created_by=?").bind(group).run();
+}
+
 /** call when a game ends (and when it is erased): every Host / Co-host key of that game stops, the role rows stay as history until the person's e-mail is purged */
 export async function endRoles<Env>(ad: Adapter<Env>, env: Env, eid: string): Promise<number> {
   const db = ad.db(env);
   const rows = (await db.prepare("SELECT role_id FROM game_role WHERE eid=? AND state<>'ended'").bind(eid).all<any>()).results;
-  for (const r of rows) await ad.revokeKeys(env, "r:" + r.role_id);
+  for (const r of rows) await revoke(ad, env, "r:" + r.role_id);
   await db.prepare("UPDATE game_role SET state='ended' WHERE eid=? AND state<>'ended'").bind(eid).run();
   return rows.length;
 }

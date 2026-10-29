@@ -1,4 +1,4 @@
-// FALSIFIED BY: bridge-new-handoff-any-key, bridge-handoff-forgets-target, bridge-purge-roles-uncounted, bridge-new-handoff-long-key, bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person, bridge-ai-key-allowed, bridge-signout-no-revoke
+// FALSIFIED BY: bridge-new-handoff-any-key, bridge-handoff-survives-signout, bridge-handoff-forgets-target, bridge-purge-roles-uncounted, bridge-new-handoff-long-key, bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person, bridge-ai-key-allowed, bridge-signout-no-revoke
 import { test, expect } from "bun:test";
 import { handleConsole, endRoles, keyFitsGame, keyIsAccountWide, KEY_LIFE_MS } from "../packages/bridge/src/bridge";
 import { makeHost, seed, type Host } from "./support/fake-host";
@@ -273,5 +273,20 @@ test("contract additions (optional fields): the hand-off address remembers the p
     expect(typeof p.rolesErased).toBe("number");
     expect(p.rolesErased).toBeGreaterThan(0);
     expect(p.removed).toBeGreaterThanOrEqual(p.rolesErased);
+  } finally { t.stop(); }
+});
+
+test("a hand-off link that nobody has opened yet dies with the key that made it (sign-out, role removal), and '_new_' is never a real game id", async () => {
+  const t = await up();
+  try {
+    const key = (await t.session("alice")).organizer.key;
+    const mk = async (b: any, k = key) => /t=([0-9a-f]{48})/.exec((await (await t.post("/api/console/handoff", b, { "x-organizer": k })).json()).url)![1];
+    const tok = await mk({ eid: "PLAY001", target: "organizer" });
+    const tokNew = await mk({ target: "new" });
+    expect((await t.post("/api/console/signout", {}, { "x-organizer": key })).status).toBe(200); // Sign out
+    expect((await t.post("/api/console/handoff/redeem", { t: tok })).status).toBe(401);
+    expect((await t.post("/api/console/handoff/redeem", { t: tokNew })).status).toBe(401);
+    const key2 = (await t.session("alice")).organizer.key;
+    expect((await t.post("/api/console/handoff", { eid: "_new_", target: "host" }, { "x-organizer": key2 })).status).toBe(400);
   } finally { t.stop(); }
 });
