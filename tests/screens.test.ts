@@ -173,7 +173,7 @@ test("Create: a Start button only on games that are live; 'Opening soon' (test m
     expect(soon.querySelector(".soonword")!.textContent).toBe("Coming soon");
     expect(soon.querySelector("a")).toBe(null);
     expect(soon.querySelector("button")).toBe(null);
-    for (const t of tiles.slice(0, 5)) expect(t.querySelectorAll("button").length).toBe(1);
+    for (const t of tiles.slice(0, 5)) expect([...t.querySelectorAll("button")].map((b: any) => b.textContent)).toEqual(["Start", "Try a free game"]);
     // games still in test mode: "Opening soon", nothing to press
     const o2 = fresh();
     const games2 = w.games.map((g: any) => (["tictactoe", "snakesladders", "luckbychance"].includes(g.id) ? { ...g, ready: false, status: "opening" } : g));

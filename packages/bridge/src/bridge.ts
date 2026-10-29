@@ -215,7 +215,7 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
 
   if (req.method === "POST" && path === "/api/console/handoff") {
     const isNew = !!body && body.target === "new"; // "Start a new game": no game exists yet, so no eid; only the Organizer may ask
-    if (!body || !(isNew ? body.eid === undefined : typeof body.eid === "string" && EID_RE.test(body.eid) && body.eid !== NEW_EID) || !["organizer", "host", "big", "tournament", "new"].includes(body.target)) return err(400, "invalid", "The request is not complete.");
+    if (!body || !(isNew ? body.eid === undefined : typeof body.eid === "string" && EID_RE.test(body.eid) && body.eid !== NEW_EID) || !["organizer", "host", "big", "tournament", "pay", "publish", "new"].includes(body.target) || (body.free !== undefined && !(isNew && body.free === true))) return err(400, "invalid", "The request is not complete.");
     const a = await keyOf();
     let org: string | undefined;
     if (isNew) { if (a && a.kind === "master" && a.org && !a.eid) org = a.org; }
@@ -226,7 +226,7 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
     const t = randHex(24);
     await db.prepare("INSERT INTO console_handoff(token_hash,eid,kind,org,created_by,expires_ms) VALUES(?,?,?,?,?,?)").bind(await sha256hex("handoff|" + t), eid, kind, org, a.createdBy || "c:" + org, nowMs + HANDOFF_LINK_MS).run();
     await db.prepare("DELETE FROM console_handoff WHERE expires_ms<?").bind(nowMs - 3600_000).run(); // keep the table small
-    return ok({ url: `${aud}/signin.html?t=${t}&go=console&e=${eid}${isNew ? "" : "&to=" + body.target}`, expiresMs: nowMs + HANDOFF_LINK_MS }); // the page asked for travels in the address, so the game opens that page and not always the organizer screen
+    return ok({ url: `${aud}/signin.html?t=${t}&go=console&e=${eid}${isNew ? (body.free === true ? "&free=1" : "") : "&to=" + body.target}`, expiresMs: nowMs + HANDOFF_LINK_MS }); // the page asked for travels in the address, so the game opens that page and not always the organizer screen
   }
   if (req.method === "POST" && path === "/api/console/handoff/redeem") {
     if (!body || typeof body.t !== "string" || !/^[0-9a-f]{48}$/.test(body.t)) return err(401, "expired", "This link has run out. Please open the game again from your console.");

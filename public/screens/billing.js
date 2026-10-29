@@ -41,7 +41,7 @@ export async function renderBilling(outlet, ctx) {
   body.append(el("h2", { class: "sechead", text: "To pay" }));
   if (!toPay.length) body.append(emptyNote("Nothing to pay.", "A game that waits for payment shows here."));
   else body.append(el("ul", { class: "list", id: "bill-topay" }, toPay.map((g) => withColor(el("li", { dataset: { game: g.game, eid: g.eid } }, el("div", { class: "what" }, el("b", { text: g.name }), el("span", { text: `${names[g.game] || g.game} · ${whenText(g.startMs)}` })),
-    el("div", { class: "btns" }, button("Pay", { main: true, sm: true, label: `Pay for ${g.name}`, onclick: () => openGame(ctx, g, "organizer") }),
+    el("div", { class: "btns" }, button("Pay", { main: true, sm: true, label: `Pay for ${g.name}`, onclick: () => openGame(ctx, g, "pay") }),
       button("Copy link for finance", { sm: true, label: `Copy a payment link for ${g.name} to send to your finance team`, onclick: async () => {
         const r = await api.payLink(g.game, g.eid);
         if (!r.ok) return toast("We could not make the link just now. Please try again.");

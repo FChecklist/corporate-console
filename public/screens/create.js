@@ -21,10 +21,10 @@ export async function renderCreate(outlet, ctx) {
   const tiles = el("div", { class: "tiles" });
   outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Create a new game" }), el("p", { class: "lead", text: "Choose a game. It opens in its own screen, with the date, size and prizes ready to fill in." }), tiles)));
 
-  async function start(game, btn) {
+  async function start(game, btn, o = {}) {
     btn.disabled = true;
     let r;
-    try { r = await api.startNew(game); } catch { r = { ok: false }; } finally { btn.disabled = false; }
+    try { r = await api.startNew(game, o); } catch { r = { ok: false }; } finally { btn.disabled = false; }
     if (!r.ok) return toast(openError(r, (names[game] || "That game")));
     (ctx.go || ((u) => location.assign(u)))(r.url);
   }
@@ -38,8 +38,9 @@ export async function renderCreate(outlet, ctx) {
     const price = el("p", { class: "hintline", dataset: { price: g.id } });
     const b = button("Start", { main: true, sm: true, label: `Start a new ${title} game` });
     b.addEventListener("click", () => start(g.id, b));
+    const free = button("Try a free game", { sm: true, label: `Try a free ${title} game for up to 10 people`, onclick: () => start(g.id, free, { free: true }) });
     prices[g.id] = price;
-    tiles.append(withColor(el("article", { class: "tile", dataset: { game: g.id } }, el("div", { class: "gname", text: "Corporate" }), el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), price, el("div", { class: "btns" }, b)), colors[g.id] || "#0B3D91"));
+    tiles.append(withColor(el("article", { class: "tile", dataset: { game: g.id } }, el("div", { class: "gname", text: "Corporate" }), el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), price, el("div", { class: "btns" }, b, free)), colors[g.id] || "#0B3D91"));
   }
   const caps = await api.capabilities().catch(() => []);
   for (const c of caps) if (c.ok && prices[c.game]) prices[c.game].textContent = priceLine(c.caps);

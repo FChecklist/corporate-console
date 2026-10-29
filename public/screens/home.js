@@ -2,7 +2,7 @@
 // "Needs your attention" (waiting for payment, an invitation, starting today) and "Playing now". Nothing else: no prices, no news, no tips.
 import { el, clear } from "../core/dom.js";
 import { withColor, button, whenText, openGame } from "./ui.js";
-import { needsAttention, startsToday, mergeGames } from "../core/merge.js";
+import { needsAttention, startsToday, draftStartsSoon, mergeGames } from "../core/merge.js";
 import { gamesFailedLine } from "../core/errors.js";
 
 const ICON = {
@@ -33,7 +33,7 @@ export async function renderHome(outlet, ctx) {
   paint(l0);
   function paint(l) {
   const mine = (g) => g.role === "organizer";
-  const attn = l.rows.filter((g) => (g.status === "waiting_payment" ? mine(g) : needsAttention(g)) || startsToday(g)); // a helper is never asked to pay
+  const attn = l.rows.filter((g) => (g.status === "waiting_payment" ? mine(g) : needsAttention(g)) || startsToday(g) || draftStartsSoon(g)); // a helper is never asked to pay
   const live = l.rows.filter((g) => g.status === "playing" && !attn.includes(g));
   clear(strips);
   if (!l.rows.length && !l.failed.length) strips.append(el("section", { class: "strip", id: "first-game" }, el("h2", { text: "Your first game" }), el("p", { class: "hintline", text: "Keep ready: the date and time, how many people will play, the prizes, and your company name. Then press Create a new game." })));
@@ -50,8 +50,8 @@ export async function renderHome(outlet, ctx) {
       let rowEl;
       const btns = accept
         ? (g.roleId ? [button("Accept", { main: true, sm: true, onclick: () => answer(g, "accept", rowEl) }), button("Decline", { sm: true, onclick: () => answer(g, "decline", rowEl) })] : [])
-        : [button(g.status === "waiting_payment" && g.role !== "cohost" ? "Pay" : "Open", { main: true, sm: true, onclick: () => openGame(ctx, g) })];
-      rowEl = row(g, accept ? "Invitation" : g.status === "waiting_payment" ? "Waiting for payment" : "Starts today", btns);
+        : [button(g.status === "draft" ? "Publish" : g.status === "waiting_payment" ? "Pay" : "Open", { main: true, sm: true, label: `${g.status === "draft" ? "Publish" : g.status === "waiting_payment" ? "Pay for" : "Open"} ${g.name}`, onclick: () => openGame(ctx, g, g.status === "draft" ? "publish" : g.status === "waiting_payment" ? "pay" : undefined) })];
+      rowEl = row(g, accept ? "Invitation" : g.status === "draft" ? "Not published yet" : g.status === "waiting_payment" ? "Waiting for payment" : "Starts today", btns);
       sec.append(rowEl);
     }
     strips.append(sec);

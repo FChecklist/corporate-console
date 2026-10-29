@@ -10,6 +10,9 @@ const IST = 19_800_000, DAY = 86_400_000;
 /** a game that is ready and starts on today's date (India time) */
 export const startsToday = (g, now = Date.now()) => g.status === "ready" && g.startMs != null && Math.floor((g.startMs + IST) / DAY) === Math.floor((now + IST) / DAY);
 
+/** a draft of the person's own that starts within a day and has not been published: nobody else will remind them */
+export const draftStartsSoon = (g, now = Date.now()) => g.role === "organizer" && g.status === "draft" && g.startMs != null && g.startMs - now < 86_400_000 && g.startMs > now - 3_600_000;
+
 /** order: needs attention first, then playing now, then by start time (soonest first, no start time last), then by name */
 export function sortGames(rows) {
   const rank = (g) => (needsAttention(g) ? 0 : g.status === "playing" ? 1 : g.status === "ready" ? 2 : g.status === "draft" ? 3 : 4);

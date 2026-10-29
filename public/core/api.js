@@ -114,23 +114,23 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       return out;
     },
     /** the page of a game that the person may open: asks the game for a one-time address (valid 60 seconds). Only the game's own sign-in address is ever returned. */
-    async handoff(game, { eid = null, target = "organizer" } = {}) {
+    async handoff(game, { eid = null, target = "organizer", free = false } = {}) {
       const g = byId[game]; if (!g) return { ok: false, error: "unknown-game" };
       const h = await headersFor(game, eid);
       if (!h) return { ok: false, error: "no-key" };
-      const r = await call(g.origin + "/api/console/handoff", { method: "POST", headers: h, body: JSON.stringify(target === "new" ? { target } : { eid, target }) });
+      const r = await call(g.origin + "/api/console/handoff", { method: "POST", headers: h, body: JSON.stringify(target === "new" ? (free ? { target, free: true } : { target }) : { eid, target }) });
       if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused", message: r.json?.message };
       const url = String(r.json?.url || "");
       if (!url.startsWith(g.origin + "/signin.html?t=")) return { ok: false, error: "wrong-address" };
       return { ok: true, url };
     },
     /** "Start a new game": make the person's account in THAT game if it is the first time, then hand over to the game's own Step 1 */
-    async startNew(game) {
+    async startNew(game, { free = false } = {}) {
       if (!vault.keyFor(game, null, now())) {
         const c = await connect({ create: true, only: [game] });
         if (!c.ok || !c.results[0]?.ok) return { ok: false, error: c.results?.[0]?.error || "no-account" };
       }
-      return this.handoff(game, { target: "new" });
+      return this.handoff(game, { target: "new", free });
     },
     /** a pay link anyone can open (the game's own route; works for 7 days): for the finance team */
     async payLink(game, eid) {

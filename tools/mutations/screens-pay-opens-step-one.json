@@ -1,0 +1,1 @@
+{"id": "screens-pay-opens-step-one", "repo": ".", "file": "public/screens/billing.js", "find": "onclick: () => openGame(ctx, g, \"pay\") }),", "replace": "onclick: () => openGame(ctx, g, \"organizer\") }),", "test": "tests/wp08-handover.test.ts", "note": "Pay opens step one again"}

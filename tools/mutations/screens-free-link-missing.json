@@ -1,0 +1,1 @@
+{"id": "screens-free-link-missing", "repo": ".", "file": "public/screens/create.js", "find": "el(\"div\", { class: \"btns\" }, b, free)), colors[g.id]", "replace": "el(\"div\", { class: \"btns\" }, b)), colors[g.id]", "test": "tests/wp08-handover.test.ts", "note": "no free-game button"}

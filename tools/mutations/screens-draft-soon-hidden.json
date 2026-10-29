@@ -1,0 +1,1 @@
+{"id": "screens-draft-soon-hidden", "repo": ".", "file": "public/screens/home.js", "find": "|| startsToday(g) || draftStartsSoon(g));", "replace": "|| startsToday(g));", "test": "tests/wp08-handover.test.ts", "note": "a draft that starts soon is not shown"}
