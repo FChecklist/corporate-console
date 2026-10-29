@@ -1,0 +1,1 @@
+{"id": "flow-pack-game-rule-leak", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "brand: \"Corporate Games\"", "replace": "brand: \"Corporate Tambola\"", "test": "tests/flow-pack.test.ts", "note": "the shared pack names a game"}

@@ -1,0 +1,1 @@
+{"id": "flow-pack-needs-descriptor", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "(typeof window !== \"undefined\" && window.ZFLOW_GAME) || {}", "replace": "window.ZFLOW_GAME.x", "test": "tests/flow-pack.test.ts", "note": "the shared pack cannot run without a game descriptor"}
