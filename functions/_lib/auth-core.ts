@@ -1,10 +1,12 @@
 // console-auth: one e-mail sign-in for the whole console. No password. A code or a one-tap link by e-mail, a cookie session, and short signed notes (assertions) for the games.
 // Plain functions of (request, env, now) so they can be tested without a server. The Pages Function in functions/auth/[[path]].ts only calls handleAuth.
 import type { D1 } from "../../packages/bridge/src/d1";
+import { tables } from "./tables";
 import { signAssertion, b64uEncode, type Payload, type Act } from "../../packages/bridge/src/assertion";
 
 export interface Env {
   DB: D1;
+  TABLE_PREFIX?: string; // "" = own tables in the console's own database; "con_" = the same tables inside an existing database, with this prefix
   SESSION_PEPPER: string;
   CONSOLE_SIGNING_KEY: string; // base64 PKCS8 of the Ed25519 private key (set by the owner with wrangler, never in a repo)
   CONSOLE_KID?: string;
@@ -55,10 +57,10 @@ export async function unsealText(env: Env, sealed: string) {
 
 // ---- rate limits: fixed one-hour windows ----
 async function bump(env: Env, key: string, limit: number, now: number): Promise<boolean> {
-  const row = await env.DB.prepare("SELECT n, win_start_ms FROM rate WHERE k=?").bind(key).first<{ n: number; win_start_ms: number }>();
-  if (!row || now - row.win_start_ms >= HOUR) { await env.DB.prepare("INSERT INTO rate(k,n,win_start_ms) VALUES(?,?,?) ON CONFLICT(k) DO UPDATE SET n=excluded.n, win_start_ms=excluded.win_start_ms").bind(key, 1, now).run(); return true; }
+  const row = await tables(env).prepare("SELECT n, win_start_ms FROM rate WHERE k=?").bind(key).first<{ n: number; win_start_ms: number }>();
+  if (!row || now - row.win_start_ms >= HOUR) { await tables(env).prepare("INSERT INTO rate(k,n,win_start_ms) VALUES(?,?,?) ON CONFLICT(k) DO UPDATE SET n=excluded.n, win_start_ms=excluded.win_start_ms").bind(key, 1, now).run(); return true; }
   if (row.n >= limit) return false;
-  await env.DB.prepare("UPDATE rate SET n=n+1 WHERE k=?").bind(key).run();
+  await tables(env).prepare("UPDATE rate SET n=n+1 WHERE k=?").bind(key).run();
   return true;
 }
 
@@ -67,9 +69,9 @@ const cookieHeader = (sid: string, maxAgeS: number) => `${COOKIE}=${sid}; HttpOn
 const readSid = (req: Request) => { const m = new RegExp(`(?:^|;\\s*)${COOKIE}=([0-9a-f]{64})`).exec(req.headers.get("cookie") || ""); return m ? m[1] : null; };
 
 async function startSession(env: Env, emailHash: string, sealed: string, consentMs: number | null, now: number) {
-  await env.DB.prepare("INSERT INTO console_email(email_hash,email_sealed,created_ms,last_seen_ms,consent_ms) VALUES(?,?,?,?,?) ON CONFLICT(email_hash) DO UPDATE SET last_seen_ms=excluded.last_seen_ms, email_sealed=excluded.email_sealed, consent_ms=COALESCE(excluded.consent_ms, console_email.consent_ms)").bind(emailHash, sealed, now, now, consentMs).run();
+  await tables(env).prepare("INSERT INTO console_email(email_hash,email_sealed,created_ms,last_seen_ms,consent_ms) VALUES(?,?,?,?,?) ON CONFLICT(email_hash) DO UPDATE SET last_seen_ms=excluded.last_seen_ms, email_sealed=excluded.email_sealed, consent_ms=COALESCE(excluded.consent_ms, console_email.consent_ms)").bind(emailHash, sealed, now, now, consentMs).run();
   const sid = randHex(32);
-  await env.DB.prepare("INSERT INTO session(sid_hash,email_hash,created_ms,last_seen_ms,expires_ms) VALUES(?,?,?,?,?)").bind(await sha256hex("sid|" + sid), emailHash, now, now, now + SESSION_MS).run();
+  await tables(env).prepare("INSERT INTO session(sid_hash,email_hash,created_ms,last_seen_ms,expires_ms) VALUES(?,?,?,?,?)").bind(await sha256hex("sid|" + sid), emailHash, now, now, now + SESSION_MS).run();
   return json(200, { ok: true }, { "set-cookie": cookieHeader(sid, SESSION_MS / 1000) });
 }
 
@@ -77,11 +79,11 @@ export async function sessionOf(req: Request, env: Env, now: number): Promise<{ 
   const sid = readSid(req);
   if (!sid) return null;
   const sidHash = await sha256hex("sid|" + sid);
-  const row = await env.DB.prepare("SELECT email_hash, last_seen_ms FROM session WHERE sid_hash=? AND expires_ms>?").bind(sidHash, now).first<{ email_hash: string; last_seen_ms: number }>();
+  const row = await tables(env).prepare("SELECT email_hash, last_seen_ms FROM session WHERE sid_hash=? AND expires_ms>?").bind(sidHash, now).first<{ email_hash: string; last_seen_ms: number }>();
   if (!row) return null;
   if (now - row.last_seen_ms > HOUR) { // sliding 30 days, written at most once an hour
-    await env.DB.prepare("UPDATE session SET last_seen_ms=?, expires_ms=? WHERE sid_hash=?").bind(now, now + SESSION_MS, sidHash).run();
-    await env.DB.prepare("UPDATE console_email SET last_seen_ms=? WHERE email_hash=?").bind(now, row.email_hash).run();
+    await tables(env).prepare("UPDATE session SET last_seen_ms=?, expires_ms=? WHERE sid_hash=?").bind(now, now + SESSION_MS, sidHash).run();
+    await tables(env).prepare("UPDATE console_email SET last_seen_ms=? WHERE email_hash=?").bind(now, row.email_hash).run();
   }
   return { emailHash: row.email_hash, sidHash };
 }
@@ -123,7 +125,7 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     const demo = env.TEST_MODE === "1" && DEMO.has(email);
     const code = demo ? "123456" : String(new DataView(crypto.getRandomValues(new Uint8Array(4)).buffer).getUint32(0) % 1_000_000).padStart(6, "0");
     const link = randHex(24);
-    await env.DB.prepare("INSERT INTO login_code(email_hash,email_sealed,code_hash,link_hash,expires_ms,attempts,sent_ms,consent_ms) VALUES(?,?,?,?,?,0,?,?) ON CONFLICT(email_hash) DO UPDATE SET email_sealed=excluded.email_sealed, code_hash=excluded.code_hash, link_hash=excluded.link_hash, expires_ms=excluded.expires_ms, attempts=0, sent_ms=excluded.sent_ms, consent_ms=excluded.consent_ms")
+    await tables(env).prepare("INSERT INTO login_code(email_hash,email_sealed,code_hash,link_hash,expires_ms,attempts,sent_ms,consent_ms) VALUES(?,?,?,?,?,0,?,?) ON CONFLICT(email_hash) DO UPDATE SET email_sealed=excluded.email_sealed, code_hash=excluded.code_hash, link_hash=excluded.link_hash, expires_ms=excluded.expires_ms, attempts=0, sent_ms=excluded.sent_ms, consent_ms=excluded.consent_ms")
       .bind(eh, await sealText(env, email), await sha256hex(`code|${env.SESSION_PEPPER}|${eh}|${code}`), await sha256hex("link|" + link), now + CODE_TTL_MS, now, now).run();
     if (!demo) {
       try { await sendMail(env, email, "[Console] Your sign-in code", `Your code is ${code}. It works for 10 minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf you did not ask for this, you can ignore this e-mail.`); }
@@ -136,15 +138,15 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     const b = await readJson(req);
     if (!b || typeof b.email !== "string" || typeof b.code !== "string" || !/^\d{6}$/.test(b.code) || !EMAIL_RE.test(normEmail(b.email))) return json(401, BAD_CODE);
     const eh = await emailHashOf(b.email);
-    const row = await env.DB.prepare("SELECT code_hash, email_sealed, expires_ms, attempts, consent_ms FROM login_code WHERE email_hash=?").bind(eh).first<any>();
+    const row = await tables(env).prepare("SELECT code_hash, email_sealed, expires_ms, attempts, consent_ms FROM login_code WHERE email_hash=?").bind(eh).first<any>();
     if (!row || row.expires_ms < now || row.attempts >= MAX_TRIES) return json(401, BAD_CODE);
     const good = (await sha256hex(`code|${env.SESSION_PEPPER}|${eh}|${b.code}`)) === row.code_hash;
     if (!good) {
-      if (row.attempts + 1 >= MAX_TRIES) await env.DB.prepare("DELETE FROM login_code WHERE email_hash=?").bind(eh).run();
-      else await env.DB.prepare("UPDATE login_code SET attempts=attempts+1 WHERE email_hash=?").bind(eh).run();
+      if (row.attempts + 1 >= MAX_TRIES) await tables(env).prepare("DELETE FROM login_code WHERE email_hash=?").bind(eh).run();
+      else await tables(env).prepare("UPDATE login_code SET attempts=attempts+1 WHERE email_hash=?").bind(eh).run();
       return json(401, BAD_CODE);
     }
-    const gone = await env.DB.prepare("DELETE FROM login_code WHERE email_hash=? AND code_hash=?").bind(eh, row.code_hash).run();
+    const gone = await tables(env).prepare("DELETE FROM login_code WHERE email_hash=? AND code_hash=?").bind(eh, row.code_hash).run();
     if (gone.meta.changes !== 1) return json(401, BAD_CODE); // used by someone else a moment ago
     return startSession(env, eh, row.email_sealed, row.consent_ms, now);
   }
@@ -157,9 +159,9 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     if (!(await bump(env, "linkfail:" + (await sha256hex("ip|" + ip)), IP_PER_HOUR, now))) return fail(429, "rate_limited", "Too many tries. Please wait an hour and try again.");
     if (!b || typeof b.t !== "string" || !/^[0-9a-f]{48}$/.test(b.t)) return json(401, BAD_CODE);
     const lh = await sha256hex("link|" + b.t);
-    const row = await env.DB.prepare("SELECT email_hash, email_sealed, consent_ms FROM login_code WHERE link_hash=? AND expires_ms>=?").bind(lh, now).first<any>();
+    const row = await tables(env).prepare("SELECT email_hash, email_sealed, consent_ms FROM login_code WHERE link_hash=? AND expires_ms>=?").bind(lh, now).first<any>();
     if (!row) return json(401, BAD_CODE);
-    const gone = await env.DB.prepare("DELETE FROM login_code WHERE link_hash=? AND expires_ms>=?").bind(lh, now).run();
+    const gone = await tables(env).prepare("DELETE FROM login_code WHERE link_hash=? AND expires_ms>=?").bind(lh, now).run();
     if (gone.meta.changes !== 1) return json(401, BAD_CODE);
     return startSession(env, row.email_hash, row.email_sealed, row.consent_ms, now);
   }
@@ -167,7 +169,7 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
   if (req.method === "GET" && path === "/auth/me") {
     const s = await sessionOf(req, env, now);
     if (!s) return json(200, { ok: true, signedIn: false });
-    const r = await env.DB.prepare("SELECT email_sealed FROM console_email WHERE email_hash=?").bind(s.emailHash).first<{ email_sealed: string }>();
+    const r = await tables(env).prepare("SELECT email_sealed FROM console_email WHERE email_hash=?").bind(s.emailHash).first<{ email_sealed: string }>();
     return json(200, { ok: true, signedIn: true, email: r ? await unsealText(env, r.email_sealed) : null });
   }
 
@@ -175,8 +177,8 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     const s = await sessionOf(req, env, now);
     const b = (await readJson(req)) || {};
     if (s) {
-      if (b.everywhere === true) await env.DB.prepare("DELETE FROM session WHERE email_hash=?").bind(s.emailHash).run();
-      else await env.DB.prepare("DELETE FROM session WHERE sid_hash=?").bind(s.sidHash).run();
+      if (b.everywhere === true) await tables(env).prepare("DELETE FROM session WHERE email_hash=?").bind(s.emailHash).run();
+      else await tables(env).prepare("DELETE FROM session WHERE sid_hash=?").bind(s.sidHash).run();
     }
     return json(200, { ok: true }, { "set-cookie": cookieHeader("0".repeat(64), 0) });
   }
@@ -201,7 +203,7 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
       if (typeof r.eid === "string") p.eid = r.eid;
       if (typeof r.sa === "string") p.sa = r.sa;
       if (r.em === true && (r.act === "session" || r.act === "role")) { // the plain e-mail travels only when the mailbox was proven by this very sign-in and a game must make an account or match an invitation
-        if (plain === null) { const e = await env.DB.prepare("SELECT email_sealed FROM console_email WHERE email_hash=?").bind(s.emailHash).first<{ email_sealed: string }>(); plain = e ? await unsealText(env, e.email_sealed) : ""; }
+        if (plain === null) { const e = await tables(env).prepare("SELECT email_sealed FROM console_email WHERE email_hash=?").bind(s.emailHash).first<{ email_sealed: string }>(); plain = e ? await unsealText(env, e.email_sealed) : ""; }
         if (plain) p.em = plain;
       }
       out.push({ game: r.game, assertion: await signAssertion(p, key) });

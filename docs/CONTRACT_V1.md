@@ -81,5 +81,5 @@ Success: `{"ok": true, ...}`. Failure: `{"ok": false, "error": "<code>", "messag
 1. The event log lives in a NEW file (for example `eventlog.ts`); `gamelog.ts` (the end-of-game summary) stays as it is.
 2. The Player's screen view lives at `/screenview/<game>` because `/preview` already means "Test your brand moment".
 3. `paidBy: link` appears for payments made through a shared pay link.
-4. A US dollar price is in `sizes[].usdMinor`; `null` for sizes without one (the new 50-person size until the owner decides).
+4. A US dollar price is in `sizes[].usdMinor`; `null` only if a game has no dollar price for a size (today every size has one).
 5. Luck by Chance must first take the Tambola hardening port; its bridge comes second.

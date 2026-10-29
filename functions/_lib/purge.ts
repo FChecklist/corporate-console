@@ -3,6 +3,7 @@
 // Invoices and legal records live in the games and are not touched by this.
 import { signAssertion, b64uEncode, type Payload } from "../../packages/bridge/src/assertion";
 import type { Env } from "./auth-core";
+import { tables } from "./tables";
 
 export const DAY_MS = 86400_000;
 const IST_MS = 19_800_000;
@@ -16,12 +17,12 @@ export const deleteAtMs = (lastSeenMs: number) => istDayStart(lastSeenMs) + (RET
 
 export async function purgeExpired(env: Env, now: number, doFetch: typeof fetch = fetch) {
   const out = { codes: 0, sessions: 0, rates: 0, emails: 0, deferred: 0, gameCalls: 0, gameFailures: 0 };
-  out.codes = (await env.DB.prepare("DELETE FROM login_code WHERE expires_ms<?").bind(now - DAY_MS).run()).meta.changes;
-  out.sessions = (await env.DB.prepare("DELETE FROM session WHERE expires_ms<?").bind(now).run()).meta.changes;
-  out.rates = (await env.DB.prepare("DELETE FROM rate WHERE win_start_ms<?").bind(now - 2 * 3600_000).run()).meta.changes;
+  out.codes = (await tables(env).prepare("DELETE FROM login_code WHERE expires_ms<?").bind(now - DAY_MS).run()).meta.changes;
+  out.sessions = (await tables(env).prepare("DELETE FROM session WHERE expires_ms<?").bind(now).run()).meta.changes;
+  out.rates = (await tables(env).prepare("DELETE FROM rate WHERE win_start_ms<?").bind(now - 2 * 3600_000).run()).meta.changes;
   // e-mails whose time has come: last_seen + 366 IST days (midnight) is not after now
   // anything due was last seen more than 365 days ago (the exact IST-midnight rule is checked per row)
-  const rows = (await env.DB.prepare("SELECT email_hash, last_seen_ms FROM console_email WHERE last_seen_ms<=? LIMIT 500").bind(now - RETENTION_DAYS * DAY_MS).all<{ email_hash: string; last_seen_ms: number }>()).results;
+  const rows = (await tables(env).prepare("SELECT email_hash, last_seen_ms FROM console_email WHERE last_seen_ms<=? LIMIT 500").bind(now - RETENTION_DAYS * DAY_MS).all<{ email_hash: string; last_seen_ms: number }>()).results;
   const due = rows.filter((r) => now >= deleteAtMs(r.last_seen_ms));
   if (!due.length) return out;
   let origins: Record<string, string> = {};
@@ -38,9 +39,9 @@ export async function purgeExpired(env: Env, now: number, doFetch: typeof fetch 
       } catch { allOk = false; out.gameFailures++; }
     }
     if (!allOk && now < deleteAtMs(r.last_seen_ms) + GRACE_MS) { out.deferred++; continue; }
-    await env.DB.prepare("DELETE FROM session WHERE email_hash=?").bind(r.email_hash).run();
-    await env.DB.prepare("DELETE FROM login_code WHERE email_hash=?").bind(r.email_hash).run();
-    await env.DB.prepare("DELETE FROM console_email WHERE email_hash=?").bind(r.email_hash).run();
+    await tables(env).prepare("DELETE FROM session WHERE email_hash=?").bind(r.email_hash).run();
+    await tables(env).prepare("DELETE FROM login_code WHERE email_hash=?").bind(r.email_hash).run();
+    await tables(env).prepare("DELETE FROM console_email WHERE email_hash=?").bind(r.email_hash).run();
     out.emails++;
   }
   return out;

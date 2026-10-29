@@ -1,0 +1,1 @@
+{ "id": "prefix-purge-unprefixed", "repo": ".", "file": "functions/_lib/purge.ts", "find": "tables(env).prepare(\"DELETE FROM login_code WHERE expires_ms<?\")", "replace": "env.DB.prepare(\"DELETE FROM login_code WHERE expires_ms<?\")", "test": "tests/table-prefix.test.ts", "note": "the daily clean-up forgets the prefix" }

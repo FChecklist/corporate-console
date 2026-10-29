@@ -14,3 +14,4 @@ database_id = "REPLACE_AFTER_THE_DATABASE_EXISTS"
 [vars]
 CONSOLE_ORIGIN = "https://console.corporatetambola.com"
 GAME_ORIGINS = '{"tambola":"https://housie.corporatetambola.com","bingo":"https://bingo.corporatetambola.com","tictactoe":"https://tictactoe.corporatetambola.com","snakesladders":"https://snakes.corporatetambola.com","luckbychance":"https://luck.corporatetambola.com","luckydraw":"https://lucky.corporatetambola.com"}'
+TABLE_PREFIX = ""   # must equal TABLE_PREFIX in the console's own wrangler.toml

@@ -14,16 +14,15 @@ Tools: the console repo is `C:\ct\test-sites\console`; each game's console branc
 
 ## Step 0. Questions the owner answers first (nothing is built on a guess)
 
-- **Prices.** The new price list (Rs 1,493 to Rs 29,477) is lower than today's prices (Rs 2,399 to Rs 29,499) and adds a 50-person size. Do the games switch to it? Until you say yes no price changes anywhere.
+- **Prices.** Decided: the console shows today's prices only (Rs 2,399 to Rs 29,499, US$ 34 to US$ 421, no GST). No game's price changes.
 - **Cloudflare plan.** The account holds 10 of 10 free databases. Is the account on the paid Workers plan? (The console and Lucky Draw need 2 more.)
-- **US dollar prices** for the new list, and whether GST is shown or added.
 - **Lawyer:** the privacy-strip wording and whether a seat number kept 365 days is personal data.
 
 Verify: the owner's four answers are written in `CONSOLE_DECISIONS.md`. Rollback: nothing was done.
 
 ## Step 1. IT Services first (additive)
 
-Branch `console/lucky-draw-origin` in `C:\ct\itservices-console` (commit de6048d): lets `lucky.corporatetambola.com` open and frame the payment window, registers Lucky Draw's site and product (no prices). Prices and the 50-person plans are added in a later migration after Step 0.
+Branch `console/lucky-draw-origin` in `C:\ct\itservices-console` (commit de6048d): lets `lucky.corporatetambola.com` open and frame the payment window, registers Lucky Draw's site and product (no prices). Prices stay as they are today (nothing new to add).
 
 1. Apply `migrations/0014_lucky_draw_site.sql` to the IT Services database (the owner's usual way).
 2. `python build.py`, then deploy `dist` to the Pages project `itservices-rajat-agarwal` (same command as the last deploy).

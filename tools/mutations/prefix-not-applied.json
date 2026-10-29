@@ -1,0 +1,1 @@
+{ "id": "prefix-not-applied", "repo": ".", "file": "functions/_lib/tables.ts", "find": "  if (!p) return env.DB;\n  return { prepare", "replace": "  return env.DB;\n  return { prepare", "test": "tests/table-prefix.test.ts", "note": "the prefix setting is ignored" }

@@ -1,36 +1,27 @@
-// FALSIFIED BY: prices-live-number-changed, prices-sync-skips-html
+// FALSIFIED BY: prices-live-number-changed, prices-games-check-skips-usd
 import { test, expect } from "bun:test";
-import { existsSync, mkdtempSync, mkdirSync, copyFileSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { tmpdir } from "node:os";
-import { loadList, withComma, rewrite, parsePacks, checkGame, onlyIn, ladderOf, GAMES } from "../tools/prices/lib.mjs";
-import { syncGame } from "../tools/prices/sync.mjs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { loadList, withComma, parsePacks, checkGame, GAMES } from "../tools/prices/lib.mjs";
 
 const ROOT = process.env.GAMES_ROOT || "C:/ct/test-sites";
 const list = loadList();
-// the files a game really has that carry a price (listed here on purpose, NOT taken from the tool, so a tool that forgets a file is caught)
-const COPIES = ["packages/shared/src/pricing.ts", "apps/web/public/common.js", "apps/web/public/pricing.html", "apps/web/public/index.html", "apps/web/public/partner.html", "apps/web/public/brochure.html"];
 
-test("the price list is complete: nine sizes, rupee prices for every size, dollar prices not invented", () => {
-  expect(list.sizes).toEqual([50, 100, 250, 500, 750, 1000, 2500, 5000, 10000]);
-  expect(Object.keys(list.target.inr).map(Number)).toEqual(list.sizes);
-  expect(list.target.usd).toBe("USD_PRICE_PENDING");
-  expect(Object.keys(list.live.inr).length).toBe(8);
-  expect(list.target.inr["50"]).toBe(1493);
+test("the price list is TODAY'S prices: eight sizes, no 50-person size, no second ladder", () => {
+  expect(list.sizes).toEqual([100, 250, 500, 750, 1000, 2500, 5000, 10000]);
+  expect(Object.values(list.inr)).toEqual([2399, 3499, 4699, 5899, 7099, 11799, 17699, 29499]);
+  expect(Object.values(list.usd)).toEqual([34, 51, 67, 84, 101, 169, 253, 421]);
+  expect(Object.keys(list.inr).map(Number)).toEqual(list.sizes);
+  expect(Object.keys(list.usd).map(Number)).toEqual(list.sizes);
+  expect("target" in list).toBe(false);
+  expect("live" in list).toBe(false);
+  expect(JSON.stringify(list)).not.toMatch(/1493|1,493|USD_PRICE_PENDING/);
 });
 
 test("numbers are written the way the pages write them", () => {
-  expect(withComma(1493)).toBe("1,493");
-  expect(withComma(29477)).toBe("29,477");
+  expect(withComma(2399)).toBe("2,399");
+  expect(withComma(29499)).toBe("29,499");
   expect(withComma(100)).toBe("100");
-});
-
-test("rewrite swaps both spellings, ignores longer numbers, and is idempotent", () => {
-  const src = "Up to 100 players: &#8377;2,399 and 7099 and 17,699; id 127099 stays; 1.2399 stays";
-  const t = rewrite(src, list, "live", "target");
-  expect(t.text).toBe("Up to 100 players: &#8377;2,387 and 7083 and 17,683; id 127099 stays; 1.2399 stays");
-  expect(rewrite(t.text, list, "live", "target").changed).toBe(false);
-  expect(rewrite(t.text, list, "target", "live").text).toBe(src);
 });
 
 test("PACKS lists are read from pricing.ts and from common.js", () => {
@@ -39,46 +30,30 @@ test("PACKS lists are read from pricing.ts and from common.js", () => {
   expect(parsePacks("TB.PACKS = [[100, 2399, 34], [250, 3499, 51]];")).toEqual([[100, 2399, 34], [250, 3499, 51]]);
 });
 
+test("the checker names a wrong rupee price, a wrong dollar price and a missing size", () => {
+  const { mkdtempSync, mkdirSync, writeFileSync } = require("node:fs");
+  const { tmpdir } = require("node:os");
+  const d = mkdtempSync(join(tmpdir(), "pr-"));
+  mkdirSync(join(d, "packages/shared/src"), { recursive: true });
+  const row = (n: number, inr: number, usd: number) => `[${n}, ${inr}, ${usd}]`;
+  const all = list.sizes.map((n: number) => [n, list.inr[n], list.usd[n]]);
+  const write = (rows: number[][]) => writeFileSync(join(d, "packages/shared/src/pricing.ts"), `export const PACKS = [${rows.map((r) => row(r[0], r[1], r[2])).join(", ")}];`);
+  write(all);
+  expect(checkGame(d, list)).toEqual([]);
+  write(all.map((r: number[], i: number) => (i === 0 ? [r[0], 2387, r[2]] : r)));
+  expect(checkGame(d, list).join("|")).toContain("size 100 costs 2387");
+  write(all.map((r: number[], i: number) => (i === 1 ? [r[0], r[1], 52] : r)));
+  expect(checkGame(d, list).join("|")).toContain("size 250 costs US$52");
+  write(all.slice(1));
+  expect(checkGame(d, list).join("|")).toContain("7 sizes");
+});
+
 for (const g of GAMES) {
-  const dir = join(ROOT, g);
-  test(`parity: ${g} shows the ${list.applied[g] ? "target" : "live"} ladder in every price copy`, () => {
+  test(`parity: ${g} charges exactly the price list (rupees and dollars)`, () => {
+    const dir = join(ROOT, g);
     if (!existsSync(dir)) return; // that game is not on this laptop
-    const want = list.applied[g] ? "target" : "live";
-    expect(checkGame(dir, list, want)).toEqual([]);
-    const ts = readFileSync(join(dir, "packages/shared/src/pricing.ts"), "utf8");
-    const packs = parsePacks(ts)!;
-    expect(packs.length).toBeGreaterThanOrEqual(8);
-    const w = ladderOf(list, want);
-    for (const [n, inr] of packs) expect(inr).toBe(w[n]);
+    expect(checkGame(dir, list)).toEqual([]);
+    const packs = parsePacks(readFileSync(join(dir, "packages/shared/src/pricing.ts"), "utf8"))!;
+    expect(packs.length).toBe(8);
   });
 }
-
-/** copy the price-bearing files of one real game into a temp folder */
-function fixtureFrom(game: string) {
-  const src = join(ROOT, game);
-  const d = mkdtempSync(join(tmpdir(), "pr-"));
-  for (const rel of COPIES) { if (!existsSync(join(src, rel))) continue; mkdirSync(dirname(join(d, rel)), { recursive: true }); copyFileSync(join(src, rel), join(d, rel)); }
-  return d;
-}
-const allText = (dir: string): Record<string, string> => {
-  const out: Record<string, string> = {};
-  const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); statSync(p).isDirectory() ? walk(p) : (out[p] = readFileSync(p, "utf8")); } };
-  walk(dir); return out;
-};
-
-test("sync to the target ladder leaves NO live-only price in any copy, a second run changes nothing, and going back restores the files exactly", () => {
-  const game = GAMES.find((g) => existsSync(join(ROOT, g, "packages/shared/src/pricing.ts")));
-  if (!game) return;
-  const d = fixtureFrom(game);
-  const original = allText(d);
-  const live = onlyIn(list, "live");
-  const first = syncGame(d, "target", { write: true, list });
-  expect(first.changes.length).toBeGreaterThanOrEqual(3);
-  expect(first.problemsAfter).toEqual([]);
-  // independent scan: every file in the fixture, not only the ones the tool knows
-  for (const [p, t] of Object.entries(allText(d))) for (const n of live) expect([p, new RegExp(`(?<![\\d,.])(${withComma(n)}|${n})(?!\\d)`).test(t)]).toEqual([p, false]);
-  const second = syncGame(d, "target", { write: true, list });
-  expect(second.changes).toEqual([]);
-  syncGame(d, "live", { write: true, list });
-  expect(allText(d)).toEqual(original);
-});

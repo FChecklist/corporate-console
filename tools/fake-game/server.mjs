@@ -12,7 +12,7 @@ const err = (status, error, message, extra = {}) => new Response(JSON.stringify(
 const ok = (body) => new Response(JSON.stringify({ ok: true, ...body }), { status: 200, headers: { ...H, ...CORS } });
 const KEY_LIFE_MS = 2 * 3600_000, HANDOFF_KEY_MS = 16 * 3600_000;
 
-const SIZES = [[50, 149300, null, false], [100, 238700, null, false], [250, 348100, null, false], [500, 469300, null, false], [750, 587900, null, false], [1000, 708300, null, false], [2500, 1179100, null, false], [5000, 1768300, null, false], [10000, 2947700, null, false]];
+const SIZES = [[100, 239900, 3400, false], [250, 349900, 5100, false], [500, 469900, 6700, false], [750, 589900, 8400, false], [1000, 709900, 10100, false], [2500, 1179900, 16900, false], [5000, 1769900, 25300, false], [10000, 2949900, 42100, false]];
 
 /** state = { game, name, origin, persona, nowMs, keys:[{kid,x}], people:Map, games:[], roles:[], invites:[], billing:[] } */
 export function newGame({ game = "bingo", name = "Corporate Bingo", persona = "normal", origin, keys, nowMs = Date.now(), freeDemoCap = 10, gameVersion = "1.3.2" }) {

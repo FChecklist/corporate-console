@@ -9,5 +9,6 @@
 | `CONSOLE_ORIGIN` | the console's own address | `wrangler.toml` | plain variable |
 | `GAME_ORIGINS` | the six game addresses the console may address | `wrangler.toml` | plain variable |
 | `MAIL_FROM` | sender shown on sign-in mails | `wrangler.toml` | plain variable |
+| `TABLE_PREFIX` | `""` = own database; `"con_"` = same four tables inside an existing database | `wrangler.toml` and `apps/cron/wrangler.toml` | plain variable |
 | `TEST_MODE` | `1` only on a test copy: demo logins demo1/2/3@xyz.in with code 123456, no mail | test copy only | plain variable |
 | `DB` | the console's D1 database `corporate-console` | `wrangler.toml` binding | binding |

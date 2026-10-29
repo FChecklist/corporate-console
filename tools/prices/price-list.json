@@ -1,15 +1,7 @@
 {
-  "_about": "THE one price list. Every game's pricing.ts, common.js and price pages are checked against it (parity.test.ts) and rewritten from it (sync.mjs). 'live' is what the games charge today; 'target' is the new ladder of the master console (taken from data/console-mockup-v2/index.html line 500). 'applied' says per game which of the two the game must show right now; a game is switched to the target only after the owner says go (prices of live games change).",
-  "sizes": [50, 100, 250, 500, 750, 1000, 2500, 5000, 10000],
-  "live": {
-    "inr": { "100": 2399, "250": 3499, "500": 4699, "750": 5899, "1000": 7099, "2500": 11799, "5000": 17699, "10000": 29499 },
-    "usd": { "100": 34, "250": 51, "500": 67, "750": 84, "1000": 101, "2500": 169, "5000": 253, "10000": 421 }
-  },
-  "target": {
-    "inr": { "50": 1493, "100": 2387, "250": 3481, "500": 4693, "750": 5879, "1000": 7083, "2500": 11791, "5000": 17683, "10000": 29477 },
-    "usd": "USD_PRICE_PENDING",
-    "_usd_note": "Decision D3 is open. Dollar prices of the new ladder are NOT invented here. Until the owner fills them in, a game keeps its current dollar prices for the sizes it has today and the 50-person size is not sold in dollars."
-  },
-  "applied": { "tambola": false, "bingo": false, "tictactoe": false, "snakesladders": false, "luckbychance": false, "luckydraw": false },
+  "_about": "THE one price list: TODAY'S prices, as the five games charge them (owner decision 9 Oct 2026, boss decision c of 27 Oct 2026). Rupees and US dollars, no GST, ending in 99 / whole dollars. Every game's pricing.ts and common.js is checked against this file by tests/prices.test.ts. There is no second ladder and no 50-person size.",
+  "sizes": [100, 250, 500, 750, 1000, 2500, 5000, 10000],
+  "inr": { "100": 2399, "250": 3499, "500": 4699, "750": 5899, "1000": 7099, "2500": 11799, "5000": 17699, "10000": 29499 },
+  "usd": { "100": 34, "250": 51, "500": 67, "750": 84, "1000": 101, "2500": 169, "5000": 253, "10000": 421 },
   "freeDemo": { "tambola": 10, "bingo": 10, "tictactoe": 5, "snakesladders": 5, "luckbychance": 5, "luckydraw": 5 }
 }

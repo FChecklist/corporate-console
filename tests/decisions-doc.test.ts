@@ -23,8 +23,8 @@ test("every decision of the build plan is in the sheet (when the plan file is pr
   for (const id of ids) expect(doc.includes(`| ${id} |`)).toBe(true);
 });
 
-test("D3 is marked open with a placeholder and no invented dollar price", () => {
+test("D3 says: keep today's prices only, no second list, no placeholder", () => {
   const d3 = rows.find((r) => r.startsWith("| D3 |"))!;
-  expect(d3).toContain("USD_PRICE_PENDING");
-  expect(/\$\s?\d|US\$\s?\d/.test(doc)).toBe(false);
+  expect(d3).toContain("TODAY'S prices only");
+  expect(doc).not.toMatch(/USD_PRICE_PENDING|1,?493|50-person/);
 });

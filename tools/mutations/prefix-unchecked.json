@@ -1,0 +1,1 @@
+{ "id": "prefix-unchecked", "repo": ".", "file": "functions/_lib/tables.ts", "find": "if (!PREFIX_RE.test(p)) throw", "replace": "if (false) throw", "test": "tests/table-prefix.test.ts", "note": "any text is accepted as a prefix" }

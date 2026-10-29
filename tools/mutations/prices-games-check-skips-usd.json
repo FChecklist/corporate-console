@@ -1,0 +1,1 @@
+{ "id": "prices-games-check-skips-usd", "repo": ".", "file": "tools/prices/lib.mjs", "find": "if (list.usd[n] !== usd)", "replace": "if (false)", "test": "tests/prices.test.ts", "note": "a game with a wrong dollar price would pass" }

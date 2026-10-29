@@ -33,7 +33,7 @@ Roles per game by e-mail (invite, accept with the invited mailbox, remove), keys
 
 1. Baselines per repo (needs the lock), full-suite runs of the four game worktrees, real-Chrome sweeps of the mockups and the shell (need the lock).
 2. W6 owner sign-off of the mockups (after my sweep), then W37 wizard (six steps, per game adapters, golden payloads from each game's real `validateCfg`), W38-W42 screens, W43 copy pass, W46-W49 rig, sims, security review, W50-W53 deploy tooling / runbook / go-live.
-3. Per-game parity (W14-W21 log, trail, retention, upgrade, free caps, drafts rule, preview, public notes, 50-person size), Luck port, Lucky Draw, IT Services (W22), showcase (W44/W45), Tambola's housie move (W23).
+3. Per-game parity (W14-W21 log, trail, retention, upgrade, free caps, drafts rule, preview, public notes), Luck port, Lucky Draw, IT Services (W22), showcase (W44/W45), Tambola's housie move (W23).
 4. Owner decisions listed in `CONSOLE_DECISIONS.md` (prices, Cloudflare plan, US$ ladder, lawyer).
 
 ## Known gaps found while building (so nobody is surprised)

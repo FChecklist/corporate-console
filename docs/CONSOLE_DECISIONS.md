@@ -8,7 +8,7 @@ One page, plain words. "Decided" means the owner has said so. "Default" means th
 |---|---|---|---|
 | D1 | Show the participant card "games you are invited to"? | **Yes.** Built only from e-mails the organizer typed on the guest list. Only a code made from the e-mail is kept, and it is erased 20 hours after the game. | W17, W42 |
 | D2 | When are login e-mails deleted, and do invoices keep the payer e-mail? | **365 days after the LAST game or sign-in** that e-mail took part in. Invoices keep the payer details because the law requires it. | W9, W16 |
-| D3 | US dollar prices and GST | **Open.** Only the rupee ladder is used for now. The dollar price is a clearly marked placeholder (`USD_PRICE_PENDING`) that the owner fills in. No dollar price is invented. | W5, W37, W41 |
+| D3 | Prices and GST | **Decided (27 Oct 2026, boss for the owner): keep TODAY'S prices only**, rupees and US dollars, no GST, one price list (`tools/prices/price-list.json`). There is no second price list and no extra size. | W5, W37, W41 |
 | D4 | Free demos per person | **Unlimited free demos stay**, as today. | W18, W37 |
 | D5 | Lucky Draw timing | **Built before the console goes live**, so six game tiles launch together. | W32, W33 |
 | D6 | Where Tambola's four modes sit | **Under "More" on Step 2.** Default: "starts by itself, game calls the numbers". | W18, W37 |

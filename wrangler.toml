@@ -1,0 +1,16 @@
+# Settings of the console's Cloudflare Pages project (nothing here is created until the owner says go). Secrets are NEVER written here: only their names, in config/SECRETS_NAMES.md.
+name = "corporate-console"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "corporate-console"
+database_id = "REPLACE_AFTER_THE_DATABASE_EXISTS"
+
+[vars]
+CONSOLE_ORIGIN = "https://console.corporatetambola.com"
+GAME_ORIGINS = '{"tambola":"https://housie.corporatetambola.com","bingo":"https://bingo.corporatetambola.com","tictactoe":"https://tictactoe.corporatetambola.com","snakesladders":"https://snakes.corporatetambola.com","luckbychance":"https://luck.corporatetambola.com","luckydraw":"https://lucky.corporatetambola.com"}'
+# THE ONE LINE: "" = the console has its own database. If the account has no free database left, point "DB" above at an existing database,
+# set a prefix such as "con_" here AND in apps/cron/wrangler.toml, and apply the output of `bun tools/prefix-migration.mjs con_`.
+TABLE_PREFIX = ""
