@@ -1,0 +1,1 @@
+{"id": "flow-pack-sample-flag", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "if (!G.sample) frame.append(", "replace": "if (false) frame.append(", "test": "tests/flow-pack.test.ts", "note": "flow-pack-sample-flag"}

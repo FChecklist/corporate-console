@@ -1,4 +1,4 @@
-// FALSIFIED BY: flow-pack-game-rule-leak, flow-pack-needs-descriptor, flow-pack-wait-column-always, flow-pack-share-no-gameid, flow-pack-board-title
+// FALSIFIED BY: flow-pack-game-rule-leak, flow-pack-needs-descriptor, flow-pack-wait-column-always, flow-pack-share-no-gameid, flow-pack-board-title, flow-pack-no-board-flag, flow-pack-no-claims-flag, flow-pack-sample-flag
 // The shared new organizer flow (packages/game-pack/zc-flow.js, opened with ?flow=new in a game's console). The behaviour tests live in each game (it needs that game's own prize table and ticket maker);
 // here: the pack stands on its own with no game descriptor, hands the game's descriptor words through, and keeps the language guide.
 import { test, expect } from "bun:test";
@@ -69,4 +69,17 @@ test("the retro board uses the game's own title and size from its descriptor", (
   expect(win.document.querySelector(".zf-retro-title").textContent).toContain("XYZ");
   expect(win.document.getElementById("zf-discs").children.length).toBe(20);
   expect(win.document.getElementById("zf-discs").getAttribute("style")).toContain("repeat(5, 1fr)");
+});
+
+test("a game with no numbered ticket, board or claims says so in its descriptor: no retro board, no claims count, and the preview waits (Coming soon); one ticket means no ticket choice", () => {
+  const win = page('window.ZFLOW_GAME = { tickets: [1], sample: false, board: false, claims: false };');
+  const F = win.ZFLOW; const d = win.document;
+  F.state.eid = "E1"; F.state.raw = { startMs: Date.now() + 3600000 }; F.state.info = { published: true, paid: true, startMs: Date.now() + 3600000 }; F.state.view = "dash"; F.draw();
+  expect(d.getElementById("zf-retro")).toBe(null);
+  expect(d.getElementById("zf-claimed")).toBe(null);
+  expect(d.getElementById("zf-sharecard")).not.toBe(null);
+  F.state.view = "steps"; F.state.open = 5; for (const n of [1, 2, 3, 4]) F.state.done[n] = true; F.draw();
+  expect(d.getElementById("zf-preview").textContent).toContain("Coming soon");
+  F.state.open = 3; F.draw();
+  expect(d.querySelector("[data-tix]")).toBe(null);
 });

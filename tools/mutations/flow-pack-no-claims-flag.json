@@ -1,0 +1,1 @@
+{"id": "flow-pack-no-claims-flag", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "if (G.claims) sec.append(el(\"h3\", { text: \"Tickets claimed\" })", "replace": "sec.append(el(\"h3\", { text: \"Tickets claimed\" })", "test": "tests/flow-pack.test.ts", "note": "flow-pack-no-claims-flag"}
