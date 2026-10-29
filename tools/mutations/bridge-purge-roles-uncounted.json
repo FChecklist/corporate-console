@@ -1,0 +1,1 @@
+{"id": "bridge-purge-roles-uncounted", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "return ok({ removed: n + rolesErased, rolesErased });", "replace": "return ok({ removed: n + rolesErased, rolesErased: 0 });", "test": "tests/bridge.test.ts", "note": "Close my account would not report the role rows erased"}

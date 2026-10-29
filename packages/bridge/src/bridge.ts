@@ -41,7 +41,7 @@ export interface Adapter<Env = any> {
   billing(env: Env, a: { org: string | null; roles: RoleRow[]; cursor: string | null; fromMs: number | null; toMs: number | null }): Promise<{ rows: any[]; credit: any | null; next: string | null }>;
   invitedCards(env: Env, emailHash: string): Promise<any[]>;
   purgePerson(env: Env, emailHash: string): Promise<number>;
-  live(env: Env): Promise<{ playing: number; startingWithin60: number; tournamentsRunning?: number }>;
+  live(env: Env): Promise<{ playing: number; startingWithin60: number; tournamentsRunning?: number; story?: string; counts?: { joined?: number; waiting?: number; done?: number; total?: number } }>;
   capabilities(env: Env): Promise<{ sizes: any[]; freeDemoCap: number; currencies: string[]; features: Record<string, boolean>; limits: { drafts: number }; options?: Record<string, unknown> }>;
   // mail and sealing
   sendRoleInvite(env: Env, o: { to: string; eid: string; role: "host" | "cohost"; gameName: string }): Promise<void>;
@@ -162,8 +162,8 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
     const r = await assertion(body.assertion, "purge"); if ("res" in r) return r.res;
     let n = await ad.purgePerson(env, r.pl.sub);
     for (const rr of await rolesOf(r.pl.sub)) await ad.revokeKeys(env, "r:" + rr.roleId);
-    n += (await db.prepare("DELETE FROM game_role WHERE email_hash=?").bind(r.pl.sub).run()).meta.changes;
-    return ok({ removed: n });
+    const rolesErased = (await db.prepare("DELETE FROM game_role WHERE email_hash=?").bind(r.pl.sub).run()).meta.changes;
+    return ok({ removed: n + rolesErased, rolesErased });
   }
 
   if (req.method === "POST" && path === "/api/console/role") {
@@ -224,7 +224,7 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
     const kind: KeyKind = a.kind === "master" ? "master" : a.kind === "host" ? "host" : "cohost";
     const t = randHex(24);
     await db.prepare("INSERT INTO console_handoff(token_hash,eid,kind,org,created_by,expires_ms) VALUES(?,?,?,?,?,?)").bind(await sha256hex("handoff|" + t), eid, kind, org, a.createdBy || "c:?", nowMs + HANDOFF_LINK_MS).run();
-    return ok({ url: `${aud}/signin.html?t=${t}&go=console&e=${eid}`, expiresMs: nowMs + HANDOFF_LINK_MS });
+    return ok({ url: `${aud}/signin.html?t=${t}&go=console&e=${eid}${isNew ? "" : "&to=" + body.target}`, expiresMs: nowMs + HANDOFF_LINK_MS }); // the page asked for travels in the address, so the game opens that page and not always the organizer screen
   }
   if (req.method === "POST" && path === "/api/console/handoff/redeem") {
     if (!body || typeof body.t !== "string" || !/^[0-9a-f]{48}$/.test(body.t)) return err(401, "expired", "This link has run out. Please open the game again from your console.");

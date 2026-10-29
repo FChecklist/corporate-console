@@ -83,3 +83,11 @@ Success: `{"ok": true, ...}`. Failure: `{"ok": false, "error": "<code>", "messag
 3. `paidBy: link` appears for payments made through a shared pay link.
 4. A US dollar price is in `sizes[].usdMinor`; `null` only if a game has no dollar price for a size (today every size has one).
 5. Luck by Chance must first take the Tambola hardening port; its bridge comes second.
+
+## 8. Addendum of 29 October 2026 (all fields OPTIONAL; contract stays v1; the 40 original cases pass unchanged)
+
+1. `POST /api/console/handoff`: the optional target `new` ("Start a new game", see section 4) and the address now ends `&to=<target>` (organizer, host, big, tournament) so the game's sign-in page can open the page that was asked for instead of always the Organizer screen. A game that ignores `to` keeps working as before.
+2. `GET /api/console/capabilities`: optional `previewUrl` = `/screenview/` (the path where the game serves the Player's screen view; present only when `features.preview` is true).
+3. `GET /api/console/live`: optional `story` (one plain sentence up to 160 letters, for example "Running. 30 of 75 called.") and `counts` (`joined`, `waiting`, `done`, `total`: whole numbers). Counts only; never a name.
+4. `POST /api/console/purge-email`: optional `rolesErased` (how many Host / Co-host rows were erased). Close my account in the console reports it.
+5. `POST /api/console/games`: optional `roleId` on an invitation row (section 4).

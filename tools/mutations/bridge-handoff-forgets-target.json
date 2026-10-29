@@ -1,0 +1,1 @@
+{"id": "bridge-handoff-forgets-target", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "${isNew ? \"\" : \"&to=\" + body.target}", "replace": "", "test": "tests/bridge.test.ts", "note": "the hand-off address no longer names the page asked for"}

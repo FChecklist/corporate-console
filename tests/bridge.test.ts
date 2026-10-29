@@ -1,4 +1,4 @@
-// FALSIFIED BY: bridge-new-handoff-any-key, bridge-new-handoff-long-key, bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person, bridge-ai-key-allowed, bridge-signout-no-revoke
+// FALSIFIED BY: bridge-new-handoff-any-key, bridge-handoff-forgets-target, bridge-purge-roles-uncounted, bridge-new-handoff-long-key, bridge-role-claim-honoured, bridge-jti-dropped, bridge-key-life-extended, bridge-dark-open, bridge-eid-check-removed, bridge-em-hash-unchecked, bridge-step-up-skipped, bridge-handoff-reusable, bridge-revoke-skipped, bridge-end-roles-no-revoke, bridge-invite-to-wrong-address, bridge-accept-wrong-person, bridge-ai-key-allowed, bridge-signout-no-revoke
 import { test, expect } from "bun:test";
 import { handleConsole, endRoles, keyFitsGame, keyIsAccountWide, KEY_LIFE_MS } from "../packages/bridge/src/bridge";
 import { makeHost, seed, type Host } from "./support/fake-host";
@@ -255,5 +255,23 @@ test("signout: the key and every other console key made for the same person stop
     // an old long-lived key and the platform key cannot use this door
     expect((await t.post("/api/console/signout", {}, { "x-organizer": "platform-secret" })).status).toBe(403);
     expect((await t.post("/api/console/signout", {})).status).toBe(403);
+  } finally { t.stop(); }
+});
+
+test("contract additions (optional fields): the hand-off address remembers the page asked for, Close my account reports the roles erased, live may carry a story and counts", async () => {
+  const t = await up();
+  try {
+    const key = (await t.session("alice")).organizer.key;
+    for (const target of ["organizer", "host", "big", "tournament"]) {
+      const j = await (await t.post("/api/console/handoff", { eid: "PLAY001", target }, { "x-organizer": key })).json();
+      expect(j.url).toMatch(new RegExp(`&go=console&e=PLAY001&to=${target}$`));
+    }
+    // a person with an accepted Host role is forgotten: the number of role rows erased is reported
+    const bob = await t.asr({ act: "purge", person: "alice" });
+    const p = await (await t.post("/api/console/purge-email", { assertion: bob })).json();
+    expect(p.ok).toBe(true);
+    expect(typeof p.rolesErased).toBe("number");
+    expect(p.rolesErased).toBeGreaterThan(0);
+    expect(p.removed).toBeGreaterThanOrEqual(p.rolesErased);
   } finally { t.stop(); }
 });

@@ -46,11 +46,11 @@ export async function handle(S, req) {
 
   if (req.method === "GET" && p === "/api/console/capabilities") {
     const old = S.persona === "old";
-    return ok({ bridge: 1, schema: old ? 1 : 2, game: S.game, gameName: S.name, gameVersion: S.gameVersion, origin: S.origin, kids: S.keys.map((k) => k.kid), sizes: SIZES.map(([pack, inrMinor, usdMinor]) => ({ pack, inrMinor, usdMinor, free: false })).concat([{ pack: S.freeDemoCap, inrMinor: 0, usdMinor: 0, free: true }]), freeDemoCap: S.freeDemoCap, currencies: ["INR"], features: { roles: true, log: !old, upgrade: !old, preview: !old, trail: !old, invited: true }, limits: { drafts: 10 }, options: {} });
+    return ok({ bridge: 1, schema: old ? 1 : 2, game: S.game, gameName: S.name, gameVersion: S.gameVersion, origin: S.origin, kids: S.keys.map((k) => k.kid), sizes: SIZES.map(([pack, inrMinor, usdMinor]) => ({ pack, inrMinor, usdMinor, free: false })).concat([{ pack: S.freeDemoCap, inrMinor: 0, usdMinor: 0, free: true }]), freeDemoCap: S.freeDemoCap, currencies: ["INR"], features: { roles: true, log: !old, upgrade: !old, preview: !old, trail: !old, invited: true }, limits: { drafts: 10 }, ...(old ? {} : { previewUrl: "/screenview/" }), options: {} });
   }
   if (req.method === "GET" && p === "/api/console/live") {
     const playing = S.games.filter((g) => g.status === "playing").length, soon = S.games.filter((g) => g.status === "ready" && g.startMs != null && g.startMs - now <= 3600_000 && g.startMs - now >= -1000).length;
-    return ok({ game: S.game, playing, startingWithin60: soon, ...(S.game === "tictactoe" ? { tournamentsRunning: 0 } : {}) });
+    return ok({ game: S.game, playing, startingWithin60: soon, story: playing ? "Running." : soon ? "Starts soon." : "Nothing is playing.", counts: { joined: 0, waiting: 0 }, ...(S.game === "tictactoe" ? { tournamentsRunning: 0 } : {}) });
   }
   if (req.method === "POST" && p === "/api/console/session") {
     if (!body || typeof body.assertion !== "string") return err(400, "invalid", "The request is not complete.");
@@ -69,7 +69,7 @@ export async function handle(S, req) {
     if (!body || typeof body.assertion !== "string") return err(400, "invalid", "The request is not complete.");
     const r = await asr(body.assertion, act); if (r.err) return r.err;
     const sub = r.pl.sub;
-    if (act === "purge") { const n0 = S.people.size + S.roles.length + S.invites.length; S.people.delete(sub); S.roles = S.roles.filter((x) => x.sub !== sub); S.invites = S.invites.filter((x) => x.sub !== sub); return ok({ removed: n0 - (S.people.size + S.roles.length + S.invites.length) }); }
+    if (act === "purge") { const n0 = S.people.size + S.roles.length + S.invites.length; const r0 = S.roles.length; S.people.delete(sub); S.roles = S.roles.filter((x) => x.sub !== sub); S.invites = S.invites.filter((x) => x.sub !== sub); return ok({ removed: n0 - (S.people.size + S.roles.length + S.invites.length), rolesErased: r0 - S.roles.length }); }
     if (act === "invited") return ok({ cards: S.invites.filter((x) => x.sub === sub).map((x) => { const g = S.games.find((y) => y.eid === x.eid); return { game: S.game, eid: x.eid, name: g?.name ?? "Game", startMs: g?.startMs ?? null, link: x.link }; }) });
     if (act === "billing") {
       const mine = S.billing.filter((b) => b.sub === sub).sort((a, b) => b.tsMs - a.tsMs);
@@ -133,7 +133,7 @@ export async function handle(S, req) {
     const g = S.games.find((x) => x.eid === body?.eid);
     if (!g || !(k.kind === "master" ? g.orgSub === k.sub : k.eid === g.eid)) return err(403, "forbidden", "You do not have a role in this game.");
     const t = hex(24); S.handoffs.set(t, { sub: k.sub, kind: k.kind, eid: g.eid, expiresMs: now + 60_000 });
-    return ok({ url: `${S.origin}/signin.html?t=${t}&go=console&e=${g.eid}`, expiresMs: now + 60_000 });
+    return ok({ url: `${S.origin}/signin.html?t=${t}&go=console&e=${g.eid}&to=${body.target}`, expiresMs: now + 60_000 });
   }
   if (req.method === "POST" && p === "/api/console/handoff/redeem") {
     const h = body && S.handoffs.get(body.t);
