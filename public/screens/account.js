@@ -33,7 +33,7 @@ export async function renderAccount(outlet, ctx) {
   const box = el("div", { class: "box", id: "acct-close" });
   const signOut = async (everywhere) => {
     const r = await api.signOut({ everywhere });
-    if (!r.ok) { msg.classList.add("bad"); msg.textContent = "We could not sign you out just now. Please try again."; return; } // never pretend
+    if (!r.ok) { msg.classList.add("bad"); msg.textContent = "The system could not sign you out just now. Please try again."; return; } // never pretend
     ctx.onSignedOut && ctx.onSignedOut();
   };
   const warn = el("div", { id: "acct-warn" });
@@ -42,10 +42,10 @@ export async function renderAccount(outlet, ctx) {
     if (!(await confirmPanel(box, "Close your account now? This cannot be undone.", "Yes, close it", "No"))) return;
     msg.textContent = "One moment."; msg.classList.remove("bad");
     const r = await api.closeAccount();
-    if (!r.ok && r.error === "console") { msg.classList.add("bad"); msg.textContent = "We could not close the account just now. Nothing was changed. Please try again."; return; }
+    if (!r.ok && r.error === "console") { msg.classList.add("bad"); msg.textContent = "The system could not close the account just now. Nothing was changed. Please try again."; return; }
     if (r.ok) { ctx.onSignedOut && ctx.onSignedOut(); return; }
     msg.classList.add("bad");
-    msg.textContent = r.failed && r.failed.length ? `${r.failed.map((id) => names[id] || id).join(", ")} did not answer. You are still signed in; please try again. (Games that did answer have already forgotten your e-mail.)` : "We could not close the account just now. Please try again.";
+    msg.textContent = r.failed && r.failed.length ? `${r.failed.map((id) => names[id] || id).join(", ")} did not answer. You are still signed in; please try again. (Games that did answer have already forgotten your e-mail.)` : "The system could not close the account just now. Please try again.";
     toast("Your account is still open.");
   };
   box.append(el("h2", { text: "Close my account" }), el("p", { text: CLOSE_WORDS }), warn,
@@ -53,7 +53,7 @@ export async function renderAccount(outlet, ctx) {
   outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Account" }), el("p", { class: "lead", id: "acct-email", text: ctx.email || "" }),
     el("div", { class: "account" },
       el("div", { class: "box" }, el("h2", { text: "Sign out" }), el("div", { class: "btns" }, button("Sign out", { main: true, onclick: () => signOut(false) }), button("Sign out on every device", { onclick: () => signOut(true) }))),
-      el("div", { class: "box", id: "acct-kept" }, el("h2", { text: "What we keep, and for how long" }), el("dl", { class: "kept" }, KEPT.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })]))),
+      el("div", { class: "box", id: "acct-kept" }, el("h2", { text: "What the system keeps, and for how long" }), el("dl", { class: "kept" }, KEPT.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })]))),
       el("div", { class: "box", id: "acct-legal" }, el("h2", { text: "Legal" }), el("div", { class: "btns" }, LEGAL.map(([t, path]) => el("a", { class: "btn sm", href: (ctx.games?.[0]?.origin || "") + path, target: "_blank", rel: "noopener", text: t })))),
       box, msg))));
   // what closing would leave behind: filled in as soon as the games answer

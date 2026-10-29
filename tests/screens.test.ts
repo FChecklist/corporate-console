@@ -101,12 +101,12 @@ test("My games: the seven status words are exactly the console's, each card has 
     expect(cards.length).toBeGreaterThan(9);
     const tam = cards.filter((c) => c.dataset.game === "tambola");
     const statusOf = (eid: string) => tam.find((c) => c.dataset.eid === eid).querySelector(".chip").textContent;
-    expect(statusOf("DRAFT01")).toBe("Draft"); expect(statusOf("WAIT001")).toBe("Waiting for payment"); expect(statusOf("READY01")).toBe("Ready"); expect(statusOf("PLAY001")).toBe("Playing now");
-    expect(statusOf("DONE001")).toBe("Finished"); expect(statusOf("CANC001")).toBe("Cancelled"); expect(statusOf("NOST001")).toBe("Did not start");
-    expect(Object.values(STATUS_TEXT)).toEqual(["Draft", "Waiting for payment", "Ready", "Playing now", "Finished", "Cancelled", "Did not start"]);
+    expect(statusOf("DRAFT01")).toBe("Draft"); expect(statusOf("WAIT001")).toMatch(/^Published, payment pending|Payment pending, start time passed$/); expect(statusOf("READY01")).toMatch(/^Published and paid|Published, free game$/); expect(statusOf("PLAY001")).toBe("Live now");
+    expect(statusOf("DONE001")).toBe("Completed"); expect(statusOf("CANC001")).toBe("Cancelled"); expect(statusOf("NOST001")).toBe("Payment pending, start time passed");
+    expect(Object.values(STATUS_TEXT)).toEqual(["Draft", "Waiting for payment", "Ready", "Playing now", "Finished", "Cancelled", "Did not start"]); // the console's own words are kept for the filters
     for (const c of cards) expect(c.querySelector(".role")!.textContent).toMatch(/^(Organizer|Host|Co-host)$/);
     const names = (eid: string) => [...tam.find((c) => c.dataset.eid === eid).querySelectorAll("button, a.btn")].map((b: any) => b.textContent);
-    expect(names("DRAFT01")).toEqual(["Open", "See what players see", "Make a copy", "Delete draft"]);
+    expect(names("DRAFT01")).toEqual(["Open", "Publish", "See what players see", "Make a copy", "Delete draft"]);
     expect(names("READY01")).toEqual(["Open", "See what players see", "Make a copy"]);
     expect(tam.find((c) => c.dataset.eid === "BOBS001").querySelector(".role")!.textContent).toBe("Host");
     expect(names("BOBS001")).toEqual(["Open", "See what players see"]); // a Host cannot copy the organizer's game
@@ -135,10 +135,10 @@ test("My games: Delete draft asks Yes/No first, then really deletes in the game;
     expect(w.states.tambola.games.some((g: any) => g.eid === "DRAFT01")).toBe(false);
     const pick = (v: string) => { const i = [...o.querySelectorAll('input[name="mf"]')].find((x: any) => x.value === v) as any; i.checked = true; i.dispatchEvent(new win.Event("change", { bubbles: true })); };
     pick("finished");
-    await until(() => [...o.querySelectorAll(".gcard .chip")].every((c: any) => ["Finished", "Cancelled", "Did not start"].includes(c.textContent)));
+    await until(() => [...o.querySelectorAll(".gcard .chip")].every((c: any) => ["Completed", "Cancelled", "Payment pending, start time passed"].includes(c.textContent)));
     expect(o.querySelectorAll(".gcard").length).toBeGreaterThan(0);
     pick("coming");
-    await until(() => [...o.querySelectorAll(".gcard .chip")].every((c: any) => !["Finished", "Cancelled", "Did not start"].includes(c.textContent)));
+    await until(() => [...o.querySelectorAll(".gcard .chip")].every((c: any) => !["Completed", "Cancelled", "Payment pending, start time passed"].includes(c.textContent)));
     const g = (status: string) => ({ status });
     expect(filterGames([g("draft"), g("finished"), g("playing"), g("cancelled")], "coming").map((x: any) => x.status)).toEqual(["draft", "playing"]);
   } finally { w.stop(); }

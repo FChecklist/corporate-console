@@ -134,7 +134,7 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
       .bind(eh, await sealText(env, email), await sha256hex(`code|${env.SESSION_PEPPER}|${eh}|${code}`), await sha256hex("link|" + link), now + CODE_TTL_MS, now, now).run();
     if (!demo) {
       try { await sendMail(env, email, `Your sign-in code is ${code}`, `Your code is ${code}. It works for 10 minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf you did not ask for this, you can ignore this e-mail.`); }
-      catch { return fail(502, "mail", "We could not send the e-mail. Please try again in a minute."); }
+      catch { return fail(502, "mail", "The system could not send the e-mail. Please try again in a minute."); }
     }
     return json(200, OK_REQUEST);
   }

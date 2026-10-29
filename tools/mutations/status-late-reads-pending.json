@@ -1,0 +1,1 @@
+{"id": "status-late-reads-pending", "repo": ".", "file": "public/core/status.js", "find": "return late ? \"overdue\" : \"pending\";", "replace": "return \"pending\";", "test": "tests/status-matrix.test.ts", "note": "status-late-reads-pending"}

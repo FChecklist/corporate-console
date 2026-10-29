@@ -170,3 +170,6 @@ body.has-tabbar .updatebar { bottom: 92px; }
   .btns .btn { flex: 1 1 100%; }
   .page h1 { font-size: 26px; }
 }
+.gid { margin: 2px 0; font-size: 14px; opacity: .85; }
+.banner2 { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--soft, #eef2fb); font-size: 15px; line-height: 1.4; }
+.who { margin: 6px 0; font-size: 14px; opacity: .9; }

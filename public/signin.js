@@ -9,6 +9,9 @@ go.addEventListener("click", async () => {
     if (r.ok) { location.replace("/"); return; }
     const j = await r.json().catch(() => ({}));
     msg.textContent = j.message || "That link has run out. Please ask for a new one.";
-  } catch { msg.textContent = "We could not reach the server. Please try again."; }
+  } catch { msg.textContent = "The system could not reach the server. Please try again."; }
   go.disabled = false;
 });
+
+// the version and release time, on this screen too
+fetch("/version.json").then((r) => r.json()).then((v) => { if (v && v.version && v.releasedAtIST) document.getElementById("version-line").textContent = `Version ${v.version}, released ${v.releasedAtIST}`; }).catch(() => {});

@@ -70,7 +70,7 @@ test("MC-06/07/17 My games: games that did not answer never read as 'No games ye
   const api: any = { capabilities: async () => [], byId: {}, listGames: async ({ onGame }: any = {}) => { calls++; if (onGame) onGame(slow); return { rows: [], failed: ["bingo"], off: [], results: [slow] }; } };
   const o = fresh();
   await renderMyGames(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "helper@acme.example" });
-  expect(o.textContent).toContain("We could not reach your games just now.");
+  expect(o.textContent).toContain("The system could not reach your games just now.");
   expect(o.textContent).not.toContain("No games yet");
   click(byText(o, "button", "Try again"));
   await until(() => calls >= 2);
@@ -93,7 +93,7 @@ test("MC-05 a hand-over that fails says why in plain words", async () => {
   expect(openError({ error: "no-key" }, "Bingo")).toBe("Please sign in again.");
   expect(openError({ error: "unreachable" }, "Bingo")).toBe("Bingo is slow, try again.");
   expect(openError({ error: "not-on-console" }, "Bingo")).toBe("Bingo is not open on the console yet.");
-  expect(openError({ error: "refused" }, "Bingo")).toBe("We could not open that game just now. Please try again.");
+  expect(openError({ error: "refused" }, "Bingo")).toBe("The system could not open that game just now. Please try again.");
 });
 
 test("MC-08 a game whose console is not switched on yet (404) is 'not on the console yet', not slow: it stays out of the slow banner, and a hand-over to it says so", async () => {

@@ -20,7 +20,7 @@ export async function renderPlayerView(outlet, ctx, game, eid) {
   const caps = (await api.capabilities().catch(() => [])).find((c) => c.game === game);
   if (!game || !eid || !caps || !caps.ok || !caps.caps.features?.preview) { stage.append(emptyNote("This game cannot show that yet.", "Everything else works as usual.")); return; }
   const r = await api.preview(game, eid);
-  if (!r.ok) { stage.append(emptyNote("We could not open the preview.", "Please go back and try again.")); return; }
+  if (!r.ok) { stage.append(emptyNote("The system could not open the preview.", "Please go back and try again.")); return; }
   function draw() {
     clear(stage);
     const sz = SIZES[mode], room = Math.max(280, Math.min(typeof innerWidth === "number" ? innerWidth - 80 : sz.w, 1000));

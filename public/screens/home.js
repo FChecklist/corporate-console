@@ -14,7 +14,7 @@ const svg = (d) => { const s = document.createElementNS("http://www.w3.org/2000/
 const door = (href, icon, title, text, main) => el("a", { class: "door" + (main ? " main" : ""), href }, svg(icon), el("b", { text: title }), el("span", { text }));
 
 /** the line a strip row shows under the game's name */
-export const rowNote = (g, names) => `${names[g.game] || g.game} · ${whenText(g.startMs)}`;
+export const rowNote = (g, names) => `${names[g.game] || g.game} · Game ID ${g.eid} · ${whenText(g.startMs)}`;
 
 export async function renderHome(outlet, ctx) {
   const { api, names, colors } = ctx;

@@ -1,0 +1,1 @@
+{"id": "status-banner-we", "repo": ".", "file": "public/core/status.js", "find": "case \"live\": return \"The game is live now. The participants are playing.\";", "replace": "case \"live\": return \"We are live now. The participants are playing.\";", "test": "tests/status-matrix.test.ts", "note": "status-banner-we"}

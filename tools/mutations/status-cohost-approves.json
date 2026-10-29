@@ -1,0 +1,1 @@
+{"id": "status-cohost-approves", "repo": ".", "file": "public/core/status.js", "find": "cohost: \"You help bring people. The organizer and the Hosts let in the people who are not on the list.\",", "replace": "cohost: \"You let in the people who are not on the list.\",", "test": "tests/status-matrix.test.ts", "note": "status-cohost-approves"}

@@ -44,7 +44,7 @@ export async function renderBilling(outlet, ctx) {
     el("div", { class: "btns" }, button("Pay", { main: true, sm: true, label: `Pay for ${g.name}`, onclick: () => openGame(ctx, g, "pay") }),
       button("Copy link for finance", { sm: true, label: `Copy a payment link for ${g.name} to send to your finance team`, onclick: async () => {
         const r = await api.payLink(g.game, g.eid);
-        if (!r.ok) return toast("We could not make the link just now. Please try again.");
+        if (!r.ok) return toast("The system could not make the link just now. Please try again.");
         await copyText(r.url, ctx); toast("Link copied. Whoever opens it can pay for this game. It works for 7 days.");
       } }))), colors[g.game] || "#0B3D91"))));
 

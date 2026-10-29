@@ -18,7 +18,7 @@ export function renderSignIn(outlet, ctx) {
   sendBtn.type = "submit";
   const form = el("form", { class: "zform", novalidate: true },
     el("div", { class: "field" }, el("label", { for: "si-email", text: "Your work e-mail" }), email),
-    el("label", { class: "opt" }, consent, el("span", { class: "t" }, el("b", { text: "I agree to the Terms of Use and the Privacy Policy." }), el("span", { text: "We send one code to this address. No password." }))),
+    el("label", { class: "opt" }, consent, el("span", { class: "t" }, el("b", { text: "I agree to the Terms of Use and the Privacy Policy." }), el("span", { text: "The system sends one code to this address. No password." }))),
     el("p", { class: "hintline" }, el("a", { href: terms, target: "_blank", rel: "noopener" }, "Read the Terms and the Privacy Policy")),
     sendBtn);
   const codeBox = el("input", { id: "si-code", inputmode: "numeric", autocomplete: "one-time-code", maxlength: "6", pattern: "[0-9]{6}", "aria-label": "The 6-digit code" });
@@ -52,7 +52,7 @@ export function renderSignIn(outlet, ctx) {
     sendBtn.disabled = true; resendBtn.disabled = true; say("Sending…"); // locked while it works: a second tap would make the first code useless
     const r = await api.auth.request(email.value.trim(), true);
     sendBtn.disabled = false;
-    if (!r.ok) { resendBtn.disabled = false; return say(r.json?.message || "We could not send the code. Please try again.", true); }
+    if (!r.ok) { resendBtn.disabled = false; return say(r.json?.message || "The system could not send the code. Please try again.", true); }
     say(""); form.classList.add("hide"); codeForm.classList.remove("hide"); codeBox.focus();
     outlet.querySelector("#si-sent").textContent = `${again ? "A new code" : "A code"} is on its way to ${email.value.trim()}. It works for 10 minutes (until ${clock(Date.now() + 10 * 60_000)}).`;
     lockResend();
@@ -70,5 +70,5 @@ export function renderSignIn(outlet, ctx) {
   });
 
   clear(outlet);
-  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page signin" }, el("h1", { text: "Sign in" }), el("p", { class: "lead", text: "Use your work e-mail. We send you a code. There is no password to remember." }), el("p", { id: "si-sent", class: "hintline", role: "status" }), msg, form, codeForm)));
+  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page signin" }, el("h1", { text: "Sign in" }), el("p", { class: "lead", text: "Use your work e-mail. The system sends you a code. There is no password to remember." }), el("p", { id: "si-sent", class: "hintline", role: "status" }), msg, form, codeForm)));
 }

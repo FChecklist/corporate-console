@@ -3,8 +3,9 @@
  "games": [
   {
    "id": "tambola",
-   "name": "Tambola",
+   "name": "Corporate Tambola",
    "short": "Tambola",
+   "newScreens": "/zc?flow=new",
    "accent": "#7A1C33",
    "freeCap": 10,
    "ready": true,
@@ -15,7 +16,7 @@
   },
   {
    "id": "bingo",
-   "name": "Bingo",
+   "name": "Corporate Bingo",
    "short": "Bingo",
    "accent": "#0B3D91",
    "freeCap": 10,
@@ -27,7 +28,7 @@
   },
   {
    "id": "tictactoe",
-   "name": "Tic-Tac-Toe",
+   "name": "Corporate Tic Tac Toe",
    "short": "Tic-Tac-Toe",
    "accent": "#1B6B4A",
    "freeCap": 10,
@@ -39,7 +40,7 @@
   },
   {
    "id": "snakesladders",
-   "name": "Snakes and Ladders",
+   "name": "Corporate Snakes and Ladders",
    "short": "Snakes and Ladders",
    "accent": "#A9741F",
    "freeCap": 10,
@@ -51,7 +52,7 @@
   },
   {
    "id": "luckbychance",
-   "name": "Luck by Chance",
+   "name": "Corporate Luck by Chance",
    "short": "Luck by Chance",
    "accent": "#6B3FA0",
    "freeCap": 10,
@@ -63,7 +64,7 @@
   },
   {
    "id": "luckydraw",
-   "name": "Lucky Draw",
+   "name": "Corporate Lucky Draw",
    "short": "Lucky Draw",
    "accent": "#C2570C",
    "freeCap": 10,

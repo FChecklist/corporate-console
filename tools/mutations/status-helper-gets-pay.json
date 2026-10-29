@@ -1,0 +1,1 @@
+{"id": "status-helper-gets-pay", "repo": ".", "file": "public/core/status.js", "find": "if (mine && (status === \"pending\" || status === \"overdue\")) out.push", "replace": "if ((status === \"pending\" || status === \"overdue\")) out.push", "test": "tests/status-matrix.test.ts", "note": "status-helper-gets-pay"}
