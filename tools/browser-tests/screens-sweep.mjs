@@ -25,6 +25,7 @@ const add = (w, theme, screen, name, v) => results.push({ w, theme, screen, name
 const SCREENS = [["home", "#/home"], ["mygames", "#/mygames"], ["create", "#/create"], ["billing", "#/billing"], ["account", "#/account"], ["view", "#/view/tambola/READY01"]];
 
 async function signIn(page) {
+  await fetch(info.origin + "/__reset");
   await page.goto(info.origin + "/", { waitUntil: "load" });
   await page.waitForSelector("#si-email");
   await page.fill("#si-email", info.email);
@@ -52,7 +53,8 @@ async function checks(page, w, theme, screen) {
   if (screen !== "signin") add(w, theme, screen, "the menu is exactly Home, My games, Create, Billing, Account", { ok: JSON.stringify(menu) === JSON.stringify(["Home", "My games", "Create", "Billing", "Account"]), detail: menu.join("|") });
   const design = await page.evaluate(() => document.documentElement.dataset.design);
   add(w, theme, screen, "design is right for this width", { ok: design === (w >= 900 ? "laptop" : "phone"), detail: `${design} at ${w}` });
-  const axe = await page.evaluate(async (src) => { if (!window.axe) { const s = document.createElement("script"); s.textContent = src; document.head.append(s); } const r = await window.axe.run(document, { runOnly: ["color-contrast"], resultTypes: ["violations"], exclude: [[".cgb"]] }); return r.violations.flatMap((v) => v.nodes.map((n) => `${n.target.join(" ")}: ${(n.any[0]?.message || "").slice(0, 80)}`)).slice(0, 5); }, axeSource).catch((e) => ["axe could not run: " + String(e).slice(0, 80)]);
+  if (!(await page.evaluate(() => !!window.axe))) await page.addScriptTag({ url: info.origin + "/__axe.js" });
+  const axe = await page.evaluate(async () => { const r = await window.axe.run(document, { runOnly: ["color-contrast"], resultTypes: ["violations"], exclude: [[".cgb"]] }); return r.violations.flatMap((v) => v.nodes.map((n) => `${n.target.join(" ")}: ${(n.any[0]?.message || "").slice(0, 80)}`)).slice(0, 5); }).catch((e) => ["axe could not run: " + String(e).slice(0, 80)]);
   add(w, theme, screen, "contrast (WCAG AA) has no violation", { ok: axe.length === 0, detail: axe.join("; ") });
 }
 
@@ -76,10 +78,9 @@ try {
           await page.screenshot({ path: join(out, `${screen}-${theme}-${w}.png`) });
         }
         if (theme === "light" && w >= 900) { // keyboard: Tab reaches the menu, focus is visible, Enter opens a screen
-          await page.evaluate(() => { location.hash = "#/home"; }); await settle(page, "home");
-          await page.evaluate(() => document.activeElement && document.activeElement.blur());
+          await page.evaluate(() => { location.hash = "#/home"; }); await page.reload({ waitUntil: "load" }); await settle(page, "home"); // a fresh load: Tab starts at the top of the page
           const seen = [];
-          for (let i = 0; i < 14; i++) { await page.keyboard.press("Tab"); seen.push(await page.evaluate(() => { const a = document.activeElement; if (!a) return ""; const cs = getComputedStyle(a); return (a.textContent || "").trim().slice(0, 20) + (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) >= 2 ? "|focus" : "|NOFOCUS"); })); }
+          for (let i = 0; i < 32; i++) { await page.keyboard.press("Tab"); seen.push(await page.evaluate(() => { const a = document.activeElement; if (!a) return ""; const cs = getComputedStyle(a); return (a.textContent || "").trim().slice(0, 20) + (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) >= 2 ? "|focus" : "|NOFOCUS"); })); }
           add(w, theme, "home", "keyboard: Tab reaches every menu item and the three doors, each with a visible focus ring", { ok: ["My games", "Create", "Billing", "Account"].every((t) => seen.some((s) => s.startsWith(t) && s.endsWith("|focus"))) && ["Create a new game", "My games"].every((t) => seen.some((s) => s.startsWith(t) && s.endsWith("|focus"))), detail: seen.join(" > ") });
           await page.focus('.top nav a[href="#/billing"]'); await page.keyboard.press("Enter"); await page.waitForSelector("h1");
           add(w, theme, "home", "keyboard: Enter on a menu item opens that screen", { ok: (await page.evaluate(() => location.hash)) === "#/billing", detail: await page.evaluate(() => location.hash) });

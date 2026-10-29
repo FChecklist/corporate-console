@@ -45,6 +45,8 @@ const con = Bun.serve({
   fetch: async (req) => {
     const url = new URL(req.url);
     if (url.pathname === "/__code") return new Response(/code is (\d{6})/.exec(lastMail)?.[1] || "", { headers: { "cache-control": "no-store" } });
+    if (url.pathname === "/__axe.js") return new Response(readFileSync(new URL("../../node_modules/axe-core/axe.min.js", import.meta.url)), { headers: { "content-type": "text/javascript" } }); // the contrast checker is served from the console's own address, so the page policy stays strict
+    if (url.pathname === "/__reset") { await db.prepare("DELETE FROM rate").run(); return new Response("ok"); } // the sweep signs in many times: forget the mail limit between runs
     if (url.pathname.startsWith("/auth/")) return handleAuth(req, env, Date.now());
     const p = url.pathname === "/" ? "/index.html" : url.pathname;
     const file = join(dist, p);

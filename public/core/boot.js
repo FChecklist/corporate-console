@@ -22,7 +22,7 @@ export function privacyStrip(copy) {
   return el("div", { class: "priv", role: "note" }, el("div", { class: "wrap" }, el("span", { text: p.phrases.join(" · ") + "." }), more, btn));
 }
 
-let current = null, last = "";
+let current = null, last = "", mountedOnce = false;
 /** the state the screens share: the api (keys in memory), who is signed in, the games' names and colours */
 const names = Object.fromEntries(GAMES.map((g) => [g.id, g.name])), colors = Object.fromEntries(GAMES.map((g) => [g.id, g.accent]));
 export const app = { api: null, signedIn: false, email: null };
@@ -53,7 +53,8 @@ export async function mount(root, copy, design) {
   const help = el("p", { class: "helpline" }, copy.help.text + " ", el("a", { href: "mailto:" + copy.help.email }, copy.help.email));
   root.querySelector("main").after(help);
   await screenFor(route, outlet, copy);
-  const main = document.getElementById("main"); if (main && main.focus) main.focus({ preventScroll: true }); // keyboard users land at the top of the new screen
+  const main = document.getElementById("main"); if (main && main.focus && mountedOnce) main.focus({ preventScroll: true }); // after a move to another screen keyboard users land at the top of it (not on the first load: there they start at the bar and menu)
+  mountedOnce = true;
 }
 
 async function onSignedIn() {
