@@ -5,6 +5,7 @@ import { withColor, button, whenText, openGame, emptyNote } from "./ui.js";
 import { gamesFailedLine } from "../core/errors.js";
 
 export const NO_REFUND = "No refunds. A cancelled paid game becomes credit for 365 days.";
+export const PAYEE = "Payment is taken by IT Services by Rajat Agarwal through Razorpay. Invoices and receipts name IT Services by Rajat Agarwal as the seller.";
 const SYMBOL = { INR: "Rs ", USD: "US$ " };
 export const money = (minor, currency) => (SYMBOL[currency] || currency + " ") + Math.round(minor / 100).toLocaleString("en-IN");
 const dayText = (ms) => new Date(ms).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" });
@@ -13,7 +14,7 @@ export async function renderBilling(outlet, ctx) {
   const { api, names, colors } = ctx;
   clear(outlet);
   const body = el("div", { id: "bill-body" }, el("p", { class: "hintline", text: "One moment." }));
-  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Billing" }), el("p", { class: "lead", text: NO_REFUND }), body)));
+  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Billing" }), el("p", { class: "lead", text: NO_REFUND }), el("p", { class: "hintline", id: "bill-payee", text: PAYEE }), body)));
   const [games, bill] = await Promise.all([api.listGames(), api.billing()]);
   clear(body);
   const failed = [...new Set([...games.failed, ...bill.failed])];

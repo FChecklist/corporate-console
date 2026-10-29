@@ -1,4 +1,4 @@
-// FALSIFIED BY: screens-home-has-input, screens-mislabel-status, screens-delete-hidden, screens-signin-no-consent, screens-home-fourth-door, screens-create-no-soon-tile, screens-create-account-everywhere, screens-billing-hides-slow, screens-close-before-answers, screens-preview-always, screens-handoff-foreign-address
+// FALSIFIED BY: screens-home-has-input, screens-mislabel-status, screens-delete-hidden, screens-signin-no-consent, screens-home-fourth-door, screens-create-no-soon-tile, screens-create-account-everywhere, screens-billing-hides-slow, screens-close-before-answers, screens-preview-always, screens-handoff-foreign-address, billing-payee-changed
 // All six screens (sign in, Home, My games, Create, Billing, Account) plus the Player's screen view run in a DOM against the real sign-in service and five fake games.
 import { test, expect, setDefaultTimeout } from "bun:test";
 import { Window } from "happy-dom";
@@ -288,4 +288,26 @@ test("no screen, copy file or page of the console uses the banned word, 'Retire 
   const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (/\.(js|html|json|css|webmanifest)$/.test(n) && !/^gamesbar\./.test(n)) files.push(p); } };
   walk(join(import.meta.dir, "../public"));
   for (const f of files) { const t = readFileSync(f, "utf8"); expect([f, /private/i.test(t.replace(/privacy/gi, ""))]).toEqual([f, false]); expect([f, /Retire a key|Ideas to improve/i.test(t)]).toEqual([f, false]); }
+});
+
+test("payments: the console says once that IT Services by Rajat Agarwal takes the payment through Razorpay; no other payee or gateway exists anywhere in the console and it never talks to Razorpay itself", async () => {
+  const w = await world({ slowMs: 0 }); spies();
+  try {
+    await w.signIn(); await w.api.connect();
+    const o = fresh();
+    await renderBilling(o, ctxOf(w));
+    expect(o.querySelector("#bill-payee")!.textContent).toBe("Payment is taken by IT Services by Rajat Agarwal through Razorpay. Invoices and receipts name IT Services by Rajat Agarwal as the seller.");
+    expect(o.textContent!.split("IT Services by Rajat Agarwal through Razorpay").length - 1).toBe(1);
+  } finally { w.stop(); }
+  const files: string[] = [];
+  const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (/\.(js|html|json|css|webmanifest)$/.test(n) && !/^gamesbar\./.test(n)) files.push(p); } };
+  walk(join(import.meta.dir, "../public"));
+  for (const f of files) {
+    const t = readFileSync(f, "utf8");
+    expect([f, /stripe|paypal|paytm|phonepe|cashfree|payu|gpay|google pay|braintree|square/i.test(t)]).toEqual([f, false]); // no other gateway or payee
+    if (!f.endsWith("billing.js")) expect([f, /razorpay/i.test(t)]).toEqual([f, false]); // the word appears only in the one sentence
+    expect([f, /checkout\.razorpay|api\.razorpay|rzp_/i.test(t)]).toEqual([f, false]); // the console never opens or calls the gateway
+  }
+  const headers = readFileSync(join(import.meta.dir, "../build.mjs"), "utf8");
+  expect(/razorpay/i.test(headers)).toBe(false); // and the page's policy lists no payment origin
 });

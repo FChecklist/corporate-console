@@ -1,0 +1,1 @@
+{"id": "billing-payee-changed", "repo": ".", "file": "public/screens/billing.js", "find": "Payment is taken by IT Services by Rajat Agarwal through Razorpay.", "replace": "Payment is taken by Corporate Games through Stripe.", "test": "tests/screens.test.ts", "note": "another payee and gateway named on the Billing screen"}

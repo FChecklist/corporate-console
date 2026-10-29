@@ -48,9 +48,9 @@ main { display: block; min-height: 50vh; }
 body.has-tabbar { padding-bottom: 86px; }
 
 /* privacy strip and help line */
-.priv { background: var(--strip); color: var(--strip-ink); font-size: 13px; line-height: 1.5; padding: 7px 0; }
+.priv { background: var(--strip); color: var(--strip-ink); font-size: 13px; line-height: 1.5; padding: 3px 0; }
 .priv .wrap { padding: 0 32px; }
-.priv .more-btn { background: none; border: 0; padding: 0 0 0 6px; color: var(--strip-ink); font-weight: 700; text-decoration: underline; font-size: inherit; min-height: 0; }
+.priv .more-btn { background: none; border: 0; padding: 0 12px; color: var(--strip-ink); font-weight: 700; text-decoration: underline; font-size: inherit; min-height: var(--tap); min-width: var(--tap); vertical-align: middle; }
 .helpline { text-align: center; font-size: 14px; color: var(--muted); margin: 8px 16px 28px; }
 .helpline a { color: var(--accent); }
 

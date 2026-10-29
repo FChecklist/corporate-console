@@ -1,4 +1,6 @@
-# Master console: build status (27 October 2026, evening)
+# Master console: build status (updated 29 October 2026; the 27 October table below is kept for the game worktrees)
+
+**29 Oct 2026:** the master console itself is complete to spec 100 section 5.1 (see `STATE.md`). The table and lists below describe the first build and the game worktrees; where they say "NOT done yet" for the console screens, that is now done.
 
 Plain words first, then where everything is. Nothing is deployed, nothing was created in Cloudflare, no money spent, no secret in any repo.
 
