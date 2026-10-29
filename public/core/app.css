@@ -62,7 +62,8 @@ body.has-tabbar { padding-bottom: 86px; }
 .door.main:hover { background: var(--btn-hover); }
 .door svg { width: 32px; height: 32px; }
 .door b { font: 600 22px var(--serif); }
-.door span { font-size: 15px; opacity: .9; }
+.door span { font-size: 15px; }
+.door:not(.main) span { color: var(--ink2); }
 
 /* strips: what needs you, what is playing */
 .strip { margin-top: 26px; }
