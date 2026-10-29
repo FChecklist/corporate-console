@@ -1,0 +1,1 @@
+{"id": "pack-log-shows-name", "repo": ".", "file": "packages/game-pack/gamelog.js", "find": "s.textContent = r.text + (Number.isInteger(r.seat)", "replace": "s.textContent = r.text + (r.name ? \" \" + r.name : \"\") + (Number.isInteger(r.seat)", "test": "tests/game-pack.test.ts", "note": "a name appears in the game log"}

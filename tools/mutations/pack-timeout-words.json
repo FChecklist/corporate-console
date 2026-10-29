@@ -1,0 +1,1 @@
+{"id": "pack-timeout-words", "repo": ".", "file": "packages/game-pack/polish.js", "find": "Please check your internet and try again.", "replace": "Please try again.", "test": "tests/game-pack.test.ts", "note": "the 40 second sentence changes"}

@@ -1,0 +1,1 @@
+{"id": "pack-runbar-dead-button", "repo": ".", "file": "packages/game-pack/runbar.js", "find": "if (can.extend && dos.extend)", "replace": "if (dos.extend)", "test": "tests/game-pack.test.ts", "note": "Add 30 minutes would show although the game cannot"}

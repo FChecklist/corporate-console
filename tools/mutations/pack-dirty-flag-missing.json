@@ -1,0 +1,1 @@
+{"id": "pack-dirty-flag-missing", "repo": ".", "file": "packages/game-pack/polish.js", "find": "win.__ctDirty = true; }, true); });", "replace": "}, true); });", "test": "tests/game-pack.test.ts", "note": "typing no longer marks the page as unsaved"}

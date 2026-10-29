@@ -1,0 +1,1 @@
+{"id": "pack-end-without-yes", "repo": ".", "file": "packages/game-pack/runbar.js", "find": "if (confirmPanel && !(await confirmPanel(el, \"End the game now? This cannot be undone.\", \"Yes, end it\", \"No\"))) return; ", "replace": "", "test": "tests/game-pack.test.ts", "note": "End the game with no Yes/No question"}
