@@ -43,7 +43,7 @@ test("a job runs, returns its exit code and frees the lock", async () => {
 test("while a job holds the lock a second job does not start", async () => {
   const lock = fresh();
   const first = heavyRun(process.execPath, ["-e", "setTimeout(()=>{},1500)"], { lock, minFreeMb: 0, pollMs: 50 });
-  await new Promise((r) => setTimeout(r, 400));
+  for (let i = 0; i < 400 && !existsSync(lock); i++) await new Promise((r) => setTimeout(r, 50)); // wait until the first job really holds the lock (a busy laptop starts it late)
   const second = await heavyRun(process.execPath, ["-e", "0"], { lock, minFreeMb: 0, waitMin: 0.002, pollMs: 50 });
   expect(second.code).toBe(98);
   expect((await first).code).toBe(0);

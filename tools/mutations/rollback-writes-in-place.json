@@ -1,0 +1,1 @@
+{"id": "rollback-writes-in-place", "repo": ".", "file": "tools/deploy/rollback.mjs", "find": "writeFileSync(file + \".rolled-back\", r.text)", "replace": "writeFileSync(file, r.text)", "test": "tests/rollback.test.ts", "note": "the original settings file would be edited"}

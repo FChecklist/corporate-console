@@ -1,77 +1,86 @@
-# Go-live runbook for the master console (draft 1, 27 October 2026)
+# Go-live runbook for the master console (draft 2, 29 October 2026)
 
-For the owner. Plain words. NOTHING here has been done. Every step below needs the owner's explicit "go" (decision D20), one step at a time. No step may touch a game that is being played or starts within the hour. No secret value is ever written in a repository or in this file: secrets are typed by the owner into the Cloudflare tools, only their NAMES are listed.
+For the owner. Plain words. NOTHING here has been done. Every step below needs the owner's explicit "go" (decision D20), one step at a time, and none may be done while a game is being played or starts within the hour. No secret value is ever written in a repository or in this file: secrets are typed by the owner into the Cloudflare tools, only their NAMES are listed.
 
-Before every step run the guard (it must print QUIET):
+Order (spec 100, section 5.6, wave 4): the console on its own pages.dev address first, then the games one at a time with the bridge switched on (Bingo, Tic Tac Toe, Snakes and Ladders, Luck by Chance), Tambola LAST and only its dark bridge, then the custom address. No other site links to `console.corporatetambola.com` until the last step is done.
+
+Before EVERY step run the guard (it must print QUIET), and for any game whose bridge is still dark also the older check:
 
 ```bash
 node tools/deploy/guard.mjs
+python3 -I C:\ct\test-sites\tools\live_games_now.py 3
 ```
 
-Until the bridge is switched on in all six games the guard says "could not be asked" for the dark ones; for those use `python -I -X utf8 C:\ct\test-sites\tools\live_games_now_game.py <database id> 6` (it must print 0 games).
+The second line must print 0. Until the bridge is on in a game, the guard says "could not be asked" for that game: that is correct (it fails closed), use the second line for it.
 
-Tools: the console repo is `C:\ct\test-sites\console`; each game's console branch lives in `C:\ct\test-sites\<game>-console` (branch `console/bridge`). `wrangler` is `node C:\ct\tools\wrangler3\node_modules\wrangler\bin\wrangler.js`.
+Tools: the console repo is `C:\ct\test-sites\console`; each game's console branch lives in its own folder (`C:\ct\test-sites\<game>-console`). `wrangler` is `node C:\ct\tools\wrangler3\node_modules\wrangler\bin\wrangler.js`. To switch one game's bridge off again at any time: `node tools/deploy/rollback.mjs --config <copy of that game's settings file>` (dry run; add `--write` to make the changed copy), then redeploy that game's PREVIOUS build.
 
 ## Step 0. Questions the owner answers first (nothing is built on a guess)
 
-- **Prices.** Decided: the console shows today's prices only (Rs 2,399 to Rs 29,499, US$ 34 to US$ 421, no GST). No game's price changes.
-- **Cloudflare plan.** The account holds 10 of 10 free databases. Is the account on the paid Workers plan? (The console and Lucky Draw need 2 more.)
+- **Where the sign-in data lives.** Own small database `corporate-console` (the account is on Workers Paid; confirm it adds no cost) or the same four tables inside an existing database under a prefix (`TABLE_PREFIX = "con_"`, one line in two settings files). Recommendation: own database after the cost check.
+- **Free demo size** for every game: 10 people at Rs 0 (three games already do this; the console file says 5 for three games).
+- **Terms for accounts made in the console:** may its one tick stand for each game's Terms box?
 - **Lawyer:** the privacy-strip wording and whether a seat number kept 365 days is personal data.
+- **Prices:** nothing to decide. The console shows today's prices only (Rs 2,399 to Rs 29,499, US$ 34 to US$ 421, no GST). No game's price changes.
 
-Verify: the owner's four answers are written in `CONSOLE_DECISIONS.md`. Rollback: nothing was done.
+Verify: the owner's answers are written in `docs/CONSOLE_DECISIONS.md`. Rollback: nothing was done.
 
 ## Step 1. IT Services first (additive)
 
-Branch `console/lucky-draw-origin` in `C:\ct\itservices-console` (commit de6048d): lets `lucky.corporatetambola.com` open and frame the payment window, registers Lucky Draw's site and product (no prices). Prices stay as they are today (nothing new to add).
+Branch `console/lucky-draw-origin` in `C:\ct\itservices-console` (commit de6048d): lets `lucky.corporatetambola.com` open and frame the payment window and registers Lucky Draw's site and product. It adds no price (Lucky Draw is a quiet "Tell us you want it" tile until it is built).
 
 1. Apply `migrations/0014_lucky_draw_site.sql` to the IT Services database (the owner's usual way).
 2. `python build.py`, then deploy `dist` to the Pages project `itservices-rajat-agarwal` (same command as the last deploy).
-3. The owner sets the site key for Lucky Draw with `scripts/setup-central.mjs` (the key is shown once and never saved in a repository).
+3. The owner sets the site key for Lucky Draw with `scripts/setup-central.mjs` (shown once, never saved in a repository).
 
 Verify: `https://itservices-rajat-agarwal.pages.dev/payframe/pay.js` contains `lucky.corporatetambola.com`; an old game's test payment still opens and completes. Rollback: redeploy the previous Pages deployment (the migration only adds rows and can stay).
 
-## Step 2. Each game, one at a time, bridge DARK (order: Bingo, Tic Tac Toe, Snakes and Ladders, Luck by Chance, Tambola last)
+## Step 2. The console on its own pages.dev address (no custom address yet)
 
-For one game at a time, after "go" from the owner and a QUIET guard:
+1. Create the sign-in database: `wrangler d1 create corporate-console`, put its id into `wrangler.toml` and `apps/cron/wrangler.toml`, apply `migrations/0001_console.sql`. (If Step 0 chose prefixed tables: point `DB` at the existing database, set `TABLE_PREFIX = "con_"` in BOTH files, apply the output of `bun tools/prefix-migration.mjs con_`, and create nothing else.)
+2. Create the Pages project `corporate-console`; build with `node build.mjs --env preview`; deploy `dist`.
+3. The owner sets the three secrets by NAME in the Pages project settings: `RESEND_API_KEY`, `CONSOLE_SIGNING_KEY` (a new Ed25519 key), `SESSION_PEPPER`. Plain settings come from `wrangler.toml`.
+4. Deploy the cron Worker `corporate-console-cron` from `apps/cron` (daily clean-up).
+5. First on a COPY with `TEST_MODE=1`: sign in with `demo1@xyz.in`, code `123456`. Then remove `TEST_MODE`.
 
-1. In the game's console worktree run its full test suite and the break-it checks (all must be green / RED as designed).
-2. Merge `console/bridge` into the game's master (owner's go), build, apply migration (`0029_game_role.sql`, or `0030` for Tic Tac Toe; optional because the game creates the tables itself), deploy with the game's usual script (`tools\deploy_game_live.ps1 -Game <dir> -Project <pages project>`).
-3. Smoke: `node tools/deploy/smoke.mjs --game <id> --expect-commit <commit>`; then `curl -s -o /dev/null -w "%{http_code}" https://<game address>/api/console/capabilities` must print **404** (the bridge is dark).
+Verify: `https://corporate-console.pages.dev/` shows the sign-in screen and the Corporate Games bar; `/auth/me` answers `{"ok":true,"signedIn":false}`; the response headers carry the Content-Security-Policy and `frame-ancestors 'none'`; a real sign-in code arrives by e-mail. Rollback: unlink the project's domain and disable the cron Worker; nothing else depends on them.
+
+## Step 3. Each game's console work, merged locally and deployed with the bridge DARK (order: Bingo, Tic Tac Toe, Snakes and Ladders, Luck by Chance, Tambola last)
+
+For one game at a time, after "go", a QUIET guard and the game's own work packages (spec 100: edge package, then console page package) being finished:
+
+1. In the game's console worktree run its FULL test suite once and compare with the recorded baseline (all new break-it checks red when broken, green when restored).
+2. Merge the console branches into a local release branch of the game (owner's go), build, apply the add-only migrations (check the next free number on the day), deploy with the game's usual script.
+3. `node tools/deploy/smoke.mjs --game <id> --expect-commit <commit>`; then `curl -s -o /dev/null -w "%{http_code}" https://<game address>/api/console/capabilities` must print **404** (the bridge is dark).
 
 Verify: version.json shows the new commit; the dark address prints 404; the game's own live smoke script passes. Rollback: redeploy the game's previous Pages deployment; stop; do not do the next game.
 
-## Step 3. Lucky Draw (after it is built)
+## Step 4. Bridge ON for Bingo only (first game)
 
-New Pages project `corporate-lucky-draw`, its own new database `corporate-lucky-draw`, address `lucky.corporatetambola.com`. Needs Step 0 (database count). Verify: `/version.json` answers; dark address prints 404. Rollback: the console tile stays "coming soon"; nothing depends on it.
+Set `CONSOLE_PUBKEYS` = `k1:<console public key>` as a plain setting on Bingo only and redeploy. With two e-mail addresses the owner controls, test: sign in, Create (Start a new game opens Bingo's Step 1), My games shows the game, a Host invitation is accepted, Billing, the Player's screen view, Sign out, and the two-account hand-off test (account A cannot open account B's game).
 
-## Step 4. The console on its own pages.dev address only
+Verify: `/api/console/capabilities` prints the game's name and version; the two-account test passes. Rollback: `node tools/deploy/rollback.mjs --config <copy of Bingo's settings>`, redeploy Bingo's previous build; the address answers 404 again and Bingo is unaffected.
 
-1. Create the database `corporate-console` (`wrangler d1 create corporate-console`), apply `migrations/0001_console.sql`.
-2. Create the Pages project `corporate-console`; build with `node build.mjs --env preview`; deploy `dist`.
-3. The owner sets the three secrets by NAME in the Pages project settings: `RESEND_API_KEY`, `CONSOLE_SIGNING_KEY` (a new Ed25519 key made by `bun -e` helper in the console repo), `SESSION_PEPPER`; plain settings from `wrangler.toml`.
-4. Deploy the cron Worker `corporate-console-cron` from `apps/cron` (daily purge).
-5. TEST mode first: set `TEST_MODE=1` on a COPY only; sign in with `demo1@xyz.in` code `123456`.
+## Step 5. Bridge ON for Tic Tac Toe
 
-Verify: `https://corporate-console.pages.dev/` loads; `/auth/me` answers `{"signedIn":false}`; response headers contain the Content-Security-Policy and `frame-ancestors 'none'`. Rollback: delete nothing; unlink the project domain.
+Same as Step 4 for Tic Tac Toe, plus: the tournament page opens from the console and the keep-open bar is shown. Verify and Rollback as Step 4 (the game's own address and previous build).
 
-## Step 5. Switch the bridge on, ONE game first (Bingo)
+## Step 6. Bridge ON for Snakes and Ladders
 
-Set `CONSOLE_PUBKEYS` = `k1:<console public key>` as a plain setting on Bingo only. Test create, publish, test payment, log, preview with two e-mail addresses the owner controls. Then the other games one by one; Tambola last of the five.
+Same as Step 4 for Snakes and Ladders, plus: an 11th person on the free 10-person game is refused and the test logins `demo1/2/3@xyz.in` do not work in live mode. Verify and Rollback as Step 4.
 
-Verify: `/api/console/capabilities` prints the game's name and version. Rollback: remove `CONSOLE_PUBKEYS` from that game: the address answers 404 again, the game is unaffected.
+## Step 7. Bridge ON for Luck by Chance (only after its Tambola hardening port is live)
 
-## Step 6. Custom domain `console.corporatetambola.com`
+Same as Step 4 for Luck by Chance. If the port is not live, this step is skipped and the Luck tile stays; nothing else waits for it. Verify and Rollback as Step 4.
 
-Attach the domain to the Pages project; check on a real phone that the app installs; test the Host and Co-host invitations with two real addresses.
+## Step 8. Tambola LAST: the dark bridge only (its own console page is not touched)
 
-Verify: `https://console.corporatetambola.com/` shows the sign-in screen with the privacy strip; the install prompt appears on the phone; both invitation mails arrive and Accept works. Rollback: detach the domain.
+After Tambola 1.6.7 and the wording pass are live and the bridge branch has been re-cut from the live commit, with 0 live games and no game booked within 3 hours: deploy the dark bridge, then (a second "go") set `CONSOLE_PUBKEYS`. Check five old participant links, that a seated participant keeps the seat and that the payment ledger has no paid-but-unfulfilled order.
 
-## Step 7. The Tambola move to `housie.corporatetambola.com` (riskiest, last, quiet hour, no game booked that day)
+Verify: `/api/console/capabilities` prints the name and version; the five old links open the same pages; the ledger is clean. Rollback: `node tools/deploy/rollback.mjs --config <copy of Tambola's settings>`, then redeploy Tambola's previous deployment (use the deploy script on branch `wip/join-redesign` only).
 
-As written in the build plan (Deploy order, Step 6): add housie. to Tambola's Pages project and verify; deploy the housie links; attach the bare address and www to the showcase with the redirect and proxy live in the same minute; check five old links and that a seated participant keeps the seat; reconcile payments before and after.
+## Step 9. The custom address `console.corporatetambola.com` (only now may other sites link to it)
 
-Verify: each of the five old links (personal, host, big screen, sign-in, pay) opens the same page on housie.; a seated participant still has the seat; the payment ledger has no paid-but-unfulfilled order. Rollback: re-attach the bare address to Tambola's project and redeploy Tambola's previous deployment.
+Attach the domain to the Pages project; install the app on a real phone; test the Host and Co-host invitations with two real addresses. Then (separately, each its own "go") let the home site and the games link to the console.
 
-## Step 8. After one quiet week
-
-Switch on the per-game screens (Host / Co-host screens, log tab, upgrade button, participant invitations). Verify: each switch shows its screen only for the games where it was turned on. Rollback: per-feature switch. At +90 days check the old-link proxy hit log; at +365 days watch the first e-mail purge.
+Verify: `https://console.corporatetambola.com/` shows the sign-in screen with the privacy strip; the install prompt appears; both invitation mails arrive and Accept works. Rollback: detach the domain and remove the links again (the pages.dev address keeps working).

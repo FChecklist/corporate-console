@@ -1,0 +1,1 @@
+{"id": "rollback-keeps-keys", "repo": ".", "file": "tools/deploy/rollback.mjs", "find": "a + q + b)", "replace": "a + '\"k1:x\"' + b)", "test": "tests/rollback.test.ts", "note": "the bridge would stay on"}
