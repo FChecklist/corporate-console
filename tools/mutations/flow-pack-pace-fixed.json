@@ -1,0 +1,1 @@
+{"id": "flow-pack-pace-fixed", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "callSeconds: G.callSeconds, cap: 10 });", "replace": "callSeconds: 12, cap: 10 });", "test": "tests/flow-pack.test.ts", "note": "the draft ignores the game's own pace"}

@@ -1,0 +1,1 @@
+{"id": "flow-pack-consent-load-ignored", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "return { payload: () => (info ? C.payload(info, st) : null) };", "replace": "return { payload: () => null };", "test": "tests/flow-pack.test.ts", "note": "the ticks of a loaded-text consent are not sent"}
