@@ -64,7 +64,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       const note = noteFor(a.notes, g.id);
       if (!note) return finish({ game: g.id, ok: false, error: "no-assertion" });
       const r = await call(g.origin + "/api/console/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: note, create }) });
-      if (!r.ok) return finish({ game: g.id, ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused" });
+      if (!r.ok) return finish({ game: g.id, ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" });
       const j = r.json;
       if (g0 !== gen) return finish({ game: g.id, ok: false, error: "signed-out" });
       if (j.organizer) vault.put(g.id, "master", null, j.organizer.key, j.organizer.expiresMs);
@@ -88,7 +88,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
           const nn = guard === 0 ? note : noteFor((await assertions([{ game: g.id, act }])).notes, g.id); // a note is good once: a second page needs a fresh one
           if (!nn) return { game: g.id, ok: false, error: "no-assertion" };
           const r = await call(g.origin + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: nn, ...(cursor ? { cursor } : {}), ...extraBody }) });
-          if (!r.ok) return { game: g.id, ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused" };
+          if (!r.ok) return { game: g.id, ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" }; // 404 = that game has not switched the console on yet: not a fault
           const part = collect(r.json);
           if (!Array.isArray(part) || part.some((x) => !x || typeof x !== "object" || typeof x.eid !== "string")) throw new Error("bad answer"); // a game that answers nonsense fails alone
           out.push(...part); credit = r.json.credit ?? credit; cursor = r.json.next; guard++;
@@ -119,7 +119,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       const h = await headersFor(game, eid);
       if (!h) return { ok: false, error: "no-key" };
       const r = await call(g.origin + "/api/console/handoff", { method: "POST", headers: h, body: JSON.stringify(target === "new" ? { target } : { eid, target }) });
-      if (!r.ok) return { ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused", message: r.json?.message };
+      if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused", message: r.json?.message };
       const url = String(r.json?.url || "");
       if (!url.startsWith(g.origin + "/signin.html?t=")) return { ok: false, error: "wrong-address" };
       return { ok: true, url };
@@ -137,7 +137,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       const g = byId[game]; const h = await headersFor(game, eid);
       if (!g || !h) return { ok: false, error: "no-key" };
       const r = await call(g.origin + "/api/console/preview", { method: "POST", headers: h, body: JSON.stringify({ eid }) });
-      if (!r.ok) return { ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused" };
+      if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
       const url = String(r.json?.url || "");
       if (!url.startsWith(g.origin + "/screenview/")) return { ok: false, error: "wrong-address" };
       return { ok: true, url };
@@ -149,7 +149,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       const note = a.ok && noteFor(a.notes, game);
       if (!note) return { ok: false, error: "signed-out" };
       const r = await call(g.origin + "/api/console/role", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ op, eid, roleId, assertion: note }) });
-      if (!r.ok) return { ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused", message: r.json?.message };
+      if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused", message: r.json?.message };
       if (op === "accept" && r.json?.scoped) vault.put(game, r.json.scoped.role, r.json.scoped.eid, r.json.scoped.key, r.json.scoped.expiresMs);
       return { ok: true };
     },

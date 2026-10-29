@@ -1,0 +1,1 @@
+{"id": "screens-helper-asked-to-pay", "repo": ".", "file": "public/screens/home.js", "find": "(g.status === \"waiting_payment\" ? mine(g) : needsAttention(g))", "replace": "needsAttention(g)", "test": "tests/wp07-screens.test.ts", "note": "a helper is asked to pay"}

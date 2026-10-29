@@ -20,7 +20,7 @@ export async function renderBilling(outlet, ctx) {
   const failed = [...new Set([...games.failed, ...bill.failed])];
   if (failed.length) body.append(el("p", { class: "banner", role: "status", text: gamesFailedLine(failed.map((id) => names[id] || id)) }));
 
-  const toPay = games.rows.filter((g) => g.status === "waiting_payment" && g.role !== "cohost");
+  const toPay = games.rows.filter((g) => g.status === "waiting_payment" && g.role === "organizer"); // only the organizer pays; a helper is never asked
   body.append(el("h2", { class: "sechead", text: "To pay" }));
   if (!toPay.length) body.append(emptyNote("Nothing to pay.", "A game that waits for payment shows here."));
   else body.append(el("ul", { class: "list", id: "bill-topay" }, toPay.map((g) => withColor(el("li", { dataset: { game: g.game, eid: g.eid } }, el("div", { class: "what" }, el("b", { text: g.name }), el("span", { text: `${names[g.game] || g.game} · ${whenText(g.startMs)}` })), button("Pay", { main: true, sm: true, onclick: () => openGame(ctx, g, g.role === "organizer" ? "organizer" : "host") })), colors[g.game] || "#0B3D91"))));

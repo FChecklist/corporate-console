@@ -3,6 +3,7 @@
 import { el, clear } from "../core/dom.js";
 import { withColor, chip, roleChip, button, whenText, emptyNote, toast, confirmPanel, openGame } from "./ui.js";
 import { gamesFailedLine } from "../core/errors.js";
+import { mergeGames } from "../core/merge.js";
 
 export const FILTERS = [["all", "All"], ["coming", "Coming up"], ["finished", "Finished"]];
 const OVER = new Set(["finished", "cancelled", "not_started"]);
@@ -59,10 +60,17 @@ export async function renderMyGames(outlet, ctx) {
     clear(body);
     if (data.failed.length) body.append(el("p", { class: "banner", role: "status", text: gamesFailedLine(data.failed.map((id) => names[id] || id)) }));
     const rows = filterGames(data.rows, filter);
-    if (!rows.length) body.append(emptyNote(data.rows.length ? "Nothing here." : "No games yet.", data.rows.length ? "Try another choice above." : "Press Create to start your first game."));
+    if (!data.rows.length && data.failed.length) body.append(emptyNote("We could not reach your games just now.", "Nothing is lost. Please try again."), button("Try again", { main: true, onclick: () => load() })); // never "No games yet" when the games simply did not answer
+    else if (!rows.length) body.append(emptyNote(data.rows.length ? "Nothing here." : "No games yet.", data.rows.length ? "Try another choice above." : `Press Create to start your first game. Waiting for an invitation? You are signed in as ${ctx.email || "this e-mail"}. A game shows here once its organizer has added exactly this e-mail address.`));
     else body.append(el("div", { class: "gcards" }, rows.map(card)));
   }
-  const [d, c] = await Promise.all([api.listGames(), api.capabilities().catch(() => [])]);
-  data = d; caps = Object.fromEntries(c.filter((x) => x.ok).map((x) => [x.game, x.caps]));
-  draw();
+  async function load() {
+    const parts = [];
+    clear(body); body.append(el("p", { class: "hintline", text: "One moment." }));
+    api.capabilities().then((c) => { caps = Object.fromEntries(c.filter((x) => x.ok).map((x) => [x.game, x.caps])); if (data) draw(); }).catch(() => {});
+    // each game is drawn the moment it answers: a slow one never holds the others back
+    data = await api.listGames({ onGame: (r) => { parts.push(r); data = mergeGames(parts); draw(); } });
+    draw();
+  }
+  await load();
 }

@@ -1,9 +1,9 @@
 // Create: one screen, one tile per game. A tile hands over to that game's own first step (the game makes the draft with its own defaults); there is no second wizard here.
-// A game that is not built yet shows a quiet tile that sends the person to tell us they want it.
+// A game still in test mode shows "Opening soon"; a game that is not built shows "Coming soon". Neither has a button or a link (boss ruling 29 Oct 2026).
 import { el, clear } from "../core/dom.js";
 import { withColor, button, toast } from "./ui.js";
 import { priceLine } from "../core/prices.js";
-import { OPEN_FAILED } from "../core/errors.js";
+import { openError } from "../core/errors.js";
 
 const WORDS = {
   tambola: "Numbers are called, players mark their tickets.",
@@ -13,7 +13,6 @@ const WORDS = {
   luckbychance: "Quick rounds where luck picks the winner.",
   luckydraw: "A draw for gifts among your people.",
 };
-export const TELL_US = "https://home.corporatetambola.com/contact";
 
 export async function renderCreate(outlet, ctx) {
   const { api, names, colors } = ctx;
@@ -26,13 +25,14 @@ export async function renderCreate(outlet, ctx) {
     btn.disabled = true;
     let r;
     try { r = await api.startNew(game); } catch { r = { ok: false }; } finally { btn.disabled = false; }
-    if (!r.ok) return toast(OPEN_FAILED);
+    if (!r.ok) return toast(openError(r, (names[game] || "That game")));
     (ctx.go || ((u) => location.assign(u)))(r.url);
   }
   for (const g of ctx.games) {
     const title = names[g.id] || g.name;
-    if (!g.ready) {
-      tiles.append(withColor(el("article", { class: "tile soon", dataset: { game: g.id } }, el("div", { class: "gname", text: "Corporate" }), el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), el("p", { class: "hintline", text: "Not ready yet." }), el("div", { class: "btns" }, el("a", { class: "btn sm", href: TELL_US, target: "_blank", rel: "noopener", text: "Tell us you want it" }))), colors[g.id] || "#0B3D91"));
+    const status = g.status || (g.ready ? "live" : "planned");
+    if (status !== "live") {
+      tiles.append(withColor(el("article", { class: "tile soon", dataset: { game: g.id, status } }, el("div", { class: "gname", text: "Corporate" }), el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), el("p", { class: "soonword", text: status === "opening" ? "Opening soon" : "Coming soon" })), colors[g.id] || "#0B3D91"));
       continue;
     }
     const price = el("p", { class: "hintline", dataset: { price: g.id } });

@@ -60,7 +60,7 @@ export async function mount(root, copy, design) {
 async function onSignedIn() {
   const me = await app.api.auth.me();
   app.signedIn = !!me.json?.signedIn; app.email = me.json?.email || null;
-  if (app.signedIn) await app.api.connect();
+  if (app.signedIn) app.api.connect(); // keys arrive in the background: the person is at Home at once, and a hand-over asks again if a key is not there yet
   current = null; location.hash = "#/home"; window.dispatchEvent(new HashChangeEvent("hashchange"));
 }
 

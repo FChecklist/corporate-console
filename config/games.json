@@ -1,5 +1,5 @@
 {
- "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'ready:false' shows an honest 'coming soon' tile instead of a game.",
+ "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'status' says what the Create screen shows: live = a Start button; opening = 'Opening soon' (the game is still in test mode, the console does not talk to it yet); planned = 'Coming soon' (not built). Only 'live' games are asked anything (ready is true only for them). Boss ruling 29 Oct 2026: Bingo and Tambola first; Tic Tac Toe, Snakes and Ladders and Luck by Chance when each has passed its live check; free demo size 10 everywhere.",
  "games": [
   {
    "id": "tambola",
@@ -10,7 +10,8 @@
    "ready": true,
    "live": "https://housie.corporatetambola.com",
    "preview": "https://corporate-tambola.pages.dev",
-   "test": "http://127.0.0.1:9"
+   "test": "http://127.0.0.1:9",
+   "status": "live"
   },
   {
    "id": "bingo",
@@ -21,51 +22,56 @@
    "ready": true,
    "live": "https://bingo.corporatetambola.com",
    "preview": "https://corporate-bingo.pages.dev",
-   "test": "http://127.0.0.1:9"
+   "test": "http://127.0.0.1:9",
+   "status": "live"
   },
   {
    "id": "tictactoe",
    "name": "Tic-Tac-Toe",
    "short": "Tic-Tac-Toe",
    "accent": "#1B6B4A",
-   "freeCap": 5,
-   "ready": true,
+   "freeCap": 10,
+   "ready": false,
    "live": "https://tictactoe.corporatetambola.com",
    "preview": "https://corporate-tic-tac-toe.pages.dev",
-   "test": "http://127.0.0.1:9"
+   "test": "http://127.0.0.1:9",
+   "status": "opening"
   },
   {
    "id": "snakesladders",
    "name": "Snakes and Ladders",
    "short": "Snakes and Ladders",
    "accent": "#A9741F",
-   "freeCap": 5,
-   "ready": true,
+   "freeCap": 10,
+   "ready": false,
    "live": "https://snakes.corporatetambola.com",
    "preview": "https://corporate-snakes-and-ladders.pages.dev",
-   "test": "http://127.0.0.1:9"
+   "test": "http://127.0.0.1:9",
+   "status": "opening"
   },
   {
    "id": "luckbychance",
    "name": "Luck by Chance",
    "short": "Luck by Chance",
    "accent": "#6B3FA0",
-   "freeCap": 5,
-   "ready": true,
+   "freeCap": 10,
+   "ready": false,
    "live": "https://luck.corporatetambola.com",
    "preview": "https://corporate-luck-by-chance.pages.dev",
-   "test": "http://127.0.0.1:9"
+   "test": "http://127.0.0.1:9",
+   "status": "opening"
   },
   {
    "id": "luckydraw",
    "name": "Lucky Draw",
    "short": "Lucky Draw",
    "accent": "#C2570C",
-   "freeCap": 5,
+   "freeCap": 10,
    "ready": false,
    "live": "https://lucky.corporatetambola.com",
    "preview": "https://corporate-lucky-draw.pages.dev",
-   "test": "http://127.0.0.1:9"
+   "test": "http://127.0.0.1:9",
+   "status": "planned"
   }
  ],
  "consoleOrigin": {

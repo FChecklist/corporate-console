@@ -13,7 +13,7 @@ Object.assign(globalThis, { window: win, document: win.document, HashChangeEvent
 const { renderSignIn } = await import("../public/screens/signin.js");
 const { renderHome } = await import("../public/screens/home.js");
 const { renderMyGames, filterGames } = await import("../public/screens/mygames.js");
-const { renderCreate, TELL_US } = await import("../public/screens/create.js");
+const { renderCreate } = await import("../public/screens/create.js");
 const { renderBilling, NO_REFUND } = await import("../public/screens/billing.js");
 const { renderAccount } = await import("../public/screens/account.js");
 const { renderPlayerView, PREVIEW_LABEL } = await import("../public/screens/playerview.js");
@@ -160,7 +160,7 @@ test("My games: Open hands over to the game's own sign-in address and nowhere el
   } finally { w.stop(); }
 });
 
-test("Create: five game tiles and one quiet 'Tell us you want it' tile for Lucky Draw; each live tile shows the game's own price line", async () => {
+test("Create: a Start button only on games that are live; 'Opening soon' (test mode) and 'Coming soon' (not built) tiles have no button and no link; live tiles show the game's own price line", async () => {
   const w = await world({ slowMs: 0 }); spies();
   try {
     await w.signIn(); await w.api.connect();
@@ -170,10 +170,18 @@ test("Create: five game tiles and one quiet 'Tell us you want it' tile for Lucky
     expect(tiles.map((t) => t.dataset.game)).toEqual(["tambola", "bingo", "tictactoe", "snakesladders", "luckbychance", "luckydraw"]);
     expect(tiles.filter((t) => t.classList.contains("soon")).map((t) => t.dataset.game)).toEqual(["luckydraw"]);
     const soon = tiles[5];
-    expect(soon.querySelector("a")!.textContent).toBe("Tell us you want it");
-    expect(soon.querySelector("a")!.getAttribute("href")).toBe(TELL_US);
+    expect(soon.querySelector(".soonword")!.textContent).toBe("Coming soon");
+    expect(soon.querySelector("a")).toBe(null);
     expect(soon.querySelector("button")).toBe(null);
     for (const t of tiles.slice(0, 5)) expect(t.querySelectorAll("button").length).toBe(1);
+    // games still in test mode: "Opening soon", nothing to press
+    const o2 = fresh();
+    const games2 = w.games.map((g: any) => (["tictactoe", "snakesladders", "luckbychance"].includes(g.id) ? { ...g, ready: false, status: "opening" } : g));
+    await renderCreate(o2, ctxOf(w, { games: games2 }));
+    const t2 = [...o2.querySelectorAll(".tile")] as any[];
+    expect(t2.filter((t) => t.dataset.status === "opening").map((t) => t.dataset.game)).toEqual(["tictactoe", "snakesladders", "luckbychance"]);
+    for (const t of t2.filter((t) => t.classList.contains("soon"))) { expect(t.querySelectorAll("button, a").length).toBe(0); expect(t.querySelector(".soonword")!.textContent).toMatch(/^(Opening|Coming) soon$/); }
+    expect(t2.filter((t) => !t.classList.contains("soon")).map((t) => t.dataset.game)).toEqual(["tambola", "bingo"]);
     await until(() => !!(o.querySelector('[data-price="tambola"]') as any).textContent);
     expect((o.querySelector('[data-price="tambola"]') as any).textContent).toBe("From Rs 2,399. Free up to 10 people.");
   } finally { w.stop(); }

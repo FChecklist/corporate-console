@@ -20,8 +20,9 @@ export interface Env {
 
 export const CODE_TTL_MS = 10 * 60_000;
 export const MAX_TRIES = 5;
-export const MAILS_PER_HOUR = 5;
-export const IP_PER_HOUR = 20;
+export const MAILS_PER_HOUR = 8; // per e-mail address
+export const IP_PER_HOUR = 60; // per office address: several colleagues sign in together before an event
+export const HELP_MAIL = "hello@corporatetambola.com";
 export const SESSION_MS = 30 * 86400_000;
 export const COOKIE = "cbsess";
 const HOUR = 3600_000;
@@ -36,6 +37,8 @@ export const emailHashOf = (email: string) => sha256hex("email|" + normEmail(ema
 const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,255}\.[^@\s]{2,}$/;
 
 const HEAD = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" };
+const minutes = (n: number) => (n === 1 ? "1 minute" : n + " minutes");
+const tooMany = (waitMin: number) => fail(429, "rate_limited", `Too many tries. Please wait ${minutes(waitMin)} and try again, or write to ${HELP_MAIL}.`);
 const json = (status: number, body: unknown, extra: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { ...HEAD, ...extra } });
 const fail = (status: number, error: string, message: string) => json(status, { ok: false, error, message });
 
@@ -56,10 +59,11 @@ export async function unsealText(env: Env, sealed: string) {
 }
 
 // ---- rate limits: fixed one-hour windows ----
-async function bump(env: Env, key: string, limit: number, now: number): Promise<boolean> {
+type Bumped = { ok: boolean; waitMin: number };
+async function bump(env: Env, key: string, limit: number, now: number): Promise<Bumped> {
   // ONE atomic statement: parallel requests cannot all read "not yet at the limit"
-  const r = await tables(env).prepare("INSERT INTO rate(k,n,win_start_ms) VALUES(?,1,?) ON CONFLICT(k) DO UPDATE SET n=CASE WHEN ?-win_start_ms>=? THEN 1 ELSE n+1 END, win_start_ms=CASE WHEN ?-win_start_ms>=? THEN ? ELSE win_start_ms END RETURNING n").bind(key, now, now, HOUR, now, HOUR, now).first<{ n: number }>();
-  return !!r && r.n <= limit;
+  const r = await tables(env).prepare("INSERT INTO rate(k,n,win_start_ms) VALUES(?,1,?) ON CONFLICT(k) DO UPDATE SET n=CASE WHEN ?-win_start_ms>=? THEN 1 ELSE n+1 END, win_start_ms=CASE WHEN ?-win_start_ms>=? THEN ? ELSE win_start_ms END RETURNING n, win_start_ms").bind(key, now, now, HOUR, now, HOUR, now).first<{ n: number; win_start_ms: number }>();
+  return { ok: !!r && r.n <= limit, waitMin: r ? Math.max(1, Math.ceil((r.win_start_ms + HOUR - now) / 60_000)) : 60 };
 }
 
 // ---- cookie session ----
@@ -119,14 +123,17 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     if (!b || typeof b.email !== "string" || !EMAIL_RE.test(normEmail(b.email))) return fail(400, "invalid", "Please type a valid e-mail address.");
     if (b.consent !== true) return fail(400, "consent", "Please tick the box to continue.");
     const email = normEmail(b.email), eh = await emailHashOf(email);
-    if (!(await bump(env, "ip:" + (await sha256hex("ip|" + ip)), IP_PER_HOUR, now)) || !(await bump(env, "mail:" + eh, MAILS_PER_HOUR, now))) return fail(429, "rate_limited", "Too many tries. Please wait an hour and try again.");
+    const byIp = await bump(env, "ip:" + (await sha256hex("ip|" + ip)), IP_PER_HOUR, now);
+    if (!byIp.ok) return tooMany(byIp.waitMin);
+    const byMail = await bump(env, "mail:" + eh, MAILS_PER_HOUR, now);
+    if (!byMail.ok) return tooMany(byMail.waitMin);
     const demo = env.TEST_MODE === "1" && DEMO.has(email);
     const code = demo ? "123456" : String(new DataView(crypto.getRandomValues(new Uint8Array(4)).buffer).getUint32(0) % 1_000_000).padStart(6, "0");
     const link = randHex(24);
     await tables(env).prepare("INSERT INTO login_code(email_hash,email_sealed,code_hash,link_hash,expires_ms,attempts,sent_ms,consent_ms) VALUES(?,?,?,?,?,0,?,?) ON CONFLICT(email_hash) DO UPDATE SET email_sealed=excluded.email_sealed, code_hash=excluded.code_hash, link_hash=excluded.link_hash, expires_ms=excluded.expires_ms, attempts=0, sent_ms=excluded.sent_ms, consent_ms=excluded.consent_ms")
       .bind(eh, await sealText(env, email), await sha256hex(`code|${env.SESSION_PEPPER}|${eh}|${code}`), await sha256hex("link|" + link), now + CODE_TTL_MS, now, now).run();
     if (!demo) {
-      try { await sendMail(env, email, "[Console] Your sign-in code", `Your code is ${code}. It works for 10 minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf you did not ask for this, you can ignore this e-mail.`); }
+      try { await sendMail(env, email, `Your sign-in code is ${code}`, `Your code is ${code}. It works for 10 minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf you did not ask for this, you can ignore this e-mail.`); }
       catch { return fail(502, "mail", "We could not send the e-mail. Please try again in a minute."); }
     }
     return json(200, OK_REQUEST);
@@ -156,13 +163,16 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
   }
   if (post && path === "/auth/link") {
     const b = await readJson(req);
-    if (!(await bump(env, "linkfail:" + (await sha256hex("ip|" + ip)), IP_PER_HOUR, now))) return fail(429, "rate_limited", "Too many tries. Please wait an hour and try again.");
-    if (!b || typeof b.t !== "string" || !/^[0-9a-f]{48}$/.test(b.t)) return json(401, BAD_CODE);
+    const linkKey = "linkfail:" + (await sha256hex("ip|" + ip));
+    const fails = await tables(env).prepare("SELECT n, win_start_ms FROM rate WHERE k=?").bind(linkKey).first<{ n: number; win_start_ms: number }>();
+    if (fails && now - fails.win_start_ms < HOUR && fails.n >= IP_PER_HOUR) return tooMany(Math.max(1, Math.ceil((fails.win_start_ms + HOUR - now) / 60_000)));
+    const badLink = async () => { await bump(env, linkKey, IP_PER_HOUR, now); return json(401, BAD_CODE); }; // only a wrong or used link counts, a good one never does
+    if (!b || typeof b.t !== "string" || !/^[0-9a-f]{48}$/.test(b.t)) return badLink();
     const lh = await sha256hex("link|" + b.t);
     const row = await tables(env).prepare("SELECT email_hash, email_sealed, consent_ms FROM login_code WHERE link_hash=? AND expires_ms>=?").bind(lh, now).first<any>();
-    if (!row) return json(401, BAD_CODE);
+    if (!row) return badLink();
     const gone = await tables(env).prepare("DELETE FROM login_code WHERE link_hash=? AND expires_ms>=?").bind(lh, now).run();
-    if (gone.meta.changes !== 1) return json(401, BAD_CODE);
+    if (gone.meta.changes !== 1) return badLink();
     return startSession(env, row.email_hash, row.email_sealed, row.consent_ms, now);
   }
 
@@ -196,7 +206,7 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
   if (post && path === "/auth/assert") {
     const s = await sessionOf(req, env, now);
     if (!s) return fail(401, "signed_out", "Please sign in again.");
-    if (!(await bump(env, "assert:" + s.sidHash, 600, now))) return fail(429, "rate_limited", "Too many requests. Please wait a minute.");
+    if (!(await bump(env, "assert:" + s.sidHash, 600, now)).ok) return fail(429, "rate_limited", "Too many requests. Please wait a minute.");
     const b = await readJson(req);
     if (!b || !Array.isArray(b.requests) || b.requests.length < 1 || b.requests.length > 12) return fail(400, "invalid", "The request is not complete.");
     let origins: Record<string, string>;

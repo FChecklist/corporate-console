@@ -1,0 +1,1 @@
+{"id": "screens-all-failed-no-games", "repo": ".", "file": "public/screens/mygames.js", "find": "if (!data.rows.length && data.failed.length) body.append(", "replace": "if (false) body.append(", "test": "tests/wp07-screens.test.ts", "note": "games that did not answer look like no games"}

@@ -22,7 +22,7 @@ export async function world(o: { slowMs?: number; timeoutMs?: number } = {}) {
     servers.push(srv); states[id] = S;
     games.push({ id, name, short: name, ready: true, origin: S.origin, freeCap: 10, accent: "#000" });
   }
-  games.push({ id: "luckydraw", name: "Lucky Draw", short: "Lucky Draw", ready: false, origin: "http://127.0.0.1:1", freeCap: 5, accent: "#000" });
+  games.push({ id: "luckydraw", name: "Lucky Draw", short: "Lucky Draw", ready: false, status: "planned", origin: "http://127.0.0.1:1", freeCap: 10, accent: "#000" });
   const { db } = makeD1();
   const mails: string[] = [];
   const env: Env = { DB: db, SESSION_PEPPER: "p", CONSOLE_SIGNING_KEY: btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.exportKey("pkcs8", kp.privateKey)))), CONSOLE_ORIGIN: "", GAME_ORIGINS: JSON.stringify(Object.fromEntries(games.map((g) => [g.id, g.origin]))), MAILER: async (_to, _s, text) => { mails.push(text); } };

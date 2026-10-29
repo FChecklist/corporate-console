@@ -1,0 +1,1 @@
+{"id": "screens-resend-open", "repo": ".", "file": "public/screens/signin.js", "find": "tick(); if (waitMs > 0) timer = setInterval(tick, 1000);", "replace": "resendBtn.disabled = false;", "test": "tests/wp07-screens.test.ts", "note": "Send a new code is open at once"}

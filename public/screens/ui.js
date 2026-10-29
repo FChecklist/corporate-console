@@ -1,6 +1,6 @@
 // Small building blocks shared by every screen in both designs. No inline styles (the page's policy forbids them): colours are set through custom properties.
 import { el } from "../core/dom.js";
-import { OPEN_FAILED } from "../core/errors.js";
+import { OPEN_FAILED, openError } from "../core/errors.js";
 
 export const STATUS_TEXT = { draft: "Draft", waiting_payment: "Waiting for payment", ready: "Ready", playing: "Playing now", finished: "Finished", cancelled: "Cancelled", not_started: "Did not start" };
 export const STATUS_CLASS = { draft: "draft", waiting_payment: "pay", ready: "ready", playing: "live", finished: "done", cancelled: "cancel", not_started: "nostart" };
@@ -43,7 +43,7 @@ export function confirmPanel(host, text, yes = "Yes", no = "No") {
 /** hand over to a game's own page: the console asks the game for a one-time address and goes there (the game checks it; the console never opens a game by itself) */
 export async function openGame(ctx, g, target) {
   const r = await ctx.api.handoff(g.game, { eid: g.eid, target: target || (g.role === "organizer" ? "organizer" : "host") });
-  if (!r.ok) { toast(OPEN_FAILED); return false; }
+  if (!r.ok) { toast(openError(r, (ctx.names && ctx.names[g.game]) || "That game")); return false; }
   (ctx.go || ((u) => location.assign(u)))(r.url);
   return true;
 }

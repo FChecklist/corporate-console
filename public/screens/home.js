@@ -2,7 +2,7 @@
 // "Needs your attention" (waiting for payment, an invitation, starting today) and "Playing now". Nothing else: no prices, no news, no tips.
 import { el, clear } from "../core/dom.js";
 import { withColor, button, whenText, openGame } from "./ui.js";
-import { needsAttention, startsToday } from "../core/merge.js";
+import { needsAttention, startsToday, mergeGames } from "../core/merge.js";
 import { gamesFailedLine } from "../core/errors.js";
 
 const ICON = {
@@ -28,8 +28,12 @@ export async function renderHome(outlet, ctx) {
       door("#/billing", ICON.bill, "Billing", "What to pay, what you paid, your credit.")),
     strips)));
 
-  const l = await api.listGames();
-  const attn = l.rows.filter((g) => needsAttention(g) || startsToday(g));
+  const parts = [];
+  const l0 = await api.listGames({ onGame: (r) => { parts.push(r); paint(mergeGames(parts)); } });
+  paint(l0);
+  function paint(l) {
+  const mine = (g) => g.role === "organizer";
+  const attn = l.rows.filter((g) => (g.status === "waiting_payment" ? mine(g) : needsAttention(g)) || startsToday(g)); // a helper is never asked to pay
   const live = l.rows.filter((g) => g.status === "playing" && !attn.includes(g));
   clear(strips);
   if (l.failed.length) strips.append(el("p", { class: "banner", role: "status", text: gamesFailedLine(l.failed.map((id) => names[id] || id)) }));
@@ -55,5 +59,6 @@ export async function renderHome(outlet, ctx) {
     const sec = el("section", { class: "strip", "aria-labelledby": "h-live" }, el("h2", { id: "h-live", text: "Playing now" }));
     for (const g of live) sec.append(row(g, "Playing now", [button("Open", { main: true, sm: true, onclick: () => openGame(ctx, g) })]));
     strips.append(sec);
+  }
   }
 }

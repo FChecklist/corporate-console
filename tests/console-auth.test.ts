@@ -41,7 +41,7 @@ test("sign-in by code: ask, get one mail with a 6-digit code and a link, verify,
   expect(r.status).toBe(200);
   expect(s.mails.length).toBe(1);
   expect(s.mails[0].to).toBe("asha@acme.com");
-  expect(s.mails[0].subject).toContain("[Console]");
+  expect(s.mails[0].subject).toBe(`Your sign-in code is ${/code is (\d{6})/.exec(s.mails[0].text)![1]}`); // the code is readable in the inbox list
   expect(s.mails[0].text).toMatch(/code is \d{6}/);
   expect(s.mails[0].text).toContain(ORIGIN + "/signin.html?t=");
   const v = await s.call("POST", "/auth/verify", { email: "asha@acme.com", code: s.codeOf() });
@@ -90,17 +90,19 @@ test("a code works once and only for 10 minutes", async () => {
   expect((await s.call("POST", "/auth/verify", { email: "asha@acme.com", code: c2 })).status).toBe(401);
 });
 
-test("the 6th mail within an hour is refused, the 6th after an hour is fine", async () => {
+test("the 9th mail within an hour is refused and says how long to wait, the 9th after an hour is fine", async () => {
   const s = await setup();
-  for (let i = 0; i < 5; i++) expect((await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { ip: "9.9.9." + i })).status).toBe(200);
-  expect((await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { ip: "9.9.9.9" })).status).toBe(429);
-  expect(s.mails.length).toBe(5);
+  for (let i = 0; i < 8; i++) expect((await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { ip: "9.9.9." + i })).status).toBe(200);
+  const refused = await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { ip: "9.9.9.9" });
+  expect(refused.status).toBe(429);
+  expect(refused.json.message).toMatch(/wait \d+ minutes? and try again, or write to hello@corporatetambola\.com/);
+  expect(s.mails.length).toBe(8);
   expect((await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { now: NOW + 3600_000 + 1, ip: "9.9.9.9" })).status).toBe(200);
 });
 
-test("one address (IP) may ask for 20 mails an hour, the 21st is refused", async () => {
+test("one office address (IP) may ask for 60 mails an hour, the 61st is refused", async () => {
   const s = await setup();
-  for (let i = 0; i < 20; i++) expect((await s.call("POST", "/auth/request", { email: `p${i}@acme.com`, consent: true }, { ip: "7.7.7.7" })).status).toBe(200);
+  for (let i = 0; i < 60; i++) expect((await s.call("POST", "/auth/request", { email: `p${i}@acme.com`, consent: true }, { ip: "7.7.7.7" })).status).toBe(200);
   expect((await s.call("POST", "/auth/request", { email: "p99@acme.com", consent: true }, { ip: "7.7.7.7" })).status).toBe(429);
 });
 

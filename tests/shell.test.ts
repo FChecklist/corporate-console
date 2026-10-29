@@ -119,8 +119,8 @@ test("the offline worker has a kill switch: sw-config.json can switch it off, an
 test("games.config.js is generated from config/games.json: six games, Lucky Draw not yet ready, addresses for the chosen environment", async () => {
   const c = await import(join(out, "core/games.config.js").replace(/\\/g, "/"));
   expect(c.GAMES.map((g: any) => g.id)).toEqual(["tambola", "bingo", "tictactoe", "snakesladders", "luckbychance", "luckydraw"]);
-  expect(c.GAMES.map((g: any) => g.freeCap)).toEqual([10, 10, 5, 5, 5, 5]);
-  expect(c.GAMES.find((g: any) => g.id === "luckydraw").ready).toBe(false);
+  expect(c.GAMES.map((g: any) => g.freeCap)).toEqual([10, 10, 10, 10, 10, 10]); // boss ruling 29 Oct: free demo of 10 people everywhere
+  expect(c.GAMES.map((g: any) => [g.id, g.status, g.ready])).toEqual([["tambola", "live", true], ["bingo", "live", true], ["tictactoe", "opening", false], ["snakesladders", "opening", false], ["luckbychance", "opening", false], ["luckydraw", "planned", false]]);
   expect(c.GAMES[0].origin).toBe("https://corporate-tambola.pages.dev");
   expect(c.ENV).toBe("preview");
 });

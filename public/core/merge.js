@@ -1,5 +1,8 @@
 // Pure helpers that merge what the six games answered. Nothing here talks to the network and nothing is stored.
 
+/** the answer of a game whose console bridge is not switched on yet */
+export const OFF = "not-on-console";
+
 /** a game row needs the person's attention: waiting for payment, or an invitation to accept */
 export const needsAttention = (g) => g.nextAction === "accept" || g.status === "waiting_payment";
 
@@ -16,7 +19,7 @@ export function sortGames(rows) {
 /** results: [{ game, ok, rows?, error? }] -> { rows (sorted), failed: [game ids] } */
 export function mergeGames(results) {
   const rows = results.filter((r) => r.ok).flatMap((r) => r.rows);
-  return { rows: sortGames(rows), failed: results.filter((r) => !r.ok).map((r) => r.game) };
+  return { rows: sortGames(rows), failed: results.filter((r) => !r.ok && r.error !== OFF).map((r) => r.game), off: results.filter((r) => !r.ok && r.error === OFF).map((r) => r.game) };
 }
 
 /** totals PER currency; rupees and dollars are never added together */
@@ -28,5 +31,5 @@ export function totalsByCurrency(rows) {
 export function mergeBilling(results) {
   const rows = results.filter((r) => r.ok).flatMap((r) => r.rows).sort((a, b) => b.tsMs - a.tsMs);
   const credits = results.filter((r) => r.ok && r.credit).map((r) => ({ game: r.game, ...r.credit }));
-  return { rows, credits, totals: totalsByCurrency(rows), failed: results.filter((r) => !r.ok).map((r) => r.game) };
+  return { rows, credits, totals: totalsByCurrency(rows), failed: results.filter((r) => !r.ok && r.error !== OFF).map((r) => r.game), off: results.filter((r) => !r.ok && r.error === OFF).map((r) => r.game) };
 }
