@@ -6,8 +6,9 @@ import { mergeGames, mergeBilling } from "./merge.js";
 
 export const GAME_TIMEOUT_MS = 6000;
 
-export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch(...a), timeoutMs = GAME_TIMEOUT_MS, now = () => Date.now() } = {}) {
+export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch(...a), timeoutMs = GAME_TIMEOUT_MS, now = () => Date.now(), onExpired = null } = {}) {
   const vault = createVault();
+  let gen = 0; // raised by Sign out / Close my account: an answer that arrives later must not put keys back
   const ready = games.filter((g) => g.ready);
   const byId = Object.fromEntries(games.map((g) => [g.id, g]));
 
@@ -33,14 +34,15 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
   /** one signed note per request, from the console; the plain e-mail only when asked for (an account is made / an invitation is matched) */
   async function assertions(requests) {
     const r = await own("/auth/assert", { requests });
-    if (!r.ok) return { ok: false, notes: [], status: r.status };
+    if (!r.ok) { if (r.status === 401 && onExpired) onExpired(); return { ok: false, notes: [], status: r.status }; }
     return { ok: true, notes: r.json.assertions };
   }
   const noteFor = (notes, game) => notes.find((n) => n.game === game && n.assertion)?.assertion || null;
 
   /** header values for a game call: the key, plus a fresh one-time confirmation when the action is a high-impact one */
   async function headersFor(game, eid, stepAction) {
-    const k = vault.keyFor(game, eid, now());
+    let k = vault.keyFor(game, eid, now());
+    if (!k) { await connect({ only: [game] }); k = vault.keyFor(game, eid, now()); } // keys last 2 hours: ask for new ones once
     if (!k) return null;
     const h = { "content-type": "application/json", "x-organizer": k.key };
     if (stepAction) {
@@ -54,6 +56,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
 
   /** after sign-in: ask every ready game for this person's keys (in parallel); each game answers or fails on its own */
   async function connect({ create = false, only = null, onGame } = {}) {
+    const g0 = gen; // taken before anything is awaited: a Sign out that happens meanwhile raises gen
     const targets = only ? ready.filter((g) => only.includes(g.id)) : ready; // an account is made only in the game the person chose, never in all of them
     const a = await assertions(targets.map((g) => ({ game: g.id, act: "session", em: create })));
     if (!a.ok) return { ok: false, results: [] };
@@ -63,6 +66,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       const r = await call(g.origin + "/api/console/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: note, create }) });
       if (!r.ok) return finish({ game: g.id, ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused" });
       const j = r.json;
+      if (g0 !== gen) return finish({ game: g.id, ok: false, error: "signed-out" });
       if (j.organizer) vault.put(g.id, "master", null, j.organizer.key, j.organizer.expiresMs);
       for (const s of j.scoped) vault.put(g.id, s.role, s.eid, s.key, s.expiresMs);
       return finish({ game: g.id, ok: true, created: !!j.created, hasAccount: !!j.organizer, scoped: j.scoped.length });
@@ -79,14 +83,18 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       const res = await (async () => {
         const note = noteFor(a.notes, g.id);
         if (!note) return { game: g.id, ok: false, error: "no-assertion" };
-        const out = []; let cursor = null, credit = null, guard = 0;
-        do {
+        const out = []; let cursor = null, credit = null, guard = 0; const t0 = now();
+        try { do {
           const nn = guard === 0 ? note : noteFor((await assertions([{ game: g.id, act }])).notes, g.id); // a note is good once: a second page needs a fresh one
           if (!nn) return { game: g.id, ok: false, error: "no-assertion" };
           const r = await call(g.origin + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: nn, ...(cursor ? { cursor } : {}), ...extraBody }) });
           if (!r.ok) return { game: g.id, ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused" };
-          out.push(...collect(r.json)); credit = r.json.credit ?? credit; cursor = r.json.next; guard++;
+          const part = collect(r.json);
+          if (!Array.isArray(part) || part.some((x) => !x || typeof x !== "object" || typeof x.eid !== "string")) throw new Error("bad answer"); // a game that answers nonsense fails alone
+          out.push(...part); credit = r.json.credit ?? credit; cursor = r.json.next; guard++;
+          if (cursor && now() - t0 > 20000) return { game: g.id, ok: false, error: "unreachable" };
         } while (cursor && guard < 40);
+        } catch { return { game: g.id, ok: false, error: "bad-answer" }; }
         return { game: g.id, ok: true, rows: out, credit };
       })();
       if (onGame) onGame(res);
@@ -147,25 +155,26 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     },
     /** "Close my account": every game forgets the person first; only when ALL answered does the console forget them (a game that does not answer is named and nothing is deleted) */
     async closeAccount() {
+      if (!ready.length) { const c0 = await own("/auth/close", {}); if (c0.ok) { gen++; vault.clear(); } return c0.ok ? { ok: true, failed: [] } : { ok: false, failed: [], error: "console" }; }
       const a = await assertions(ready.map((g) => ({ game: g.id, act: "purge" })));
-      if (!a.ok) return { ok: false, failed: ready.map((g) => g.id) };
+      if (!a.ok) return { ok: false, failed: [], error: "console" };
       const done = await Promise.all(ready.map(async (g) => {
         const note = noteFor(a.notes, g.id);
         if (!note) return [g.id, false];
         const r = await call(g.origin + "/api/console/purge-email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: note }) });
-        return [g.id, r.ok];
+        return [g.id, r.ok || r.status === 404]; // 404 = that game's bridge is dark: nothing to forget there
       }));
       const failed = done.filter(([, ok]) => !ok).map(([id]) => id);
       if (failed.length) return { ok: false, failed };
-      vault.clear();
       const c = await own("/auth/close", {});
+      if (c.ok) { gen++; vault.clear(); }
       return c.ok ? { ok: true, failed: [] } : { ok: false, failed: [], error: "console" };
     },
     /** sign out: every held key is ended in its own game, then the console session; failures of one game do not stop the others */
     async signOut({ everywhere = false } = {}) {
       const held = vault.all();
       await Promise.all(held.map((k) => call(byId[k.game].origin + "/api/console/signout", { method: "POST", headers: { "content-type": "application/json", "x-organizer": k.key }, body: "{}" })));
-      vault.clear();
+      gen++; vault.clear();
       return own("/auth/signout", { everywhere });
     },
   };

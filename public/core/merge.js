@@ -10,7 +10,7 @@ export const startsToday = (g, now = Date.now()) => g.status === "ready" && g.st
 /** order: needs attention first, then playing now, then by start time (soonest first, no start time last), then by name */
 export function sortGames(rows) {
   const rank = (g) => (needsAttention(g) ? 0 : g.status === "playing" ? 1 : g.status === "ready" ? 2 : g.status === "draft" ? 3 : 4);
-  return [...rows].sort((a, b) => rank(a) - rank(b) || (a.startMs ?? Infinity) - (b.startMs ?? Infinity) || a.name.localeCompare(b.name) || a.eid.localeCompare(b.eid));
+  return [...rows].sort((a, b) => rank(a) - rank(b) || (a.startMs ?? Infinity) - (b.startMs ?? Infinity) || String(a.name || "").localeCompare(String(b.name || "")) || String(a.eid).localeCompare(String(b.eid)));
 }
 
 /** results: [{ game, ok, rows?, error? }] -> { rows (sorted), failed: [game ids] } */

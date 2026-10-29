@@ -17,7 +17,9 @@ export async function renderMyGames(outlet, ctx) {
   const seg = el("div", { class: "seg", role: "radiogroup", "aria-label": "Show" }, FILTERS.map(([v, t]) => el("label", {}, el("input", { type: "radio", name: "mf", value: v, checked: v === filter, onchange: () => { filter = v; draw(); } }), el("span", { text: t }))));
   outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "My games" }), el("p", { class: "lead", text: "Every game you organize, host or help with, in one list." }), seg, body)));
 
+  const EID = /^[A-Za-z0-9_-]{4,40}$/;
   async function removeDraft(g, card) {
+    if (!EID.test(g.eid)) return;
     if (!(await confirmPanel(card, "Delete this draft? This cannot be undone.", "Yes, delete", "No"))) return;
     const h = await api.headersFor(g.game, g.eid, "draft-delete");
     if (!h) return toast("Please sign in again.");
@@ -25,6 +27,7 @@ export async function renderMyGames(outlet, ctx) {
     if (r.ok) { data.rows = data.rows.filter((x) => !(x.game === g.game && x.eid === g.eid)); draw(); } else toast("That draft could not be deleted. Please try again.");
   }
   async function copyOf(g) {
+    if (!EID.test(g.eid)) return;
     const h = await api.headersFor(g.game, g.eid);
     if (!h) return toast("Please sign in again.");
     const r = await api.call(`${api.byId[g.game].origin}/api/z/${g.eid}/clone`, { method: "POST", headers: h, body: "{}" });
@@ -38,11 +41,12 @@ export async function renderMyGames(outlet, ctx) {
   function card(g) {
     const btns = [];
     if (g.nextAction === "accept") {
-      if (g.roleId) btns.push(button("Accept", { main: true, sm: true, onclick: () => answer(g, "accept") }), button("Decline", { sm: true, onclick: () => answer(g, "decline") }));
-    } else btns.push(button("Open", { main: true, sm: true, onclick: () => openGame(ctx, g) }));
+      if (g.roleId) btns.push(button("Accept", { main: true, sm: true, label: `Accept the invitation to ${g.name}`, onclick: () => answer(g, "accept") }), button("Decline", { sm: true, label: `Decline the invitation to ${g.name}`, onclick: () => answer(g, "decline") }));
+      else btns.push(el("span", { class: "hintline", text: "Open the game itself to answer this invitation." }));
+    } else btns.push(button("Open", { main: true, sm: true, label: `Open ${g.name}`, onclick: () => openGame(ctx, g) }));
     if (caps[g.game]?.features?.preview && g.nextAction !== "accept") btns.push(el("a", { class: "btn sm", href: `#/view/${g.game}/${g.eid}`, text: "See what players see" }));
-    if (g.role === "organizer") btns.push(button("Create one like this", { sm: true, onclick: () => copyOf(g) }));
-    if (g.status === "draft" && g.role === "organizer") btns.push(button("Delete draft", { sm: true, danger: true, onclick: () => removeDraft(g, c) }));
+    if (g.role === "organizer") btns.push(button("Create one like this", { sm: true, label: `Create one like ${g.name}`, onclick: () => copyOf(g) }));
+    if (g.status === "draft" && g.role === "organizer") btns.push(button("Delete draft", { sm: true, danger: true, label: `Delete the draft ${g.name}`, onclick: () => removeDraft(g, c) }));
     const c = withColor(el("article", { class: "gcard", dataset: { game: g.game, eid: g.eid } },
       el("div", { class: "gname", text: names[g.game] || g.game }), el("h3", { text: g.name }),
       el("div", { class: "chips" }, roleChip(g.role), g.nextAction === "accept" ? el("span", { class: "chip ready", text: "Invitation" }) : chip(g.status)),

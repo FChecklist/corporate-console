@@ -1,4 +1,4 @@
-// FALSIFIED BY: core-key-in-storage, core-waits-for-all, core-extra-header, core-signout-keeps-keys, core-price-hardcoded
+// FALSIFIED BY: core-signout-late-keys, core-key-in-storage, core-waits-for-all, core-extra-header, core-signout-keeps-keys, core-price-hardcoded
 import { test, expect, setDefaultTimeout } from "bun:test";
 
 setDefaultTimeout(30_000);
@@ -108,4 +108,35 @@ test("merge: needs-attention first, then playing, ready, draft, the rest; money 
   expect(totalsByCurrency([{ status: "paid", currency: "INR", amountMinor: 100 }, { status: "paid", currency: "USD", amountMinor: 50 }, { status: "paid", currency: "INR", amountMinor: 20 }, { status: "waiting", currency: "INR", amountMinor: 999 }])).toEqual({ INR: 120, USD: 50 });
   const m = mergeBilling([{ game: "a", ok: true, rows: [{ tsMs: 1, status: "paid", currency: "INR", amountMinor: 5 }], credit: { balanceMinor: 7, currency: "INR", expiresMs: 1 } }, { game: "b", ok: false }]);
   expect(m.failed).toEqual(["b"]); expect(m.credits.length).toBe(1); expect(m.totals).toEqual({ INR: 5 });
+});
+
+test("one game that answers nonsense (200 with a web page, a list that is not a list) never breaks the others, and a 401 from the console sign-in tells the page it ended", async () => {
+  const { createApi } = await import("../public/core/api.js");
+  const games = [{ id: "a", ready: true, origin: "http://a.test" }, { id: "b", ready: true, origin: "http://b.test" }, { id: "c", ready: true, origin: "http://c.test" }];
+  let expired = 0;
+  const fetchFn = async (url: string, init: any = {}) => {
+    const u = String(url);
+    if (u.endsWith("/auth/assert")) return new Response(JSON.stringify({ ok: true, assertions: games.map((g) => ({ game: g.id, assertion: "v1.x.y" })) }), { status: 200 });
+    if (u.startsWith("http://a.test")) return new Response("<html>fallback page</html>", { status: 200 });
+    if (u.startsWith("http://b.test")) return new Response(JSON.stringify({ ok: true, games: "not a list", next: null }), { status: 200 });
+    return new Response(JSON.stringify({ ok: true, games: [{ game: "c", eid: "ABCD1", name: "Good", status: "ready", role: "organizer", startMs: 1, cap: 10, payment: { state: "free" }, nextAction: "none" }], next: null }), { status: 200 });
+  };
+  const api = createApi({ games, consoleOrigin: "http://console.test", fetchFn, timeoutMs: 500, onExpired: () => { expired++; } });
+  const l = await api.listGames();
+  expect(l.rows.map((r: any) => r.eid)).toEqual(["ABCD1"]);
+  expect(l.failed.sort()).toEqual(["a", "b"]);
+  const dead = createApi({ games, consoleOrigin: "http://console.test", fetchFn: async () => new Response(JSON.stringify({ ok: false, error: "signed_out" }), { status: 401 }), timeoutMs: 500, onExpired: () => { expired++; } });
+  await dead.listGames();
+  expect(expired).toBe(1);
+});
+
+test("Sign out: a key that arrives after sign-out is not kept, and Close my account clears keys only when the console really closed", async () => {
+  const w = await world({ slowMs: 0 }); spies();
+  try {
+    await w.signIn();
+    const pending = w.api.connect(); // keys are on their way ...
+    await w.api.signOut({});
+    await pending;
+    expect(w.api.vault.size).toBe(0); // ... and are thrown away when they arrive
+  } finally { w.stop(); }
 });

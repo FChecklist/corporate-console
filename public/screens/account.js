@@ -10,14 +10,19 @@ export async function renderAccount(outlet, ctx) {
   clear(outlet);
   const msg = el("p", { class: "signmsg", role: "status", "aria-live": "polite" });
   const box = el("div", { class: "box", id: "acct-close" });
-  const signOut = async (everywhere) => { await api.signOut({ everywhere }); ctx.onSignedOut && ctx.onSignedOut(); };
+  const signOut = async (everywhere) => {
+    const r = await api.signOut({ everywhere });
+    if (!r.ok) { msg.classList.add("bad"); msg.textContent = "We could not sign you out just now. Please try again."; return; } // never pretend
+    ctx.onSignedOut && ctx.onSignedOut();
+  };
   const close = async () => {
     if (!(await confirmPanel(box, "Close your account now? This cannot be undone.", "Yes, close it", "No"))) return;
     msg.textContent = "One moment."; msg.classList.remove("bad");
     const r = await api.closeAccount();
+    if (!r.ok && r.error === "console") { msg.classList.add("bad"); msg.textContent = "We could not close the account just now. Nothing was changed. Please try again."; return; }
     if (r.ok) { ctx.onSignedOut && ctx.onSignedOut(); return; }
     msg.classList.add("bad");
-    msg.textContent = r.failed && r.failed.length ? `${r.failed.map((id) => names[id] || id).join(", ")} did not answer, so nothing was deleted. You are still signed in. Please try again.` : "We could not close the account just now. Please try again.";
+    msg.textContent = r.failed && r.failed.length ? `${r.failed.map((id) => names[id] || id).join(", ")} did not answer. You are still signed in; please try again. (Games that did answer have already forgotten your e-mail.)` : "We could not close the account just now. Please try again.";
     toast("Your account is still open.");
   };
   box.append(el("h2", { text: "Close my account" }), el("p", { text: CLOSE_WORDS }), button("Close my account", { danger: true, onclick: close }));

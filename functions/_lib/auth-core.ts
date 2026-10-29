@@ -57,11 +57,9 @@ export async function unsealText(env: Env, sealed: string) {
 
 // ---- rate limits: fixed one-hour windows ----
 async function bump(env: Env, key: string, limit: number, now: number): Promise<boolean> {
-  const row = await tables(env).prepare("SELECT n, win_start_ms FROM rate WHERE k=?").bind(key).first<{ n: number; win_start_ms: number }>();
-  if (!row || now - row.win_start_ms >= HOUR) { await tables(env).prepare("INSERT INTO rate(k,n,win_start_ms) VALUES(?,?,?) ON CONFLICT(k) DO UPDATE SET n=excluded.n, win_start_ms=excluded.win_start_ms").bind(key, 1, now).run(); return true; }
-  if (row.n >= limit) return false;
-  await tables(env).prepare("UPDATE rate SET n=n+1 WHERE k=?").bind(key).run();
-  return true;
+  // ONE atomic statement: parallel requests cannot all read "not yet at the limit"
+  const r = await tables(env).prepare("INSERT INTO rate(k,n,win_start_ms) VALUES(?,1,?) ON CONFLICT(k) DO UPDATE SET n=CASE WHEN ?-win_start_ms>=? THEN 1 ELSE n+1 END, win_start_ms=CASE WHEN ?-win_start_ms>=? THEN ? ELSE win_start_ms END RETURNING n").bind(key, now, now, HOUR, now, HOUR, now).first<{ n: number }>();
+  return !!r && r.n <= limit;
 }
 
 // ---- cookie session ----
@@ -140,10 +138,12 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     const eh = await emailHashOf(b.email);
     const row = await tables(env).prepare("SELECT code_hash, email_sealed, expires_ms, attempts, consent_ms FROM login_code WHERE email_hash=?").bind(eh).first<any>();
     if (!row || row.expires_ms < now || row.attempts >= MAX_TRIES) return json(401, BAD_CODE);
+    // every try is counted FIRST, in one atomic statement, so parallel guesses cannot all get past the limit
+    const claim = await tables(env).prepare("UPDATE login_code SET attempts=attempts+1 WHERE email_hash=? AND code_hash=? AND attempts<?").bind(eh, row.code_hash, MAX_TRIES).run();
+    if (claim.meta.changes !== 1) return json(401, BAD_CODE);
     const good = (await sha256hex(`code|${env.SESSION_PEPPER}|${eh}|${b.code}`)) === row.code_hash;
     if (!good) {
-      if (row.attempts + 1 >= MAX_TRIES) await tables(env).prepare("DELETE FROM login_code WHERE email_hash=?").bind(eh).run();
-      else await tables(env).prepare("UPDATE login_code SET attempts=attempts+1 WHERE email_hash=?").bind(eh).run();
+      await tables(env).prepare("DELETE FROM login_code WHERE email_hash=? AND attempts>=?").bind(eh, MAX_TRIES).run(); // the last try is used: the code is gone
       return json(401, BAD_CODE);
     }
     const gone = await tables(env).prepare("DELETE FROM login_code WHERE email_hash=? AND code_hash=?").bind(eh, row.code_hash).run();

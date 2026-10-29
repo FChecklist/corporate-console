@@ -45,7 +45,7 @@ export async function renderHome(outlet, ctx) {
       let rowEl;
       const btns = accept
         ? (g.roleId ? [button("Accept", { main: true, sm: true, onclick: () => answer(g, "accept", rowEl) }), button("Decline", { sm: true, onclick: () => answer(g, "decline", rowEl) })] : [])
-        : [button(g.status === "waiting_payment" ? "Pay" : "Open", { main: true, sm: true, onclick: () => openGame(ctx, g) })];
+        : [button(g.status === "waiting_payment" && g.role !== "cohost" ? "Pay" : "Open", { main: true, sm: true, onclick: () => openGame(ctx, g) })];
       rowEl = row(g, accept ? "Invitation" : g.status === "waiting_payment" ? "Waiting for payment" : "Starts today", btns);
       sec.append(rowEl);
     }

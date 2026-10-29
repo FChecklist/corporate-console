@@ -33,7 +33,7 @@ export async function renderBilling(outlet, ctx) {
     return el("li", { dataset: { game: r.game, eid: r.eid } },
       el("div", { class: "what" }, el("b", { text: r.gameName }), el("span", { text: `${names[r.game] || r.game} · ${dayText(r.tsMs)}` })),
       el("span", { class: "amt", text: money(r.amountMinor, r.currency) }),
-      r.invoice && origin ? el("a", { class: "btn sm", href: origin + r.invoice, target: "_blank", rel: "noopener", text: "Download invoice" }) : null);
+      r.invoice && origin && /^\/api\/invoice\/inv_[0-9a-f]{32}$/.test(r.invoice) ? el("a", { class: "btn sm", href: origin + r.invoice, target: "_blank", rel: "noopener", text: "Download invoice" }) : null);
   })));
 
   body.append(el("h2", { class: "sechead", text: "Your credit" }));

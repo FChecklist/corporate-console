@@ -22,7 +22,7 @@ export async function purgeExpired(env: Env, now: number, doFetch: typeof fetch 
   out.rates = (await tables(env).prepare("DELETE FROM rate WHERE win_start_ms<?").bind(now - 2 * 3600_000).run()).meta.changes;
   // e-mails whose time has come: last_seen + 366 IST days (midnight) is not after now
   // anything due was last seen more than 365 days ago (the exact IST-midnight rule is checked per row)
-  const rows = (await tables(env).prepare("SELECT email_hash, last_seen_ms FROM console_email WHERE last_seen_ms<=? LIMIT 500").bind(now - RETENTION_DAYS * DAY_MS).all<{ email_hash: string; last_seen_ms: number }>()).results;
+  const rows = (await tables(env).prepare("SELECT email_hash, last_seen_ms FROM console_email WHERE last_seen_ms<=? ORDER BY last_seen_ms LIMIT 500").bind(now - RETENTION_DAYS * DAY_MS).all<{ email_hash: string; last_seen_ms: number }>()).results;
   const due = rows.filter((r) => now >= deleteAtMs(r.last_seen_ms));
   if (!due.length) return out;
   let origins: Record<string, string> = {};
@@ -34,14 +34,15 @@ export async function purgeExpired(env: Env, now: number, doFetch: typeof fetch 
       const p: Payload = { v: 1, kid: env.CONSOLE_KID || "k1", aud, sub: r.email_hash, act: "purge", jti: b64uEncode(crypto.getRandomValues(new Uint8Array(16))), iat: Math.floor(now / 1000), exp: Math.floor(now / 1000) + 60 };
       out.gameCalls++;
       try {
-        const res = await doFetch(aud + "/api/console/purge-email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: await signAssertion(p, key) }) });
+        const res = await doFetch(aud + "/api/console/purge-email", { method: "POST", signal: AbortSignal.timeout(8000), headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: await signAssertion(p, key) }) });
         if (!(res.ok || res.status === 404)) { allOk = false; out.gameFailures++; } // 404 = that game's bridge is dark: nothing to forget there
       } catch { allOk = false; out.gameFailures++; }
     }
     if (!allOk && now < deleteAtMs(r.last_seen_ms) + GRACE_MS) { out.deferred++; continue; }
+    const gone = await tables(env).prepare("DELETE FROM console_email WHERE email_hash=? AND last_seen_ms=?").bind(r.email_hash, r.last_seen_ms).run();
+    if (gone.meta.changes !== 1) continue; // the person signed in again while the games were being asked: keep them
     await tables(env).prepare("DELETE FROM session WHERE email_hash=?").bind(r.email_hash).run();
     await tables(env).prepare("DELETE FROM login_code WHERE email_hash=?").bind(r.email_hash).run();
-    await tables(env).prepare("DELETE FROM console_email WHERE email_hash=?").bind(r.email_hash).run();
     out.emails++;
   }
   return out;

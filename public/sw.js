@@ -14,7 +14,7 @@ self.addEventListener("activate", (e) => {
   })());
 });
 
-const cacheable = (url) => url.origin === self.location.origin && !url.pathname.startsWith("/auth/") && !url.pathname.startsWith("/api/") && url.pathname !== "/version.json" && url.pathname !== "/sw-config.json" && url.pathname !== "/sw.js";
+const cacheable = (url) => url.origin === self.location.origin && !url.pathname.startsWith("/auth/") && !url.pathname.startsWith("/api/") && url.pathname !== "/signin.html" && url.pathname !== "/version.json" && url.pathname !== "/sw-config.json" && url.pathname !== "/sw.js";
 
 self.addEventListener("fetch", (e) => {
   const req = e.request, url = new URL(req.url);

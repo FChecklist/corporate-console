@@ -53,6 +53,7 @@ export async function mount(root, copy, design) {
   const help = el("p", { class: "helpline" }, copy.help.text + " ", el("a", { href: "mailto:" + copy.help.email }, copy.help.email));
   root.querySelector("main").after(help);
   await screenFor(route, outlet, copy);
+  const main = document.getElementById("main"); if (main && main.focus) main.focus({ preventScroll: true }); // keyboard users land at the top of the new screen
 }
 
 async function onSignedIn() {
@@ -76,7 +77,7 @@ function updateBar(copy, reg) {
 export async function start() {
   const root = document.getElementById("app");
   const copy = await loadCopy();
-  app.api = createApi({ games: GAMES, consoleOrigin: location.origin });
+  app.api = createApi({ games: GAMES, consoleOrigin: location.origin, onExpired: () => { if (app.signedIn) onSignedOut(); } }); // the console sign-in ended: back to the sign-in screen
   const me = await app.api.auth.me();
   app.signedIn = !!me.json?.signedIn; app.email = me.json?.email || null;
   if (app.signedIn) app.api.connect(); // keys arrive in the background; each game on its own

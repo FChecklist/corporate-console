@@ -1,4 +1,4 @@
-// FALSIFIED BY: screens-home-has-input, screens-mislabel-status, screens-delete-hidden, screens-signin-no-consent, screens-home-fourth-door, screens-create-no-soon-tile, screens-create-account-everywhere, screens-billing-hides-slow, screens-close-before-answers, screens-preview-always, screens-handoff-foreign-address, billing-payee-changed
+// FALSIFIED BY: screens-home-has-input, screens-mislabel-status, screens-delete-hidden, screens-signin-no-consent, screens-home-fourth-door, screens-create-no-soon-tile, screens-create-account-everywhere, screens-billing-hides-slow, screens-close-before-answers, screens-preview-always, screens-handoff-foreign-address, billing-payee-changed, screens-invoice-any-address
 // All six screens (sign in, Home, My games, Create, Billing, Account) plus the Player's screen view run in a DOM against the real sign-in service and five fake games.
 import { test, expect, setDefaultTimeout } from "bun:test";
 import { Window } from "happy-dom";
@@ -152,7 +152,7 @@ test("My games: Open hands over to the game's own sign-in address and nowhere el
     await renderMyGames(o, ctxOf(w, { go: (u: string) => went.push(u) }));
     click(byText(o.querySelector('[data-eid="READY01"][data-game="tambola"]')!, "button", "Open"));
     await until(() => went.length === 1);
-    expect(went[0]).toMatch(new RegExp("^" + w.states.tambola.origin.replace(/[.]/g, "\\.") + "/signin\\.html\\?t=[0-9a-f]{48}&go=console&e=READY01$"));
+    expect(went[0]).toMatch(new RegExp("^" + w.states.tambola.origin.replace(/[.]/g, "\\.") + "/signin\\.html\\?t=[0-9a-f]{48}&go=console&e=READY01(&to=organizer)?$"));
     // a game that answers with an address that is not its own is refused: the page never goes there
     w.states.bingo.origin = "https://evil.example";
     const bad = await w.api.handoff("bingo", { eid: "READY01", target: "organizer" });
@@ -310,4 +310,34 @@ test("payments: the console says once that IT Services by Rajat Agarwal takes th
   }
   const headers = readFileSync(join(import.meta.dir, "../build.mjs"), "utf8");
   expect(/razorpay/i.test(headers)).toBe(false); // and the page's policy lists no payment origin
+});
+
+test("sign-in: a wrong code is told on the code step itself (the message is outside the hidden form) and there is a way back to change the e-mail", async () => {
+  const w = await world({ slowMs: 0 }); spies();
+  try {
+    const o = fresh();
+    renderSignIn(o, ctxOf(w, { onSignedIn: async () => {} }));
+    const submit = (f: Element) => f.dispatchEvent(new win.Event("submit", { cancelable: true, bubbles: true }));
+    const forms = o.querySelectorAll("form"); const form = forms[0]!, codeForm = forms[1]!;
+    (o.querySelector("#si-email") as any).value = "alice@acme.example"; (o.querySelector("#si-consent") as any).checked = true; submit(form);
+    await until(() => !codeForm.classList.contains("hide"));
+    (o.querySelector("#si-code") as any).value = "000000"; submit(codeForm);
+    await until(() => /not right|run out/.test(o.querySelector(".signmsg")!.textContent || ""));
+    expect(form.contains(o.querySelector(".signmsg"))).toBe(false);
+    expect(codeForm.contains(o.querySelector(".signmsg"))).toBe(false);
+    click(byText(codeForm, "button", "Use a different e-mail"));
+    expect(form.classList.contains("hide")).toBe(false);
+    expect(codeForm.classList.contains("hide")).toBe(true);
+  } finally { w.stop(); }
+});
+
+test("Billing: an invoice link that is not an invoice path of the game's own address is not shown", async () => {
+  const w = await world({ slowMs: 0 }); spies();
+  try {
+    await w.signIn(); await w.api.connect();
+    w.states.tambola.billing.forEach((b: any) => { if (b.invoice) b.invoice = "@evil.example/x"; });
+    const o = fresh();
+    await renderBilling(o, ctxOf(w));
+    expect([...o.querySelectorAll("#bill-paid a")].some((a: any) => /evil/.test(a.getAttribute("href")))).toBe(false);
+  } finally { w.stop(); }
 });

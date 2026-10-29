@@ -7,7 +7,7 @@ export const STATUS_CLASS = { draft: "draft", waiting_payment: "pay", ready: "re
 export const ROLE_TEXT = { organizer: "Organizer", host: "Host", cohost: "Co-host", participant: "Participant" };
 
 export const withColor = (node, color) => { node.style.setProperty("--c", color); return node; };
-export const chip = (status) => el("span", { class: "chip " + STATUS_CLASS[status], text: STATUS_TEXT[status] });
+export const chip = (status) => el("span", { class: "chip " + (STATUS_CLASS[status] || ""), text: STATUS_TEXT[status] || "" });
 export const roleChip = (role) => el("span", { class: "role", text: ROLE_TEXT[role] || role });
 export const button = (text, o = {}) => el("button", { type: "button", class: "btn" + (o.main ? " main" : "") + (o.gold ? " gold" : "") + (o.sm ? " sm" : "") + (o.danger ? " danger" : ""), title: o.title, "aria-label": o.label, onclick: o.onclick, disabled: o.disabled }, text);
 export const link = (text, href, cls = "btn sm") => el("a", { class: cls, href }, text);
@@ -35,7 +35,7 @@ export function confirmPanel(host, text, yes = "Yes", no = "No") {
   return new Promise((done) => {
     const close = (v) => { panel.remove(); done(v); };
     const yesBtn = button(yes, { danger: true, onclick: () => close(true) }), noBtn = button(no, { onclick: () => close(false) });
-    const panel = el("div", { class: "confirm", role: "alertdialog", "aria-label": text }, el("p", { text }), el("div", { class: "btns" }, noBtn, yesBtn));
+    const panel = el("div", { class: "confirm", role: "alertdialog", "aria-modal": "true", "aria-label": text, onkeydown: (e) => { if (e.key === "Escape") close(false); } }, el("p", { text }), el("div", { class: "btns" }, noBtn, yesBtn));
     host.append(panel); noBtn.focus();
   });
 }

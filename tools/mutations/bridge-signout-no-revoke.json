@@ -1,1 +1,1 @@
-{"id": "bridge-signout-no-revoke", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "await ad.revokeKeys(env, a.createdBy);\n    return ok({});", "replace": "return ok({});", "test": "tests/bridge.test.ts", "note": "signing out would not end the keys"}
+{"id": "bridge-signout-no-revoke", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "await revoke(ad, env, a.createdBy);\n    return ok({});", "replace": "return ok({});", "test": "tests/bridge.test.ts", "note": "signing out would not end the keys"}

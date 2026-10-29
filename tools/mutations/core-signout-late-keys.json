@@ -1,0 +1,1 @@
+{"id": "core-signout-late-keys", "repo": ".", "file": "public/core/api.js", "find": "if (g0 !== gen) return finish({ game: g.id, ok: false, error: \"signed-out\" });", "replace": "", "test": "tests/core-api.test.ts", "note": "keys arriving after Sign out are kept"}

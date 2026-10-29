@@ -13,15 +13,15 @@ export function renderSignIn(outlet, ctx) {
     el("div", { class: "field" }, el("label", { for: "si-email", text: "Your work e-mail" }), email),
     el("label", { class: "opt" }, consent, el("span", { class: "t" }, el("b", { text: "I agree to the Terms of Use and the Privacy Policy." }), el("span", { text: "We send one code to this address. No password." }))),
     el("p", { class: "hintline" }, el("a", { href: terms, target: "_blank", rel: "noopener" }, "Read the Terms and the Privacy Policy")),
-    msg,
     button("Send me a code", { main: true }));
   form.lastChild.type = "submit";
   const codeBox = el("input", { id: "si-code", inputmode: "numeric", autocomplete: "one-time-code", maxlength: "6", pattern: "[0-9]{6}", "aria-label": "The 6-digit code" });
   const codeForm = el("form", { class: "zform hide", novalidate: true },
     el("div", { class: "field" }, el("label", { for: "si-code", text: "The 6-digit code from your e-mail" }), codeBox),
     button("Sign me in", { main: true }),
+    button("Use a different e-mail", { sm: true, onclick: () => { codeForm.classList.add("hide"); form.classList.remove("hide"); say(""); email.focus(); } }),
     el("p", { class: "hintline", text: "You can also open the link in the same e-mail and press the button there." }));
-  codeForm.lastChild.previousSibling.type = "submit";
+  codeForm.querySelector(".btn.main").type = "submit";
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -41,5 +41,5 @@ export function renderSignIn(outlet, ctx) {
   });
 
   clear(outlet);
-  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page signin" }, el("h1", { text: "Sign in" }), el("p", { class: "lead", text: "Use your work e-mail. We send you a code. There is no password to remember." }), el("p", { id: "si-sent", class: "hintline", role: "status" }), form, codeForm)));
+  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page signin" }, el("h1", { text: "Sign in" }), el("p", { class: "lead", text: "Use your work e-mail. We send you a code. There is no password to remember." }), el("p", { id: "si-sent", class: "hintline", role: "status" }), msg, form, codeForm)));
 }

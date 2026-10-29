@@ -24,8 +24,8 @@ export async function renderCreate(outlet, ctx) {
 
   async function start(game, btn) {
     btn.disabled = true;
-    const r = await api.startNew(game);
-    btn.disabled = false;
+    let r;
+    try { r = await api.startNew(game); } catch { r = { ok: false }; } finally { btn.disabled = false; }
     if (!r.ok) return toast(OPEN_FAILED);
     (ctx.go || ((u) => location.assign(u)))(r.url);
   }
