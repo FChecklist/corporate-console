@@ -85,7 +85,7 @@ export async function handle(S, req) {
       if (!role && rr) { role = rr.role; if (rr.state === "invited") nextAction = "accept"; }
       if (!role) continue;
       const showMoney = role === "organizer" || role === "host";
-      rows.push({ game: S.game, eid: g.eid, role, status: g.status, startMs: g.startMs, cap: g.cap, pack: g.pack, name: g.name, payment: showMoney ? g.payment : { state: g.payment.state }, invitedBy: role === "organizer" ? null : g.orgLabel ?? null, liveNow: g.status === "playing", nextAction, createdMs: g.createdMs });
+      rows.push({ game: S.game, eid: g.eid, role, status: g.status, startMs: g.startMs, cap: g.cap, pack: g.pack, name: g.name, payment: showMoney ? g.payment : { state: g.payment.state }, invitedBy: role === "organizer" ? null : g.orgLabel ?? null, liveNow: g.status === "playing", nextAction, ...(nextAction === "accept" && rr ? { roleId: rr.roleId } : {}), createdMs: g.createdMs });
     }
     rows.sort((a, b) => a.createdMs - b.createdMs || a.eid.localeCompare(b.eid));
     const off = Number(body.cursor || 0) || 0, lim = Math.min(Number(body.limit) || 50, 100);
@@ -188,28 +188,28 @@ export function seedGames(S, subs, opts = {}) {
   const T0 = S.nowMs, day = 86400_000;
   const mk = (eid, o) => S.games.push({ eid, orgSub: alice, name: eid + " party", status: "draft", startMs: T0 + 3 * day, cap: 100, pack: 0, payment: { state: "none" }, nextAction: "publish", createdMs: T0 - 5 * day, orgLabel: "Acme Corp", ...o });
   if (S.persona === "empty") return;
-  if (S.persona === "many") { for (let i = 0; i < 150; i++) mk("M" + String(i).padStart(4, "0"), { createdMs: T0 - i * 1000, status: "finished", nextAction: "none", pack: 100, payment: { state: "paid", amountMinor: 238700, currency: "INR" } }); S.people.add(alice); return; }
+  if (S.persona === "many") { for (let i = 0; i < 150; i++) mk("M" + String(i).padStart(4, "0"), { createdMs: T0 - i * 1000, status: "finished", nextAction: "none", pack: 100, payment: { state: "paid", amountMinor: 239900, currency: "INR" } }); S.people.add(alice); return; }
   mk("DRAFT01", {});
   mk("WAIT001", { status: "waiting_payment", nextAction: "pay", cap: 250, payment: { state: "waiting" } });
-  mk("READY01", { status: "ready", nextAction: "share", pack: 100, startMs: T0 + 2 * 3600_000, payment: { state: "paid", amountMinor: 238700, currency: "INR" } });
-  mk("PLAY001", { status: "playing", nextAction: "run", pack: 250, startMs: T0 - 600_000, payment: { state: "paid", amountMinor: 348100, currency: "INR" } });
-  mk("DONE001", { status: "finished", nextAction: "none", pack: 100, startMs: T0 - 2 * day, payment: { state: "paid", amountMinor: 238700, currency: "INR" } });
+  mk("READY01", { status: "ready", nextAction: "share", pack: 100, startMs: T0 + 2 * 3600_000, payment: { state: "paid", amountMinor: 239900, currency: "INR" } });
+  mk("PLAY001", { status: "playing", nextAction: "run", pack: 250, startMs: T0 - 600_000, payment: { state: "paid", amountMinor: 349900, currency: "INR" } });
+  mk("DONE001", { status: "finished", nextAction: "none", pack: 100, startMs: T0 - 2 * day, payment: { state: "paid", amountMinor: 239900, currency: "INR" } });
   mk("CANC001", { status: "cancelled", nextAction: "none", pack: 100, payment: { state: "credit" } });
-  mk("NOST001", { status: "not_started", nextAction: "none", pack: 100, startMs: T0 - day, payment: { state: "paid", amountMinor: 238700, currency: "INR" } });
+  mk("NOST001", { status: "not_started", nextAction: "none", pack: 100, startMs: T0 - day, payment: { state: "paid", amountMinor: 239900, currency: "INR" } });
   // a game owned by Bob where Alice is Host (accepted) and one where she is invited as Co-host
-  S.games.push({ eid: "BOBS001", orgSub: bob, name: "Bob's quiz night", status: "ready", startMs: T0 + day, cap: 100, pack: 100, payment: { state: "paid", amountMinor: 238700, currency: "INR" }, nextAction: "none", createdMs: T0 - 2 * day, orgLabel: "Bob Industries" });
-  S.games.push({ eid: "CARO001", orgSub: carol, name: "Carol's launch", status: "ready", startMs: T0 + 2 * day, cap: 250, pack: 250, payment: { state: "paid", amountMinor: 348100, currency: "INR" }, nextAction: "none", createdMs: T0 - 1 * day, orgLabel: "Carol & Co" });
+  S.games.push({ eid: "BOBS001", orgSub: bob, name: "Bob's quiz night", status: "ready", startMs: T0 + day, cap: 100, pack: 100, payment: { state: "paid", amountMinor: 239900, currency: "INR" }, nextAction: "none", createdMs: T0 - 2 * day, orgLabel: "Bob Industries" });
+  S.games.push({ eid: "CARO001", orgSub: carol, name: "Carol's launch", status: "ready", startMs: T0 + 2 * day, cap: 250, pack: 250, payment: { state: "paid", amountMinor: 349900, currency: "INR" }, nextAction: "none", createdMs: T0 - 1 * day, orgLabel: "Carol & Co" });
   S.roles.push({ roleId: "aaaaaaaaaa", eid: "BOBS001", role: "host", sub: alice, state: "accepted", emailHint: "a***@x.in" });
   S.roles.push({ roleId: "bbbbbbbbbb", eid: "CARO001", role: "cohost", sub: alice, state: "invited", emailHint: "a***@x.in" });
   S.people.add(alice); S.people.add(bob); S.people.add(carol);
   S.invites.push({ sub: alice, eid: "BOBS001", link: S.origin + "/z.html?e=BOBS001#p=personal" });
-  S.billing.push({ sub: alice, tsMs: T0 - 3 * day, game: S.game, eid: "READY01", gameName: "READY01 party", what: "pack", amountMinor: 238700, currency: "INR", status: "paid", paidBy: "organizer", invoice: "/api/invoice/inv_" + "a".repeat(32) });
-  S.billing.push({ sub: alice, tsMs: T0 - 2 * day, game: S.game, eid: "PLAY001", gameName: "PLAY001 party", what: "pack", amountMinor: 348100, currency: "INR", status: "paid", paidBy: "host", invoice: "/api/invoice/inv_" + "b".repeat(32) });
-  S.billing.push({ sub: alice, tsMs: T0 - 1 * day, game: S.game, eid: "WAIT001", gameName: "WAIT001 party", what: "pack", amountMinor: 348100, currency: "INR", status: "waiting", paidBy: "organizer", invoice: null });
-  S.credit = { sub: alice, balanceMinor: 238700, currency: "INR", expiresMs: T0 + 300 * day };
+  S.billing.push({ sub: alice, tsMs: T0 - 3 * day, game: S.game, eid: "READY01", gameName: "READY01 party", what: "pack", amountMinor: 239900, currency: "INR", status: "paid", paidBy: "organizer", invoice: "/api/invoice/inv_" + "a".repeat(32) });
+  S.billing.push({ sub: alice, tsMs: T0 - 2 * day, game: S.game, eid: "PLAY001", gameName: "PLAY001 party", what: "pack", amountMinor: 349900, currency: "INR", status: "paid", paidBy: "host", invoice: "/api/invoice/inv_" + "b".repeat(32) });
+  S.billing.push({ sub: alice, tsMs: T0 - 1 * day, game: S.game, eid: "WAIT001", gameName: "WAIT001 party", what: "pack", amountMinor: 349900, currency: "INR", status: "waiting", paidBy: "organizer", invoice: null });
+  S.credit = { sub: alice, balanceMinor: 239900, currency: "INR", expiresMs: T0 + 300 * day };
   let seq = 0; const lg = (eid, kind, who, text, data = {}) => S.log.push({ eid, seq: ++seq, tsMs: T0 - 1000 * (20 - seq), kind, who, text, data });
   lg("PLAY001", "created", "organizer", "The game was created.");
-  lg("PLAY001", "payment", "host", "A payment was received.", { amountMinor: 348100, currency: "INR" });
+  lg("PLAY001", "payment", "host", "A payment was received.", { amountMinor: 349900, currency: "INR" });
   lg("PLAY001", "started", "system", "The game started.");
   lg("PLAY001", "number_called", "system", "Number 47 was called.", { number: 47 });
   void opts;

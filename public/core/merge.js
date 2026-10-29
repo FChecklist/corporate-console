@@ -3,6 +3,10 @@
 /** a game row needs the person's attention: waiting for payment, or an invitation to accept */
 export const needsAttention = (g) => g.nextAction === "accept" || g.status === "waiting_payment";
 
+const IST = 19_800_000, DAY = 86_400_000;
+/** a game that is ready and starts on today's date (India time) */
+export const startsToday = (g, now = Date.now()) => g.status === "ready" && g.startMs != null && Math.floor((g.startMs + IST) / DAY) === Math.floor((now + IST) / DAY);
+
 /** order: needs attention first, then playing now, then by start time (soonest first, no start time last), then by name */
 export function sortGames(rows) {
   const rank = (g) => (needsAttention(g) ? 0 : g.status === "playing" ? 1 : g.status === "ready" ? 2 : g.status === "draft" ? 3 : 4);

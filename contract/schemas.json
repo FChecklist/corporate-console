@@ -118,6 +118,7 @@
         "invitedBy": { "type": ["string", "null"], "maxLength": 80 },
         "liveNow": { "type": "boolean" },
         "nextAction": { "type": "string", "enum": ["publish", "pay", "accept", "run", "share", "none"] },
+        "roleId": { "type": "string", "pattern": "^[0-9a-f]{10}$" },
         "createdMs": { "type": "integer" }
       }
     },

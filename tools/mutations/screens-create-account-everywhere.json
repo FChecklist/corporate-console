@@ -1,0 +1,1 @@
+{"id": "screens-create-account-everywhere", "repo": ".", "file": "public/core/api.js", "find": "await connect({ create: true, only: [game] })", "replace": "await connect({ create: true })", "test": "tests/screens.test.ts", "note": "starting one game would make an account in all games"}

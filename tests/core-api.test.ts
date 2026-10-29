@@ -33,7 +33,8 @@ test("the list: five games render while one is slow and one is down; each failur
     const t0 = Date.now();
     const l = await w.api.listGames({ onGame: (r: any) => order.push(r.game + (r.ok ? "+" : "-")) });
     expect(l.failed.sort()).toEqual(["bingo", "tictactoe"]);
-    expect(gamesFailedLine(["Bingo"])).toBe("Could not reach Bingo. Please try again. The other games are shown.");
+    expect(gamesFailedLine(["Bingo"])).toBe("Bingo is slow, try again.");
+    expect(gamesFailedLine(["Bingo", "Tic-Tac-Toe"])).toBe("Bingo and Tic-Tac-Toe are slow, try again.");
     expect(l.rows.filter((r: any) => r.game === "tambola").length).toBe(9);
     expect(l.rows.filter((r: any) => r.game === "luckbychance").length).toBe(150); // paged by 50, three pages
     expect(l.rows[0].status === "waiting_payment" || l.rows[0].nextAction === "accept").toBe(true); // needs attention first

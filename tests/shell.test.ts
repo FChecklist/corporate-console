@@ -46,10 +46,11 @@ test("the page itself has no inline script, no inline style and no inline event 
   for (const f of ["core/dom.js", "core/boot.js", "view-laptop/shell.js", "view-mobile/shell.js"]) expect([f, /["'`]\s*style\s*=/.test(read(f))]).toEqual([f, false]);
 });
 
-test("the top menu is Home, the six games and Billing, and no brand word appears in it, the page title or the app name", async () => {
+test("the menu is exactly Home, My games, Create, Billing, Account (no game names), and no brand word appears in it, the page title or the app name", async () => {
   const boot = await import(join(out, "core/boot.js").replace(/\\/g, "/"));
   const labels = boot.menuItems(copy).map((i: any) => i.label);
-  expect(labels).toEqual(["Home", "Tambola", "Bingo", "Tic-Tac-Toe", "Snakes and Ladders", "Luck by Chance", "Lucky Draw", "Billing"]);
+  expect(labels).toEqual(["Home", "My games", "Create", "Billing", "Account"]);
+  expect(copy.mobileBar).toEqual({ home: "Home", mygames: "My games", create: "Create", billing: "Billing", account: "Account" });
   for (const l of labels) expect(/corporate|console/i.test(l)).toBe(false);
   expect(/<title>([^<]*)<\/title>/.exec(read("index.html"))![1]).toBe("Console");
 });

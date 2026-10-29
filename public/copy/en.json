@@ -1,6 +1,18 @@
 {
-  "menu": { "home": "Home", "billing": "Billing" },
-  "mobileBar": { "home": "Home", "mygames": "My games", "billing": "Billing", "more": "More" },
+  "menu": {
+    "home": "Home",
+    "mygames": "My games",
+    "create": "Create",
+    "billing": "Billing",
+    "account": "Account"
+  },
+  "mobileBar": {
+    "home": "Home",
+    "mygames": "My games",
+    "create": "Create",
+    "billing": "Billing",
+    "account": "Account"
+  },
   "privacy": {
     "phrases": [
       "100% data deletion of player data",
@@ -14,5 +26,9 @@
   "loading": "One moment.",
   "updateReady": "A new version is ready.",
   "updateButton": "Update now",
-  "offline": "You are offline. Showing what was saved on this device."
+  "offline": "You are offline. Showing what was saved on this device.",
+  "help": {
+    "text": "Need help?",
+    "email": "hello@corporatetambola.com"
+  }
 }

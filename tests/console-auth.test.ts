@@ -1,4 +1,4 @@
-// FALSIFIED BY: auth-attempt-limit-raised, auth-exists-leak, auth-link-get-consumes, auth-cookie-not-httponly, auth-csrf-skipped, auth-purge-boundary, auth-demo-always-on, auth-assert-em-always
+// FALSIFIED BY: auth-attempt-limit-raised, auth-exists-leak, auth-link-get-consumes, auth-cookie-not-httponly, auth-csrf-skipped, auth-purge-boundary, auth-demo-always-on, auth-assert-em-always, auth-close-keeps-email, auth-close-one-device
 import { test, expect } from "bun:test";
 import { makeD1 } from "./support/d1-sqlite";
 import { handleAuth, emailHashOf, type Env } from "../functions/_lib/auth-core";
@@ -253,4 +253,23 @@ test("purge also clears old codes, finished sessions and counters (no personal d
   expect(out.sessions).toBe(1);
   expect(out.rates).toBeGreaterThan(0);
   expect(s.raw.query("SELECT COUNT(*) c FROM session").get()).toEqual({ c: 0 });
+});
+
+test("Close my account: needs a sign-in, then the e-mail, every session and any pending code are gone, and the cookie is cleared", async () => {
+  const s = await setup();
+  expect((await s.call("POST", "/auth/close", {})).status).toBe(401);
+  const a = await s.signIn("asha@acme.com");
+  const b = await s.signIn("asha@acme.com", { ip: "9.9.9.9" });
+  await s.signIn("bela@acme.com", { ip: "8.8.8.8" });
+  await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { ip: "7.7.7.7" }); // a code is pending
+  const r = await s.call("POST", "/auth/close", {}, { cookie: a.cookie });
+  expect(r.status).toBe(200);
+  expect(r.headers.get("set-cookie")).toContain("Max-Age=0");
+  expect((await s.call("GET", "/auth/me", undefined, { cookie: a.cookie })).json.signedIn).toBe(false);
+  expect((await s.call("GET", "/auth/me", undefined, { cookie: b.cookie })).json.signedIn).toBe(false); // every device
+  const h = await emailHashOf("asha@acme.com");
+  expect(s.raw.query("SELECT COUNT(*) c FROM console_email WHERE email_hash=?").get(h)).toEqual({ c: 0 });
+  expect(s.raw.query("SELECT COUNT(*) c FROM login_code WHERE email_hash=?").get(h)).toEqual({ c: 0 });
+  expect(s.raw.query("SELECT COUNT(*) c FROM session WHERE email_hash=?").get(h)).toEqual({ c: 0 });
+  expect(s.raw.query("SELECT COUNT(*) c FROM console_email").get()).toEqual({ c: 1 }); // another person is untouched
 });

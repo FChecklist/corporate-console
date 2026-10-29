@@ -1,67 +1,20 @@
-/* Design tokens of the master console (royal blue, gold, cream). One place for colour, type, space. Everything else uses var(--...) */
+/* Design tokens of the master console (royal blue, gold, cream; ink-blue at night). One place for colour, type and space. Everything else uses var(--...). */
 :root {
-  --blue: #0B3D91; --navy: #0A2A66; --wine: #5A1426; --wine2: #7A1C33;
-  --gold: #E0B872; --gold2: #F3D9A4; --goldd: #B8894D; --goldt: #8A6228;
-  --ivory: #FBF6EC; --bg: #F6F1E7; --ink: #1C1014; --ink2: #40343A; --muted: #6B5E63; --line: #E4D9C6; --line2: #EFE6D4;
-  --ok: #1B6B4A; --warn: #8A5A00; --bad: #B3261E;
+  color-scheme: light dark;
+  --navy: #0A2A66; --blue: #0B3D91; --btn: #0B3D91; --btn-hover: #0A2A66; --accent: #0B3D91;
+  --gold: #E0B872; --gold2: #F3D9A4; --goldt: #8A6228;
+  --bg: #F6F1E7; --card: #FFFFFF; --soft: #EFE5CF; --ink: #1C1014; --ink2: #40343A; --muted: #5F5359; --line: #E4D9C6;
+  --ok: #1B6B4A; --warn: #8A5A00; --bad: #B3261E; --wine: #7A1C33;
+  --bar: #0A2A66; --bar-ink: #FFFFFF; --bar-dim: #C4D2EE; --strip: #EFE5CF; --strip-ink: #5d4b3d;
   --serif: Fraunces, Georgia, serif; --sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --tap: 44px;
+  --tap: 44px; --radius: 14px;
 }
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; overflow-wrap: anywhere; }
-h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; color: var(--ink); letter-spacing: -.01em; }
-a { color: inherit; }
-button { font-family: var(--sans); cursor: pointer; }
-:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-.hide { display: none !important; }
-.nojs { padding: 24px; }
-
-/* ---- buttons ---- */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; min-width: var(--tap); padding: 0 22px; border-radius: 10px; border: 1.5px solid var(--blue); background: transparent; color: var(--blue); font-weight: 600; font-size: 15.5px; text-decoration: none; }
-.btn:hover { background: rgba(11, 61, 145, .07); }
-.btn.main { background: var(--blue); color: #fff; }
-.btn.main:hover { background: var(--navy); }
-.btn[disabled] { opacity: .5; cursor: not-allowed; }
-
-/* ---- top menu (laptop): no brand text ---- */
-.top { background: var(--navy); position: sticky; top: 0; z-index: 30; }
-.top .in { max-width: 1120px; margin: 0 auto; padding: 0 32px; display: flex; align-items: stretch; min-height: 60px; gap: 6px; }
-.top nav { display: flex; flex: 1; gap: 2px; overflow-x: auto; scrollbar-width: none; }
-.top nav::-webkit-scrollbar { display: none; }
-.top nav a { display: flex; align-items: center; min-height: var(--tap); padding: 0 13px; font-size: 15px; font-weight: 500; color: #C4D2EE; text-decoration: none; white-space: nowrap; position: relative; }
-.top nav a:hover { color: #fff; }
-.top nav a.on { color: #fff; font-weight: 600; }
-.top nav a.on::after { content: ""; position: absolute; left: 13px; right: 13px; bottom: 0; height: 3px; background: var(--gold); border-radius: 3px 3px 0 0; }
-.top .me { display: flex; align-items: center; padding-left: 18px; font-size: 14px; color: #E8EEFA; text-decoration: none; border-left: 1px solid rgba(255, 255, 255, .18); white-space: nowrap; }
-
-/* ---- privacy strip ---- */
-.priv { background: #EFE5CF; color: #5d4b3d; font-size: 12.5px; line-height: 1.5; padding: 7px 0; }
-.priv .wrap { max-width: 1120px; margin: 0 auto; padding: 0 32px; }
-.priv b { color: var(--wine2); }
-.priv .more-btn { background: none; border: 0; padding: 0 0 0 6px; color: var(--wine2); font-weight: 600; text-decoration: underline; font-size: inherit; min-height: 0; }
-
-/* ---- page ---- */
-main { display: block; min-height: 50vh; }
-.wrap { max-width: 1120px; margin: 0 auto; padding: 0 32px; }
-.page { padding: 40px 0; }
-.page h1 { font-size: clamp(28px, 4vw, 42px); line-height: 1.1; }
-.page .lead { font-size: 17px; color: var(--ink2); max-width: 640px; margin: 12px 0 0; }
-
-/* ---- bottom bar (phone) ---- */
-.mtop { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; background: var(--navy); color: #fff; position: sticky; top: 0; z-index: 30; }
-.mtop h2 { font-size: 20px; color: #fff; flex: 1; }
-.tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #fff; border-top: 1px solid var(--line); padding: 6px 4px calc(8px + env(safe-area-inset-bottom)); }
-.tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 12px; font-weight: 600; color: #6B5E63; text-decoration: none; min-height: 52px; min-width: var(--tap); }
-.tabbar a.on { color: var(--wine2); }
-body.has-tabbar { padding-bottom: 84px; }
-
-/* ---- update bar ---- */
-.updatebar { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 70; background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 12px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-body.has-tabbar .updatebar { bottom: 92px; }
-.updatebar button { min-height: var(--tap); border-radius: 8px; border: 0; padding: 0 16px; font-weight: 600; background: var(--gold); color: #2b1a05; }
-
-@media (max-width: 899px) {
-  .wrap, .priv .wrap { padding: 0 18px; }
-  .page { padding: 26px 0 24px; }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --btn: #2F5FC4; --btn-hover: #3C6FD8; --accent: #9DBAFF;
+    --gold: #E0B872; --goldt: #E3BE7D;
+    --bg: #11141F; --card: #1A1F2E; --soft: #232A3E; --ink: #F2EEE6; --ink2: #D3CDC2; --muted: #ABA6B6; --line: #323A55;
+    --ok: #6FD3A4; --warn: #F0C36A; --bad: #FF8D84; --wine: #F0A3B5;
+    --bar: #0A1226; --bar-ink: #FFFFFF; --bar-dim: #B9C7E6; --strip: #232A3E; --strip-ink: #D8D0C2;
+  }
 }

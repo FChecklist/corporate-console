@@ -1,0 +1,1 @@
+{"id": "screens-handoff-foreign-address", "repo": ".", "file": "public/core/api.js", "find": "if (!url.startsWith(g.origin + \"/signin.html?t=\")) return { ok: false, error: \"wrong-address\" };", "replace": "", "test": "tests/screens.test.ts", "note": "the console would go to any address a game names"}

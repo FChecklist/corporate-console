@@ -3,6 +3,9 @@
 import { GAMES } from "./games.config.js";
 import { el, clear } from "./dom.js";
 import { createApi } from "./api.js";
+import { menuItems, partsOf, menuFor } from "./routes.js";
+
+export { menuItems };
 
 export const BREAKPOINT = 900;
 export const designFor = (width, override) => (override === "laptop" || override === "phone" ? (override === "laptop" ? "laptop" : "phone") : width >= BREAKPOINT ? "laptop" : "phone");
@@ -11,8 +14,6 @@ const readOverride = () => { try { return localStorage.getItem("cg-design"); } c
 
 export async function loadCopy() { return (await fetch("/copy/en.json")).json(); }
 
-/** the menu entries, in order: Home, the six games, Billing */
-export const menuItems = (copy) => [{ id: "home", label: copy.menu.home }, ...GAMES.map((g) => ({ id: g.id, label: g.short })), { id: "billing", label: copy.menu.billing }];
 
 export function privacyStrip(copy) {
   const p = copy.privacy;
@@ -29,12 +30,15 @@ export const app = { api: null, signedIn: false, email: null };
 const routeOf = () => location.hash.replace(/^#\/?/, "") || "home";
 
 async function screenFor(route, outlet, copy) {
-  const ctx = { api: app.api, copy, names, colors, email: app.email, onSignedIn, termsUrl: GAMES[0].origin + "/terms.html" };
+  const ctx = { api: app.api, copy, names, colors, games: GAMES, designIsPhone: window.innerWidth < BREAKPOINT, email: app.email, onSignedIn, onSignedOut, termsUrl: GAMES[0].origin + "/terms.html" };
   if (!app.signedIn) return (await import("../screens/signin.js")).renderSignIn(outlet, ctx);
-  const first = route.split("/")[0];
-  if (first === "home") return (await import("../screens/home.js")).renderHome(outlet, ctx);
+  const parts = partsOf("#/" + route), first = parts[0];
   if (first === "mygames") return (await import("../screens/mygames.js")).renderMyGames(outlet, ctx);
-  return (await import("../screens/soon.js")).renderSoon(outlet, ctx, route);
+  if (first === "create") return (await import("../screens/create.js")).renderCreate(outlet, ctx);
+  if (first === "billing") return (await import("../screens/billing.js")).renderBilling(outlet, ctx);
+  if (first === "account") return (await import("../screens/account.js")).renderAccount(outlet, ctx);
+  if (first === "view") return (await import("../screens/playerview.js")).renderPlayerView(outlet, ctx, parts[1], parts[2]);
+  return (await import("../screens/home.js")).renderHome(outlet, ctx);
 }
 
 export async function mount(root, copy, design) {
@@ -45,7 +49,9 @@ export async function mount(root, copy, design) {
   document.documentElement.dataset.design = design;
   const mod = await import(design === "laptop" ? "../view-laptop/shell.js" : "../view-mobile/shell.js");
   clear(root);
-  const outlet = mod.mountShell(root, { copy, items: menuItems(copy), strip: privacyStrip(copy), route, email: app.email, signedIn: app.signedIn });
+  const outlet = mod.mountShell(root, { copy, items: menuItems(copy), strip: privacyStrip(copy), route: menuFor(route), email: app.email, signedIn: app.signedIn });
+  const help = el("p", { class: "helpline" }, copy.help.text + " ", el("a", { href: "mailto:" + copy.help.email }, copy.help.email));
+  root.querySelector("main").after(help);
   await screenFor(route, outlet, copy);
 }
 
@@ -54,6 +60,11 @@ async function onSignedIn() {
   app.signedIn = !!me.json?.signedIn; app.email = me.json?.email || null;
   if (app.signedIn) await app.api.connect();
   current = null; location.hash = "#/home"; window.dispatchEvent(new HashChangeEvent("hashchange"));
+}
+
+/** after Sign out or Close my account: back to the sign-in screen, nothing of the person kept on the page */
+function onSignedOut() {
+  app.signedIn = false; app.email = null; current = null; location.hash = "#/home"; window.dispatchEvent(new HashChangeEvent("hashchange"));
 }
 
 function updateBar(copy, reg) {

@@ -1,0 +1,1 @@
+{"id": "screens-create-no-soon-tile", "repo": ".", "file": "public/screens/create.js", "find": "if (!g.ready) {", "replace": "if (false) {", "test": "tests/screens.test.ts", "note": "Lucky Draw would look like a playable game"}

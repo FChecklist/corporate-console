@@ -1,0 +1,1 @@
+{"id": "screens-billing-hides-slow", "repo": ".", "file": "public/screens/billing.js", "find": "const failed = [...new Set([...games.failed, ...bill.failed])];", "replace": "const failed = [];", "test": "tests/screens.test.ts", "note": "a slow game would be silently left out"}

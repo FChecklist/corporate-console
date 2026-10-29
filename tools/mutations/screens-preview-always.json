@@ -1,0 +1,1 @@
+{"id": "screens-preview-always", "repo": ".", "file": "public/screens/playerview.js", "find": " || !caps.caps.features?.preview)", "replace": ")", "test": "tests/screens.test.ts", "note": "a preview button for a game that cannot show one"}

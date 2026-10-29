@@ -53,10 +53,11 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
   }
 
   /** after sign-in: ask every ready game for this person's keys (in parallel); each game answers or fails on its own */
-  async function connect({ create = false, onGame } = {}) {
-    const a = await assertions(ready.map((g) => ({ game: g.id, act: "session", em: create })));
+  async function connect({ create = false, only = null, onGame } = {}) {
+    const targets = only ? ready.filter((g) => only.includes(g.id)) : ready; // an account is made only in the game the person chose, never in all of them
+    const a = await assertions(targets.map((g) => ({ game: g.id, act: "session", em: create })));
     if (!a.ok) return { ok: false, results: [] };
-    const results = await Promise.all(ready.map(async (g) => {
+    const results = await Promise.all(targets.map(async (g) => {
       const note = noteFor(a.notes, g.id);
       if (!note) return finish({ game: g.id, ok: false, error: "no-assertion" });
       const r = await call(g.origin + "/api/console/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: note, create }) });
@@ -103,6 +104,62 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     async capabilities() {
       const out = await Promise.all(ready.map(async (g) => { const r = await call(g.origin + "/api/console/capabilities"); return r.ok ? { game: g.id, ok: true, caps: r.json } : { game: g.id, ok: false, error: r.unreachable ? "unreachable" : "refused" }; }));
       return out;
+    },
+    /** the page of a game that the person may open: asks the game for a one-time address (valid 60 seconds). Only the game's own sign-in address is ever returned. */
+    async handoff(game, { eid = null, target = "organizer" } = {}) {
+      const g = byId[game]; if (!g) return { ok: false, error: "unknown-game" };
+      const h = await headersFor(game, eid);
+      if (!h) return { ok: false, error: "no-key" };
+      const r = await call(g.origin + "/api/console/handoff", { method: "POST", headers: h, body: JSON.stringify(target === "new" ? { target } : { eid, target }) });
+      if (!r.ok) return { ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused", message: r.json?.message };
+      const url = String(r.json?.url || "");
+      if (!url.startsWith(g.origin + "/signin.html?t=")) return { ok: false, error: "wrong-address" };
+      return { ok: true, url };
+    },
+    /** "Start a new game": make the person's account in THAT game if it is the first time, then hand over to the game's own Step 1 */
+    async startNew(game) {
+      if (!vault.keyFor(game, null, now())) {
+        const c = await connect({ create: true, only: [game] });
+        if (!c.ok || !c.results[0]?.ok) return { ok: false, error: c.results?.[0]?.error || "no-account" };
+      }
+      return this.handoff(game, { target: "new" });
+    },
+    /** the Player's screen view address of one game (the game checks the key; the console only frames it) */
+    async preview(game, eid) {
+      const g = byId[game]; const h = await headersFor(game, eid);
+      if (!g || !h) return { ok: false, error: "no-key" };
+      const r = await call(g.origin + "/api/console/preview", { method: "POST", headers: h, body: JSON.stringify({ eid }) });
+      if (!r.ok) return { ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused" };
+      const url = String(r.json?.url || "");
+      if (!url.startsWith(g.origin + "/screenview/")) return { ok: false, error: "wrong-address" };
+      return { ok: true, url };
+    },
+    /** answer an invitation (Host / Co-host) with a note for exactly that game and game id */
+    async answerInvitation(game, eid, roleId, op) {
+      const g = byId[game]; if (!g || !["accept", "decline"].includes(op)) return { ok: false, error: "invalid" };
+      const a = await assertions([{ game, act: "role", eid }]);
+      const note = a.ok && noteFor(a.notes, game);
+      if (!note) return { ok: false, error: "signed-out" };
+      const r = await call(g.origin + "/api/console/role", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ op, eid, roleId, assertion: note }) });
+      if (!r.ok) return { ok: false, error: r.unreachable ? "unreachable" : r.json?.error || "refused", message: r.json?.message };
+      if (op === "accept" && r.json?.scoped) vault.put(game, r.json.scoped.role, r.json.scoped.eid, r.json.scoped.key, r.json.scoped.expiresMs);
+      return { ok: true };
+    },
+    /** "Close my account": every game forgets the person first; only when ALL answered does the console forget them (a game that does not answer is named and nothing is deleted) */
+    async closeAccount() {
+      const a = await assertions(ready.map((g) => ({ game: g.id, act: "purge" })));
+      if (!a.ok) return { ok: false, failed: ready.map((g) => g.id) };
+      const done = await Promise.all(ready.map(async (g) => {
+        const note = noteFor(a.notes, g.id);
+        if (!note) return [g.id, false];
+        const r = await call(g.origin + "/api/console/purge-email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: note }) });
+        return [g.id, r.ok];
+      }));
+      const failed = done.filter(([, ok]) => !ok).map(([id]) => id);
+      if (failed.length) return { ok: false, failed };
+      vault.clear();
+      const c = await own("/auth/close", {});
+      return c.ok ? { ok: true, failed: [] } : { ok: false, failed: [], error: "console" };
     },
     /** sign out: every held key is ended in its own game, then the console session; failures of one game do not stop the others */
     async signOut({ everywhere = false } = {}) {

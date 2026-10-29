@@ -1,0 +1,1 @@
+{"id": "screens-close-before-answers", "repo": ".", "file": "public/core/api.js", "find": "if (failed.length) return { ok: false, failed };", "replace": "", "test": "tests/screens.test.ts", "note": "the account would close although a game did not answer"}

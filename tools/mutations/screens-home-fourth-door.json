@@ -1,0 +1,1 @@
+{"id": "screens-home-fourth-door", "repo": ".", "file": "public/screens/home.js", "find": "\"What to pay, what you paid, your credit.\")),", "replace": "\"What to pay, what you paid, your credit.\"), door(\"#/x\", ICON.bill, \"More\", \"x\")),", "test": "tests/screens.test.ts", "note": "a fourth door on Home"}

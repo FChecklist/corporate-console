@@ -183,6 +183,16 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     return json(200, { ok: true }, { "set-cookie": cookieHeader("0".repeat(64), 0) });
   }
 
+  if (post && path === "/auth/close") { // "Close my account": the console forgets this e-mail and every sign-in of it. The page calls this only AFTER every game has been asked to forget the person (purge-email).
+    const s = await sessionOf(req, env, now);
+    if (!s) return fail(401, "signed_out", "Please sign in again.");
+    const db = tables(env);
+    await db.prepare("DELETE FROM session WHERE email_hash=?").bind(s.emailHash).run();
+    await db.prepare("DELETE FROM login_code WHERE email_hash=?").bind(s.emailHash).run();
+    await db.prepare("DELETE FROM console_email WHERE email_hash=?").bind(s.emailHash).run();
+    return json(200, { ok: true }, { "set-cookie": cookieHeader("0".repeat(64), 0) });
+  }
+
   if (post && path === "/auth/assert") {
     const s = await sessionOf(req, env, now);
     if (!s) return fail(401, "signed_out", "Please sign in again.");
