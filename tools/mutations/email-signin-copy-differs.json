@@ -1,0 +1,1 @@
+{"id": "email-signin-copy-differs", "repo": ".", "file": "public/screens/signin.js", "find": "String(e == null ? \"\" : e).normalize(\"NFKC\").trim().toLowerCase();", "replace": "String(e == null ? \"\" : e).trim().toLowerCase();", "test": "tests/email-case.test.ts", "note": "email-signin-copy-differs"}

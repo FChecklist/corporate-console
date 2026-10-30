@@ -1,0 +1,1 @@
+{"id": "auth-session-30-days", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "SESSION_MS = 5 * 365 * 86400_000", "replace": "SESSION_MS = 30 * 86400_000", "test": "tests/console-auth.test.ts", "note": "auth-session-30-days"}

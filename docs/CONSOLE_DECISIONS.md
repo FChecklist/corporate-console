@@ -18,7 +18,7 @@ One page, plain words. "Decided" means the owner has said so. "Default" means th
 
 | # | Question | Default | Needed by |
 |---|---|---|---|
-| D8 | How long a person stays signed in | Console sign-in lasts 30 days if used. Game keys last 2 hours. A "Sign out everywhere" button exists. | W9, W34 |
+| D8 | How long a person stays signed in | A sign-in code and its link work for 30 minutes (5 wrong tries lock the code). Once signed in, a person stays signed in until Sign out: the session slides, 5 years from the last visit. Game keys last 2 hours. A "Sign out everywhere" button exists. | W9, W34 |
 | D9 | Lawyer questions | Whether a seat number kept 365 days is personal data, and the exact privacy-strip wording. Until answered the page says "built to follow" and never claims "100% deleted" for invoices. | W8, W43 |
 | D10 | Upgrades | Allowed only before the game starts, never to a smaller size. | W19 |
 | D11 | Old games in the list | Games older than 365 days are not listed ("games are kept 365 days"). | W36 |

@@ -1,0 +1,1 @@
+{"id": "auth-cookie-strict", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "SameSite=Lax; Path=/", "replace": "SameSite=Strict; Path=/", "test": "tests/console-auth.test.ts", "note": "auth-cookie-strict"}

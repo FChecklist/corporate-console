@@ -57,7 +57,7 @@ test("the menu is exactly Home, My games, Create, Billing, Account (no game name
 
 test("the privacy strip has the five phrases of the owner's brief", () => {
   const text = copy.privacy.phrases.join(" ");
-  for (const p of ["100% data deletion of player data", "DPDP Act", "GDPR", "US privacy law", "global data policy", "close-group online games"]) expect([p, text.includes(p)]).toEqual([p, true]);
+  for (const p of ["Players' personal details are deleted after the game", "DPDP Act", "GDPR", "US privacy law", "global data policy", "close-group online games"]) expect([p, text.includes(p)]).toEqual([p, true]);
   expect(/invoices/i.test(copy.privacy.more)).toBe(true);
   expect(/invoice[^.]*delet/i.test(text + copy.privacy.more)).toBe(false); // never claims invoices are deleted
 });

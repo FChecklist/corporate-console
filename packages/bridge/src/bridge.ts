@@ -5,6 +5,7 @@
 //  * The console only proves WHO the person is. The game decides the role from its own tables (organizer account, game_role). The 'hint' in an assertion is ignored.
 //  * Every assertion is for this game's address, for the right purpose, short-lived, and used once.
 import type { D1 } from "./d1";
+import { normEmail } from "./email";
 import { parseKeyList, verifyAssertion, type Act, type Payload } from "./assertion";
 import { ensureBridgeSchema } from "./schema";
 
@@ -66,7 +67,7 @@ const randHex = (n: number) => hex(crypto.getRandomValues(new Uint8Array(n)));
 const sha256hex = async (s: string) => hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s))));
 const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,255}\.[^@\s]{2,}$/;
 const EID_RE = /^[A-Za-z0-9_-]{4,40}$/;
-const emailHashOf = (email: string) => sha256hex("email|" + email.trim().toLowerCase());
+const emailHashOf = (email: string) => sha256hex("email|" + normEmail(email));
 
 /** 'a***@acme.com' - enough for the organizer to recognise the person, not the address */
 export const emailHint = (email: string) => { const [u, d] = email.split("@"); return (u?.[0] ?? "?") + "***@" + (d ?? ""); };
@@ -192,9 +193,9 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
       const s = await step("role-add", eid); if ("res" in s) return s.res;
       const who = await ad.organizerOf(env, s.pl.sub);
       if (!who || who.org !== a.org) return err(403, "forbidden", "That confirmation belongs to someone else.");
-      if (!["host", "cohost"].includes(body.role) || typeof body.email !== "string" || !EMAIL_RE.test(body.email.trim())) return err(400, "invalid", "Please give a role and a valid e-mail address.");
+      if (!["host", "cohost"].includes(body.role) || typeof body.email !== "string" || !EMAIL_RE.test(normEmail(body.email))) return err(400, "invalid", "Please give a role and a valid e-mail address.");
       if (e.ended) return err(409, "too_late", "That game is over.");
-      const email = body.email.trim().toLowerCase(), eh = await emailHashOf(email);
+      const email = normEmail(body.email), eh = await emailHashOf(email);
       if (await db.prepare("SELECT 1 x FROM game_role WHERE eid=? AND email_hash=? AND state IN ('invited','accepted')").bind(eid, eh).first()) return err(409, "conflict", "That person is already on this game.");
       const roleId = randHex(5);
       await db.prepare("INSERT INTO game_role(role_id,eid,role,email_hash,email_sealed,state,invited_ms,invited_by) VALUES(?,?,?,?,?,'invited',?,?)").bind(roleId, eid, body.role, eh, await ad.seal(env, email), nowMs, a.org).run();

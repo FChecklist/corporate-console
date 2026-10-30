@@ -37,7 +37,7 @@ test("MC-02/03/04 sign-in: Send is locked while it works, 'Send a new code' open
   const resend = [...codeForm.querySelectorAll("button")].find((b: any) => /^Send a new code/.test(b.textContent)) as any;
   expect(resend.disabled).toBe(true);
   expect(resend.textContent).toMatch(/in \d+ s/);
-  expect(o.querySelector("#si-sent")!.textContent).toMatch(/works for 10 minutes \(until \d{1,2}:\d{2} (am|pm)\)/);
+  expect(o.querySelector("#si-sent")!.textContent).toMatch(/works for 30 minutes \(until \d{1,2}:\d{2} (am|pm)\)/);
   expect(o.querySelector("#si-newest")!.textContent).toContain("use the newest e-mail");
   expect(codeForm.textContent).toContain("Use a different e-mail");
   (o.querySelector("#si-code") as any).value = "123456"; submit(codeForm);

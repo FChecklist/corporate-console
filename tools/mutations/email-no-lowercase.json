@@ -1,0 +1,1 @@
+{"id": "email-no-lowercase", "repo": ".", "file": "packages/bridge/src/email.ts", "find": ".trim().toLowerCase();", "replace": ".trim();", "test": "tests/email-case.test.ts", "note": "email-no-lowercase"}

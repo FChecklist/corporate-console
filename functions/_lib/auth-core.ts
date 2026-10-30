@@ -2,6 +2,7 @@
 // Plain functions of (request, env, now) so they can be tested without a server. The Pages Function in functions/auth/[[path]].ts only calls handleAuth.
 import type { D1 } from "../../packages/bridge/src/d1";
 import { tables } from "./tables";
+import { normEmail } from "../../packages/bridge/src/email";
 import { signAssertion, b64uEncode, type Payload, type Act } from "../../packages/bridge/src/assertion";
 
 export interface Env {
@@ -18,12 +19,13 @@ export interface Env {
   MAILER?: (to: string, subject: string, text: string) => Promise<void>; // tests
 }
 
-export const CODE_TTL_MS = 10 * 60_000;
+export const CODE_TTL_MS = 30 * 60_000; // a code and its link work this long (owner decision 30 Oct); 5 wrong tries lock the code, and the rate limits stay
+export const CODE_MINUTES = CODE_TTL_MS / 60_000;
 export const MAX_TRIES = 5;
 export const MAILS_PER_HOUR = 8; // per e-mail address
 export const IP_PER_HOUR = 60; // per office address: several colleagues sign in together before an event
 export const HELP_MAIL = "hello@corporatetambola.com";
-export const SESSION_MS = 30 * 86400_000;
+export const SESSION_MS = 5 * 365 * 86400_000; // a person stays signed in until Sign out: the session slides, 5 years from the last visit (owner decision 30 Oct)
 export const COOKIE = "cbsess";
 const HOUR = 3600_000;
 const DEMO = new Set(["demo1@demo-test.invalid", "demo2@demo-test.invalid", "demo3@demo-test.invalid"]);
@@ -32,7 +34,7 @@ const enc = new TextEncoder();
 const hex = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
 export const sha256hex = async (s: string) => hex(new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s))));
 const randHex = (n: number) => hex(crypto.getRandomValues(new Uint8Array(n)));
-export const normEmail = (e: string) => e.trim().toLowerCase();
+export { normEmail };
 export const emailHashOf = (email: string) => sha256hex("email|" + normEmail(email));
 const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,255}\.[^@\s]{2,}$/;
 
@@ -67,7 +69,7 @@ async function bump(env: Env, key: string, limit: number, now: number): Promise<
 }
 
 // ---- cookie session ----
-const cookieHeader = (sid: string, maxAgeS: number) => `${COOKIE}=${sid}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${maxAgeS}`;
+const cookieHeader = (sid: string, maxAgeS: number) => `${COOKIE}=${sid}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAgeS}`;
 const readSid = (req: Request) => { const m = new RegExp(`(?:^|;\\s*)${COOKIE}=([0-9a-f]{64})`).exec(req.headers.get("cookie") || ""); return m ? m[1] : null; };
 
 async function startSession(env: Env, emailHash: string, sealed: string, consentMs: number | null, now: number) {
@@ -83,7 +85,7 @@ export async function sessionOf(req: Request, env: Env, now: number): Promise<{ 
   const sidHash = await sha256hex("sid|" + sid);
   const row = await tables(env).prepare("SELECT email_hash, last_seen_ms FROM session WHERE sid_hash=? AND expires_ms>?").bind(sidHash, now).first<{ email_hash: string; last_seen_ms: number }>();
   if (!row) return null;
-  if (now - row.last_seen_ms > HOUR) { // sliding 30 days, written at most once an hour
+  if (now - row.last_seen_ms > HOUR) { // sliding (5 years), written at most once an hour; the 365-day clock of the e-mail counts from here too
     await tables(env).prepare("UPDATE session SET last_seen_ms=?, expires_ms=? WHERE sid_hash=?").bind(now, now + SESSION_MS, sidHash).run();
     await tables(env).prepare("UPDATE console_email SET last_seen_ms=? WHERE email_hash=?").bind(now, row.email_hash).run();
   }
@@ -108,7 +110,7 @@ async function readJson(req: Request): Promise<any | null> {
   try { return JSON.parse(t); } catch { return null; }
 }
 
-const OK_REQUEST = { ok: true, message: "If that address can receive mail, a code is on its way. It works for 10 minutes." };
+const OK_REQUEST = { ok: true, message: `If that address can receive mail, a code is on its way. It works for ${CODE_MINUTES} minutes.`, codeMinutes: CODE_MINUTES };
 const BAD_CODE = { ok: false, error: "bad_code", message: "That code is not right or has run out. Ask for a new one." };
 
 export async function handleAuth(req: Request, env: Env, now: number): Promise<Response> {
@@ -137,10 +139,10 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     await tables(env).prepare("INSERT INTO login_code(email_hash,email_sealed,code_hash,link_hash,expires_ms,attempts,sent_ms,consent_ms) VALUES(?,?,?,?,?,0,?,?) ON CONFLICT(email_hash) DO UPDATE SET email_sealed=excluded.email_sealed, code_hash=excluded.code_hash, link_hash=excluded.link_hash, expires_ms=excluded.expires_ms, attempts=0, sent_ms=excluded.sent_ms, consent_ms=excluded.consent_ms")
       .bind(eh, await sealText(env, email), await sha256hex(`code|${env.SESSION_PEPPER}|${eh}|${code}`), await sha256hex("link|" + link), now + CODE_TTL_MS, now, now).run();
     if (!demo) {
-      try { await sendMail(env, email, `Your sign-in code is ${code}`, `Your code is ${code}. It works for 10 minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf you did not ask for this, you can ignore this e-mail.`); }
+      try { await sendMail(env, email, `Your sign-in code is ${code}`, `Your code is ${code}. It works for ${CODE_MINUTES} minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf you did not ask for this, you can ignore this e-mail.`); }
       catch { return fail(502, "mail", "The system could not send the e-mail. Please try again in a minute."); }
     }
-    return json(200, OK_REQUEST);
+    return json(200, { ...OK_REQUEST, expiresMs: now + CODE_TTL_MS });
   }
 
   if (post && path === "/auth/verify") {
@@ -184,7 +186,8 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     const s = await sessionOf(req, env, now);
     if (!s) return json(200, { ok: true, signedIn: false });
     const r = await tables(env).prepare("SELECT email_sealed FROM console_email WHERE email_hash=?").bind(s.emailHash).first<{ email_sealed: string }>();
-    return json(200, { ok: true, signedIn: true, email: r ? await unsealText(env, r.email_sealed) : null });
+    const sid = readSid(req)!; // every visit renews the cookie too (browsers cap a cookie's life, so it is sent again each time)
+    return json(200, { ok: true, signedIn: true, email: r ? await unsealText(env, r.email_sealed) : null }, { "set-cookie": cookieHeader(sid, SESSION_MS / 1000) });
   }
 
   if (post && path === "/auth/signout") {

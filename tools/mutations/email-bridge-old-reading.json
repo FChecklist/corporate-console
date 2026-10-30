@@ -1,0 +1,1 @@
+{"id": "email-bridge-old-reading", "repo": ".", "file": "packages/bridge/src/bridge.ts", "find": "sha256hex(\"email|\" + normEmail(email))", "replace": "sha256hex(\"email|\" + email.trim().toLowerCase())", "test": "tests/email-case.test.ts", "note": "email-bridge-old-reading"}

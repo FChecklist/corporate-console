@@ -1,0 +1,1 @@
+{"id": "auth-code-ttl-10min", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "CODE_TTL_MS = 30 * 60_000", "replace": "CODE_TTL_MS = 10 * 60_000", "test": "tests/console-auth.test.ts", "note": "auth-code-ttl-10min"}

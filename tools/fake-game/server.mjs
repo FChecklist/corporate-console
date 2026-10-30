@@ -7,7 +7,7 @@ const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers
 const H = { "content-type": "application/json", "cache-control": "no-store" };
 const hex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
 export const sha256hex = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
-export const emailHash = (email) => sha256hex("email|" + email.trim().toLowerCase());
+export const emailHash = (email) => sha256hex("email|" + String(email == null ? "" : email).normalize("NFKC").trim().toLowerCase()); // the same reading of an address as packages/bridge/src/email.ts
 const err = (status, error, message, extra = {}) => new Response(JSON.stringify({ ok: false, error, message, ...extra }), { status, headers: { ...H, ...CORS } });
 const ok = (body) => new Response(JSON.stringify({ ok: true, ...body }), { status: 200, headers: { ...H, ...CORS } });
 const KEY_LIFE_MS = 2 * 3600_000, HANDOFF_KEY_MS = 16 * 3600_000;

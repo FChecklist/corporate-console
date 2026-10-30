@@ -1,0 +1,1 @@
+{"id": "email-auth-own-reading", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "export const emailHashOf = (email: string) => sha256hex(\"email|\" + normEmail(email));", "replace": "export const emailHashOf = (email: string) => sha256hex(\"email|\" + email.trim().toLowerCase());", "test": "tests/email-case.test.ts", "note": "email-auth-own-reading"}

@@ -1,0 +1,1 @@
+{"id": "email-no-nfkc", "repo": ".", "file": "packages/bridge/src/email.ts", "find": ".normalize(\"NFKC\").trim()", "replace": ".trim()", "test": "tests/email-case.test.ts", "note": "email-no-nfkc"}

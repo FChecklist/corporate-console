@@ -3,6 +3,8 @@
 import { el, clear } from "../core/dom.js";
 import { button } from "./ui.js";
 
+/* e-mail ID: the same function as packages/bridge/src/email.ts (a test keeps the two identical). The system reads an address in lower case, so it shows it that way. */
+const normEmail = (e) => String(e == null ? "" : e).normalize("NFKC").trim().toLowerCase();
 export const RESEND_AFTER_MS = 30_000;
 const clock = (ms) => new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(" AM", " am").replace(" PM", " pm");
 
@@ -54,7 +56,7 @@ export function renderSignIn(outlet, ctx) {
     sendBtn.disabled = false;
     if (!r.ok) { resendBtn.disabled = false; return say(r.json?.message || "The system could not send the code. Please try again.", true); }
     say(""); form.classList.add("hide"); codeForm.classList.remove("hide"); codeBox.focus();
-    outlet.querySelector("#si-sent").textContent = `${again ? "A new code" : "A code"} is on its way to ${email.value.trim()}. It works for 10 minutes (until ${clock(Date.now() + 10 * 60_000)}).`;
+    outlet.querySelector("#si-sent").textContent = `${again ? "A new code" : "A code"} is on its way to ${normEmail(email.value)}. It works for ${r.json?.codeMinutes || 30} minutes (until ${clock(r.json?.expiresMs || Date.now() + 30 * 60_000)}).`;
     lockResend();
   }
   form.addEventListener("submit", (e) => { e.preventDefault(); if (!sendBtn.disabled) send(false); });
