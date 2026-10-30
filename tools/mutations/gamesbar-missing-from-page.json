@@ -1,1 +1,1 @@
-{"id": "gamesbar-missing-from-page", "repo": ".", "file": "public/index.html", "find": "<script src=\"/gamesbar.js?v=2\" defer></script>\n", "replace": "", "test": "tests/gamesbar.test.ts", "note": "the page forgets to load the bar"}
+{"id": "gamesbar-missing-from-page", "repo": ".", "file": "public/index.html", "find": "<script src=\"/gamesbar.js?v=3\" defer></script>", "replace": "", "test": "tests/gamesbar.test.ts", "note": "the page forgets to load the bar"}

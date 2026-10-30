@@ -28,7 +28,7 @@ test("MC-02/03/04 sign-in: Send is locked while it works, 'Send a new code' open
   const o = fresh();
   renderSignIn(o, { api, onSignedIn: async () => { signed++; }, resendAfterMs: 60_000 });
   const [form, codeForm] = [...o.querySelectorAll("form")] as any[];
-  (o.querySelector("#si-email") as any).value = "alice@acme.example"; (o.querySelector("#si-consent") as any).checked = true;
+  (o.querySelector("#si-email") as any).value = "demo5@demo-test.invalid"; (o.querySelector("#si-consent") as any).checked = true;
   submit(form); submit(form); submit(form); // three quick taps
   expect(asked).toBe(1);
   expect(byText(form, "button", "Send me a code").disabled).toBe(true);
@@ -56,11 +56,11 @@ test("MC-18 a helper (Host or Co-host) is never asked to pay: not on Home, not u
   const mine = row("WAIT002", { name: "My game", status: "waiting_payment", nextAction: "pay", payment: { state: "waiting" } });
   const api: any = { listGames: async () => ({ rows: [helper, mine], failed: [], off: [] }), billing: async () => ({ rows: [], credits: [], failed: [], off: [] }), byId: {} };
   const o = fresh();
-  await renderHome(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "x@y.example" });
+  await renderHome(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "demo6@demo-test.invalid" });
   expect([...o.querySelectorAll(".row")].map((r: any) => r.dataset.eid)).toEqual(["WAIT002"]);
   expect(byText(o.querySelector(".row")!, "button", "Pay")).toBeTruthy();
   const o2 = fresh();
-  await renderBilling(o2, { api, names: { bingo: "Bingo" }, colors: {}, email: "x@y.example" });
+  await renderBilling(o2, { api, names: { bingo: "Bingo" }, colors: {}, email: "demo6@demo-test.invalid" });
   expect([...o2.querySelectorAll("#bill-topay li")].map((r: any) => r.dataset.eid)).toEqual(["WAIT002"]);
 });
 
@@ -69,20 +69,20 @@ test("MC-06/07/17 My games: games that did not answer never read as 'No games ye
   let calls = 0;
   const api: any = { capabilities: async () => [], byId: {}, listGames: async ({ onGame }: any = {}) => { calls++; if (onGame) onGame(slow); return { rows: [], failed: ["bingo"], off: [], results: [slow] }; } };
   const o = fresh();
-  await renderMyGames(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "helper@acme.example" });
+  await renderMyGames(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "demo10@demo-test.invalid" });
   expect(o.textContent).toContain("The system could not reach your games just now.");
   expect(o.textContent).not.toContain("No games yet");
   click(byText(o, "button", "Try again"));
   await until(() => calls >= 2);
   const api2: any = { capabilities: async () => [], byId: {}, listGames: async () => ({ rows: [], failed: [], off: [] }) };
   const o2 = fresh();
-  await renderMyGames(o2, { api: api2, names: {}, colors: {}, email: "helper@acme.example" });
+  await renderMyGames(o2, { api: api2, names: {}, colors: {}, email: "demo10@demo-test.invalid" });
   expect(o2.textContent).toContain("No games yet.");
-  expect(o2.textContent).toContain("You are signed in as helper@acme.example");
+  expect(o2.textContent).toContain("You are signed in as demo10@demo-test.invalid");
   let finish: (v: any) => void = () => {};
   const api3: any = { capabilities: async () => [], byId: {}, listGames: ({ onGame }: any) => new Promise((r) => { onGame({ game: "bingo", ok: true, rows: [row("FAST0001")] }); finish = r; }) };
   const o3 = fresh();
-  const pending = renderMyGames(o3, { api: api3, names: { bingo: "Bingo" }, colors: {}, email: "x@y.example" });
+  const pending = renderMyGames(o3, { api: api3, names: { bingo: "Bingo" }, colors: {}, email: "demo6@demo-test.invalid" });
   await until(() => !!o3.querySelector('[data-eid="FAST0001"]'));
   expect(o3.querySelector('[data-eid="FAST0001"]')).toBeTruthy(); // on screen while the slow game is still being waited for
   finish({ rows: [row("FAST0001")], failed: [], off: [] }); await pending;

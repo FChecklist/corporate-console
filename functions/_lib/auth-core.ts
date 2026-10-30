@@ -14,7 +14,7 @@ export interface Env {
   GAME_ORIGINS: string; // JSON: {"tambola":"https://housie.corporatetambola.com", ...}
   RESEND_API_KEY?: string;
   MAIL_FROM?: string;
-  TEST_MODE?: string; // "1": demo1/2/3@xyz.in with code 123456 and no mail
+  TEST_MODE?: string; // "1": demo1/2/demo7@demo-test.invalid with code 123456 and no mail
   MAILER?: (to: string, subject: string, text: string) => Promise<void>; // tests
 }
 
@@ -26,7 +26,7 @@ export const HELP_MAIL = "hello@corporatetambola.com";
 export const SESSION_MS = 30 * 86400_000;
 export const COOKIE = "cbsess";
 const HOUR = 3600_000;
-const DEMO = new Set(["demo1@xyz.in", "demo2@xyz.in", "demo3@xyz.in"]);
+const DEMO = new Set(["demo1@demo-test.invalid", "demo2@demo-test.invalid", "demo3@demo-test.invalid"]);
 const enc = new TextEncoder();
 
 const hex = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
@@ -91,7 +91,11 @@ export async function sessionOf(req: Request, env: Env, now: number): Promise<{ 
 }
 
 // ---- mail ----
+/** Test addresses (owner rule 30 Oct: demoN@demo-test.invalid) can never be delivered, so nothing is ever sent to them: the mail is only RECORDED here (the last 50, in memory), never given to the mail service. */
+export const recordedMail: Array<{ to: string; subject: string; text: string }> = [];
+export const isTestAddress = (to: string) => /\.invalid$/i.test(String(to).trim());
 async function sendMail(env: Env, to: string, subject: string, text: string) {
+  if (isTestAddress(to)) { recordedMail.push({ to, subject, text }); if (recordedMail.length > 50) recordedMail.shift(); if (env.MAILER) await env.MAILER(to, subject, text); return; } // a test mailer may watch it; the real mail service never does
   if (env.MAILER) return env.MAILER(to, subject, text);
   if (!env.RESEND_API_KEY) throw new Error("no mail key");
   const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" }, body: JSON.stringify({ from: env.MAIL_FROM || "Corporate Games <console@corporatetambola.com>", to: [to], subject, text }) });

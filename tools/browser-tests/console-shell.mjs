@@ -14,7 +14,7 @@ const out = (() => { const i = process.argv.indexOf("--out"); return i >= 0 ? pr
 mkdirSync(out, { recursive: true });
 const dist = mkdtempSync(join(tmpdir(), "shell-dist-"));
 build({ env: "test", out: dist }); // game addresses point at a closed port: the browser never reaches the real games
-const srv = await startServer({ dir: dist, extra: async (req, res, url) => { if (url.pathname === "/auth/me") { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: true, signedIn: true, email: "asha@acme.com" })); return true; } if (url.pathname.startsWith("/auth/")) { res.writeHead(401, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: false, error: "signed_out", message: "Please sign in again." })); return true; } return false; } });
+const srv = await startServer({ dir: dist, extra: async (req, res, url) => { if (url.pathname === "/auth/me") { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: true, signedIn: true, email: "demo4@demo-test.invalid" })); return true; } if (url.pathname.startsWith("/auth/")) { res.writeHead(401, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: false, error: "signed_out", message: "Please sign in again." })); return true; } return false; } });
 const chrome = await launchChrome();
 const results = [];
 const errors = [];

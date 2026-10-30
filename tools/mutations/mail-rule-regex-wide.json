@@ -1,0 +1,1 @@
+{"id": "mail-rule-regex-wide", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "/\\.invalid$/i.test(String(to).trim())", "replace": "/invalid$/i.test(String(to).trim())", "test": "tests/mail-test-mode.test.ts", "note": "mail-rule-regex-wide"}

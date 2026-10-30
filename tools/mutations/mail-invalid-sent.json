@@ -1,0 +1,1 @@
+{"id": "mail-invalid-sent", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "if (isTestAddress(to)) { recordedMail.push", "replace": "if (false) { recordedMail.push", "test": "tests/mail-test-mode.test.ts", "note": "mail-invalid-sent"}

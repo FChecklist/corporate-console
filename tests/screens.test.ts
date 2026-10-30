@@ -19,7 +19,7 @@ const { renderAccount } = await import("../public/screens/account.js");
 const { renderPlayerView, PREVIEW_LABEL } = await import("../public/screens/playerview.js");
 const { STATUS_TEXT } = await import("../public/screens/ui.js");
 
-const ctxOf = (w: any, extra: any = {}) => ({ api: w.api, games: w.games, names: Object.fromEntries(w.games.map((g: any) => [g.id, g.name])), colors: Object.fromEntries(w.games.map((g: any) => [g.id, g.accent])), email: "alice@acme.example", ...extra });
+const ctxOf = (w: any, extra: any = {}) => ({ api: w.api, games: w.games, names: Object.fromEntries(w.games.map((g: any) => [g.id, g.name])), colors: Object.fromEntries(w.games.map((g: any) => [g.id, g.accent])), email: "demo5@demo-test.invalid", ...extra });
 const fresh = () => { const o = document.createElement("div"); document.body.replaceChildren(o); return o; };
 const until = async (f: () => boolean, ms = 60000) => { const t0 = Date.now(); while (!f()) { if (Date.now() - t0 > ms) throw new Error("timed out waiting"); await new Promise((r) => setTimeout(r, 30)); } };
 const click = (n: Element | null | undefined) => (n as any).click();
@@ -34,14 +34,14 @@ test("signed out: only the sign-in form; the consent box is required; the code f
     const email = o.querySelector("#si-email") as any, consent = o.querySelector("#si-consent") as any;
     const submit = (f: Element) => f.dispatchEvent(new win.Event("submit", { cancelable: true, bubbles: true }));
     const forms = o.querySelectorAll("form"); const form = forms[0]!, codeForm = forms[1]!;
-    email.value = "alice@acme.example";
+    email.value = "demo5@demo-test.invalid";
     submit(form);
     expect(o.querySelector(".signmsg")!.textContent).toContain("tick the box");
     expect(w.mails.length).toBe(0);
     consent.checked = true; submit(form);
     await until(() => !codeForm.classList.contains("hide"));
     expect(w.mails.length).toBe(1);
-    expect(o.querySelector("#si-sent")!.textContent).toContain("alice@acme.example");
+    expect(o.querySelector("#si-sent")!.textContent).toContain("demo5@demo-test.invalid");
     (o.querySelector("#si-code") as any).value = "000000"; submit(codeForm);
     await until(() => /not right|run out/.test(o.querySelector(".signmsg")!.textContent || ""));
     expect(signed).toBe(0);
@@ -70,7 +70,7 @@ test("Home: exactly three doors and NO input of any kind; the strips show what n
 test("Home: with nothing to show there is no \"needs attention\" or \"playing now\" strip, only the three doors and one calm first-game line", async () => {
   const api: any = { listGames: async () => ({ rows: [], failed: [] }) };
   const o = fresh();
-  await renderHome(o, { api, names: {}, colors: {}, email: "x@y.example" });
+  await renderHome(o, { api, names: {}, colors: {}, email: "demo6@demo-test.invalid" });
   expect([...o.querySelector("#home-strips")!.children].map((c: any) => c.id)).toEqual(["first-game"]);
   expect(o.querySelectorAll(".door").length).toBe(3);
 });
@@ -199,14 +199,14 @@ test("Create: a Start button only on games that are live; 'Opening soon' (test m
 test("Create: a tile hands over to that game's Step 1 (target new) and makes an account ONLY in that game, only the first time", async () => {
   const w = await world({ slowMs: 0 }); spies();
   try {
-    await w.signIn("newbie@new.example"); await w.api.connect();
+    await w.signIn("demo12@demo-test.invalid"); await w.api.connect();
     expect(w.api.vault.size).toBe(0); // a brand-new person has no key anywhere
     const o = fresh(); const went: string[] = [];
-    await renderCreate(o, ctxOf(w, { go: (u: string) => went.push(u), email: "newbie@new.example" }));
+    await renderCreate(o, ctxOf(w, { go: (u: string) => went.push(u), email: "demo12@demo-test.invalid" }));
     click(byText(o.querySelector('[data-game="tambola"]')!, "button", "Start"));
     await until(() => went.length === 1);
     expect(went[0]).toBe(w.states.tambola.origin + "/signin.html?t=" + /t=([0-9a-f]{48})/.exec(went[0])![1] + "&go=console&e=_new_");
-    const me = await emailHash("newbie@new.example");
+    const me = await emailHash("demo12@demo-test.invalid");
     expect(w.states.tambola.people.has(me)).toBe(true); // the account exists in Tambola
     for (const g of ["bingo", "tictactoe", "snakesladders", "luckbychance"]) expect([g, w.states[g].people.has(me)]).toEqual([g, false]); // and in no other game
     expect(w.api.vault.all().map((k: any) => k.game)).toEqual(["tambola"]);
@@ -246,7 +246,7 @@ test("Account: Sign out and Sign out on every device end the keys and call back;
     expect(w.api.vault.size).toBeGreaterThan(0);
     const o = fresh(); let out = 0;
     await renderAccount(o, ctxOf(w, { onSignedOut: () => { out++; } }));
-    expect(o.querySelector("#acct-email")!.textContent).toBe("alice@acme.example");
+    expect(o.querySelector("#acct-email")!.textContent).toBe("demo5@demo-test.invalid");
     expect([...o.querySelectorAll("button")].map((b: any) => b.textContent)).toEqual(["Sign out", "Sign out on every device", "Download my payments first (CSV)", "Close my account"]);
     click(byText(o, "button", "Sign out"));
     await until(() => out === 1);
@@ -339,7 +339,7 @@ test("sign-in: a wrong code is told on the code step itself (the message is outs
     renderSignIn(o, ctxOf(w, { onSignedIn: async () => {} }));
     const submit = (f: Element) => f.dispatchEvent(new win.Event("submit", { cancelable: true, bubbles: true }));
     const forms = o.querySelectorAll("form"); const form = forms[0]!, codeForm = forms[1]!;
-    (o.querySelector("#si-email") as any).value = "alice@acme.example"; (o.querySelector("#si-consent") as any).checked = true; submit(form);
+    (o.querySelector("#si-email") as any).value = "demo5@demo-test.invalid"; (o.querySelector("#si-consent") as any).checked = true; submit(form);
     await until(() => !codeForm.classList.contains("hide"));
     (o.querySelector("#si-code") as any).value = "000000"; submit(codeForm);
     await until(() => /not right|run out/.test(o.querySelector(".signmsg")!.textContent || ""));

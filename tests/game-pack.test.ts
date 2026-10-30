@@ -120,14 +120,14 @@ test("polish: typing marks the page as unsaved (__ctDirty), saving clears it, an
   await expect(silent("/x")).rejects.toThrow(polish.TIMEOUT_SENTENCE);
   const fast = polish.withTimeout(async () => "fine", 1000);
   expect(await fast("/x")).toBe("fine");
-  const host = document.createElement("div"); polish.showEmail(host, "<b>x</b>@y.example");
-  expect(host.querySelector(".ctp-email")!.textContent).toBe("<b>x</b>@y.example"); expect(host.querySelector("b")).toBe(null);
+  const host = document.createElement("div"); polish.showEmail(host, "<b>x</b>@demo-test.invalid");
+  expect(host.querySelector(".ctp-email")!.textContent).toBe("<b>x</b>@demo-test.invalid"); expect(host.querySelector("b")).toBe(null);
 });
 
 test("the game log shows time + sentence + seat number only, escapes markup, and never reads a name, e-mail or mobile field", () => {
   const o = fresh();
   const rows = [
-    { ts: Date.UTC(2026, 9, 29, 13, 30), text: "Early five won", seat: 17, name: "Asha Verma", email: "asha@x.example", mobile: "9876512345" },
+    { ts: Date.UTC(2026, 9, 29, 13, 30), text: "Early five won", seat: 17, name: "Asha Verma", email: "demo17@demo-test.invalid", mobile: "9876512345" },
     { ts: Date.UTC(2026, 9, 29, 13, 0), text: "<img src=x onerror=alert(1)> Game started" },
     { ts: "bad", text: "ignored" },
   ];

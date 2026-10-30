@@ -48,12 +48,12 @@ test("with TABLE_PREFIX the whole sign-in works inside a database that already h
   const w = await world("con_");
   expect(names(w.raw)).toContain("con_session");
   expect(names(w.raw)).not.toContain("console_email");
-  expect((await w.call("/auth/request", { email: "asha@acme.com", consent: true })).status).toBe(200);
+  expect((await w.call("/auth/request", { email: "demo4@demo-test.invalid", consent: true })).status).toBe(200);
   const code = /code is (\d{6})/.exec(w.mails[0]!)![1];
-  const v = await w.call("/auth/verify", { email: "asha@acme.com", code });
+  const v = await w.call("/auth/verify", { email: "demo4@demo-test.invalid", code });
   expect(v.status).toBe(200);
   const cookie = /(cbsess=[0-9a-f]{64})/.exec(v.headers.get("set-cookie")!)![1];
-  expect((await w.call("/auth/me", undefined, cookie)).json).toEqual({ ok: true, signedIn: true, email: "asha@acme.com" });
+  expect((await w.call("/auth/me", undefined, cookie)).json).toEqual({ ok: true, signedIn: true, email: "demo4@demo-test.invalid" });
   expect(w.raw.query("SELECT COUNT(*) c FROM con_session").get()).toEqual({ c: 1 });
   expect(w.raw.query("SELECT COUNT(*) c FROM con_console_email").get()).toEqual({ c: 1 });
   expect(w.raw.query("SELECT * FROM session").all()).toEqual([{ id: "keep", note: "not mine" }]);
@@ -64,7 +64,7 @@ test("with TABLE_PREFIX the whole sign-in works inside a database that already h
 
 test("the daily clean-up uses the same prefix", async () => {
   const w = await world("con_");
-  await w.call("/auth/request", { email: "asha@acme.com", consent: true });
+  await w.call("/auth/request", { email: "demo4@demo-test.invalid", consent: true });
   const out = await purgeExpired(w.env, NOW + 400 * 86400_000, (async () => new Response("{}")) as any);
   expect(out.codes).toBeGreaterThan(0);
   expect(w.raw.query("SELECT COUNT(*) c FROM con_login_code").get()).toEqual({ c: 0 });
@@ -74,7 +74,7 @@ test("the daily clean-up uses the same prefix", async () => {
 test("a bad prefix stops the sign-in service instead of running unsafe SQL", async () => {
   const w = await world("con_");
   w.env.TABLE_PREFIX = "x; DROP TABLE session";
-  await expect(w.call("/auth/request", { email: "asha@acme.com", consent: true })).rejects.toThrow();
+  await expect(w.call("/auth/request", { email: "demo4@demo-test.invalid", consent: true })).rejects.toThrow();
   expect(w.raw.query("SELECT COUNT(*) c FROM session").get()).toEqual({ c: 1 });
 });
 
@@ -82,7 +82,7 @@ test("without a prefix the console uses its own plain table names (the default)"
   const { db, raw } = makeD1();
   const mails: string[] = [];
   const env: Env = { DB: db, SESSION_PEPPER: "p", CONSOLE_SIGNING_KEY: "x", CONSOLE_ORIGIN: ORIGIN, GAME_ORIGINS: "{}", MAILER: async (_t, _s, text) => { mails.push(text); } };
-  const r = await handleAuth(new Request(ORIGIN + "/auth/request", { method: "POST", headers: { "content-type": "application/json", origin: ORIGIN, "x-console": "1" }, body: JSON.stringify({ email: "asha@acme.com", consent: true }) }), env, NOW);
+  const r = await handleAuth(new Request(ORIGIN + "/auth/request", { method: "POST", headers: { "content-type": "application/json", origin: ORIGIN, "x-console": "1" }, body: JSON.stringify({ email: "demo4@demo-test.invalid", consent: true }) }), env, NOW);
   expect(r.status).toBe(200);
   expect(raw.query("SELECT COUNT(*) c FROM login_code").get()).toEqual({ c: 1 });
 });

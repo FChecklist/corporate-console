@@ -79,7 +79,7 @@ export async function makeHost(o: { origin?: string; nowMs?: number; pubkeys?: "
     seal: async (e, t) => "sealed:" + btoa(t), unseal: async (e, s) => atob(s.replace("sealed:", "")),
     previewUrl: async (e, p) => ({ url: `${origin}/screenview/${p.eid}?t=${hex(30)}`, expiresMs: p.nowMs + 15 * 60_000 }),
   };
-  const people = { alice: await sha("email|alice@acme.example"), bob: await sha("email|bob@bob.example"), carol: await sha("email|carol@carol.example") };
+  const people = { alice: await sha("email|demo5@demo-test.invalid"), bob: await sha("email|demo8@demo-test.invalid"), carol: await sha("email|demo9@demo-test.invalid") };
   return { env, raw, db, adapter, mails, clock, pub: kp.publicB64u, priv: kp.privateKey, origin, people };
 }
 
@@ -99,8 +99,8 @@ export function seed(h: Host) {
   g("NOST001", "orgA", "NOST001 party", "not_started", T0 - DAY, 100, 100, T0 - 5 * DAY, "paid", 239900, "Acme Corp", "none");
   g("BOBS001", "orgB", "Bob's quiz night", "ready", T0 + DAY, 100, 100, T0 - 2 * DAY, "paid", 239900, "Bob Industries", "none");
   g("CARO001", "orgC", "Carol's launch", "ready", T0 + 2 * DAY, 250, 250, T0 - DAY, "paid", 349900, "Carol & Co", "none");
-  h.raw.run("INSERT INTO game_role VALUES ('aaaaaaaaaa','BOBS001','host',?,?, 'accepted',?,?, 'orgB')", [alice, "sealed:" + btoa("alice@acme.example"), T0 - DAY, T0 - DAY]);
-  h.raw.run("INSERT INTO game_role VALUES ('bbbbbbbbbb','CARO001','cohost',?,?, 'invited',?,NULL, 'orgC')", [alice, "sealed:" + btoa("alice@acme.example"), T0 - DAY]);
+  h.raw.run("INSERT INTO game_role VALUES ('aaaaaaaaaa','BOBS001','host',?,?, 'accepted',?,?, 'orgB')", [alice, "sealed:" + btoa("demo5@demo-test.invalid"), T0 - DAY, T0 - DAY]);
+  h.raw.run("INSERT INTO game_role VALUES ('bbbbbbbbbb','CARO001','cohost',?,?, 'invited',?,NULL, 'orgC')", [alice, "sealed:" + btoa("demo5@demo-test.invalid"), T0 - DAY]);
   h.raw.run("INSERT INTO bill VALUES (?,?,?,?,?,?,?,?,?)", ["orgA", T0 - 3 * DAY, "READY01", "READY01 party", "pack", 239900, "paid", "organizer", "/api/invoice/inv_" + "a".repeat(32)]);
   h.raw.run("INSERT INTO bill VALUES (?,?,?,?,?,?,?,?,?)", ["orgA", T0 - 2 * DAY, "PLAY001", "PLAY001 party", "pack", 349900, "paid", "host", "/api/invoice/inv_" + "b".repeat(32)]);
   h.raw.run("INSERT INTO bill VALUES (?,?,?,?,?,?,?,?,?)", ["orgA", T0 - DAY, "WAIT001", "WAIT001 party", "pack", 349900, "waiting", "organizer", null]);

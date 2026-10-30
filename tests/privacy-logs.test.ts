@@ -7,9 +7,9 @@ import { handleAuth, type Env } from "../functions/_lib/auth-core";
 import { purgeExpired } from "../functions/_lib/purge";
 
 setDefaultTimeout(60_000);
-const EMAIL = "Zed.Fuzz+9@fuzzcorp-test.example", MOBILE = "9876512345", MOBILE_SPACED = "98765 12345", MOBILE_PLUS = "+919876512345";
+const EMAIL = "Demo16@Demo-Test.invalid", MOBILE = "9876512345", MOBILE_SPACED = "98765 12345", MOBILE_PLUS = "+919876512345";
 const ORIGIN = "https://console.test";
-const seen = (text: string) => [EMAIL, EMAIL.toLowerCase(), "fuzzcorp-test", MOBILE, MOBILE_SPACED, MOBILE_PLUS].filter((s) => text.toLowerCase().includes(s.toLowerCase()));
+const seen = (text: string) => [EMAIL, EMAIL.toLowerCase(), "demo-test", MOBILE, MOBILE_SPACED, MOBILE_PLUS].filter((s) => text.toLowerCase().includes(s.toLowerCase()));
 
 test("no log line, error text, game call line or plain database column carries the e-mail or the mobile number", async () => {
   const lines: string[] = [];
@@ -50,7 +50,7 @@ test("a fake game that receives a note for this person writes no e-mail or mobil
   const { world } = await import("./support/world");
   const w = await world({ slowMs: 0 });
   try {
-    await w.signIn("zed.fuzz+9@fuzzcorp-test.example"); await w.api.connect({ create: true });
+    await w.signIn("demo16@demo-test.invalid"); await w.api.connect({ create: true });
     await w.api.listGames(); await w.api.billing();
     await w.api.handoff("tambola", { target: "new" });
     const all = Object.values(w.states).map((S: any) => JSON.stringify([S.calls, S.log])).join("\n");

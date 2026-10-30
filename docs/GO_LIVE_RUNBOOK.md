@@ -114,7 +114,7 @@ $W secret put SESSION_PEPPER
 cd ../..
 ```
 
-**2.9 First sign-in on a COPY with `TEST_MODE=1`**: in the Pages project settings add the plain variable `TEST_MODE` = `1`, sign in with `demo1@xyz.in`, code `123456` (no e-mail is sent), then delete `TEST_MODE` again and sign in with a real address.
+**2.9 First sign-in on a COPY with `TEST_MODE=1`**: in the Pages project settings add the plain variable `TEST_MODE` = `1`, sign in with `demo1@demo-test.invalid`, code `123456` (no e-mail is sent), then delete `TEST_MODE` again and sign in with a real address.
 
 Verify: `https://corporate-console.pages.dev/` shows the sign-in screen, the Corporate Games bar and the version line ("Version 0.1.0, released ... IST"); `https://corporate-console.pages.dev/version.json` carries `version`, `releasedAt` and `releasedAtIST`; `/auth/me` answers `{"ok":true,"signedIn":false}`; the response headers carry the Content-Security-Policy and `frame-ancestors 'none'`; a real sign-in code arrives by e-mail. Rollback: unlink the project's domain, `$W pages project delete corporate-console` and `$W delete --name corporate-console-cron` if nothing else uses them, and put `CONSOLE_ORIGIN` back with `git checkout wrangler.toml apps/cron/wrangler.toml` (the database can stay: it holds only sign-in codes and sessions).
 
@@ -140,7 +140,7 @@ Same as Step 4 for Tic Tac Toe, plus: the tournament page opens from the console
 
 ## Step 6. Bridge ON for Snakes and Ladders
 
-Same as Step 4 for Snakes and Ladders, plus: an 11th person on the free 10-person game is refused and the test logins `demo1/2/3@xyz.in` do not work in live mode. Verify and Rollback as Step 4.
+Same as Step 4 for Snakes and Ladders, plus: an 11th person on the free 10-person game is refused and the test logins `demo1/2/demo7@demo-test.invalid` do not work in live mode. Verify and Rollback as Step 4.
 
 ## Step 7. Bridge ON for Luck by Chance (only after its Tambola hardening port is live)
 

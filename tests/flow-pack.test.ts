@@ -54,7 +54,7 @@ test("the pack holds no game name and no outside address in its code, and no ban
 test("Dashboard v2 pure parts: the waiting table shows a column only when somebody gave that detail; the shared message carries the Game ID and link", () => {
   const F = page().ZFLOW;
   expect(F.waitColumns([{ id: "1" }]).map((c: any) => c.label)).toEqual(["Ticket number"]);
-  const rows = [{ id: "1", firstName: "Asha", last4: "4321", via: "boss@acme.com" }, { id: "2", email: "x@y.com" }];
+  const rows = [{ id: "1", firstName: "Asha", last4: "4321", via: "demo19@demo-test.invalid" }, { id: "2", email: "demo27@demo-test.invalid" }];
   expect(F.waitColumns(rows).map((c: any) => c.label)).toEqual(["Ticket number", "Name", "Email ID", "Mobile", "Referred by"]);
   const m = F.shareMessage("Team party", "http://x/z?e=E1", "E1");
   expect(m).toContain("Game ID: E1"); expect(m).toContain("http://x/z?e=E1");
@@ -97,7 +97,7 @@ test("a game that has the TermsBox instead of CBConsent: Publish waits for its b
   await new Promise((r) => setTimeout(r, 20));
   expect(posted[0]).toEqual(["mount", "K1"]);
   expect(d.getElementById("zf-publish").disabled).toBe(true);
-  const em = d.getElementById("zf-pemail"); em.value = "a@b.co"; em.dispatchEvent(new win.Event("input"));
+  const em = d.getElementById("zf-pemail"); em.value = "demo11@demo-test.invalid"; em.dispatchEvent(new win.Event("input"));
   const ph = d.getElementById("zf-pphone"); ph.value = "98765 43210"; ph.dispatchEvent(new win.Event("input"));
   const box = d.querySelector("#zf-consent input"); box.checked = true; box.dispatchEvent(new win.Event("change"));
   expect(d.getElementById("zf-publish").disabled).toBe(false);
@@ -142,7 +142,7 @@ test("a game whose CBConsent draws its boxes from loaded text (load / html / bin
   await new Promise((r) => setTimeout(r, 30));
   expect(posted[0].slice(0, 2)).toEqual(["load", "K1"]);
   expect(d.getElementById("zf-publish").disabled).toBe(true);
-  const em = d.getElementById("zf-pemail"); em.value = "a@b.co"; em.dispatchEvent(new win.Event("input"));
+  const em = d.getElementById("zf-pemail"); em.value = "demo11@demo-test.invalid"; em.dispatchEvent(new win.Event("input"));
   const ph = d.getElementById("zf-pphone"); ph.value = "98765 43210"; ph.dispatchEvent(new win.Event("input"));
   for (const c of d.querySelectorAll("#zf-consent input")) { c.checked = true; c.dispatchEvent(new win.Event("change")); }
   expect(d.getElementById("zf-publish").disabled).toBe(false);

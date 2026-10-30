@@ -1,0 +1,1 @@
+{"id": "mail-invalid-not-recorded", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "recordedMail.push({ to, subject, text }); if", "replace": "if", "test": "tests/mail-test-mode.test.ts", "note": "mail-invalid-not-recorded"}

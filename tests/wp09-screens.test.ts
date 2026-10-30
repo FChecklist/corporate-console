@@ -37,7 +37,7 @@ test("MC-12/14/15 Billing: a finance link for a game to pay, 'paid by' and the i
     payLink: async () => { made++; return { ok: true, url: "https://bingo.test/paylink.html?t=" + "0".repeat(48) }; },
   };
   const o = fresh();
-  await renderBilling(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "x@y.example" });
+  await renderBilling(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "demo6@demo-test.invalid" });
   click(byText(o, "button", "Copy link for finance"));
   await until(() => made === 1 && copied.length > 0);
   expect(copied).toBe("https://bingo.test/paylink.html?t=" + "0".repeat(48));
@@ -59,7 +59,7 @@ test("MC-10/23/24 Account: says what closing leaves behind and warns about paid 
   expect(w).toEqual(["You have 2 paid games still to come. Closing the account does not cancel them.", "You have credit: Rs 1,000 in Bingo. It stays with the game's own account; this screen cannot use it afterwards."]);
   const api: any = { listGames: async () => ({ rows: [gameRow("A0000001")], failed: [], off: [] }), billing: async () => ({ rows: [paidRow()], credits: [], failed: [], off: [] }), signOut: async () => ({ ok: true }), closeAccount: async () => ({ ok: true }) };
   const o = fresh();
-  await renderAccount(o, { api, names: { bingo: "Bingo" }, email: "x@y.example", games: [{ origin: "https://housie.test" }] });
+  await renderAccount(o, { api, names: { bingo: "Bingo" }, email: "demo6@demo-test.invalid", games: [{ origin: "https://housie.test" }] });
   await until(() => !!o.querySelector("#acct-warn .banner"));
   expect(o.querySelector("#acct-warn")!.textContent).toContain("1 paid game still to come");
   expect(byText(o, "button", "Download my payments first (CSV)")).toBeTruthy();
@@ -79,7 +79,7 @@ test("MC-31 Make a copy: when the game does not hand back a NEW id nothing is op
   for (const [reply, expected] of [[{ ok: true, json: {} }, []], [{ ok: true, json: { id: "ORIG0001" } }, []], [{ ok: true, json: { id: "COPY0002" } }, ["COPY0002"]]] as any[]) {
     went.length = 0;
     const o = fresh();
-    await renderMyGames(o, { api: mk(reply), names: { bingo: "Bingo" }, colors: {}, email: "x@y.example", go: () => {} });
+    await renderMyGames(o, { api: mk(reply), names: { bingo: "Bingo" }, colors: {}, email: "demo6@demo-test.invalid", go: () => {} });
     expect(byText(o, "button", "Create one like this")).toBeUndefined();
     click(byText(o, "button", "Make a copy"));
     await new Promise((r) => setTimeout(r, 150));
@@ -90,7 +90,7 @@ test("MC-31 Make a copy: when the game does not hand back a NEW id nothing is op
 test("MC-19/20 My games shows how many joined and the person's limit when the game says so; a finished game opens to 'Results and game log'", async () => {
   const api: any = { byId: {}, capabilities: async () => [], listGames: async () => ({ rows: [gameRow("LIVE0001", { joined: 37, yourLimit: 100, role: "cohost" }), gameRow("DONE0001", { status: "finished" })], failed: [], off: [] }) };
   const o = fresh();
-  await renderMyGames(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "x@y.example" });
+  await renderMyGames(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "demo6@demo-test.invalid" });
   expect(o.querySelector('[data-eid="LIVE0001"]')!.textContent).toContain("up to 100 people, 37 joined, you can add up to 100");
   expect(byText(o.querySelector('[data-eid="DONE0001"]')!, "button", "Results and game log")).toBeTruthy();
   expect(byText(o.querySelector('[data-eid="LIVE0001"]')!, "button", "Open")).toBeTruthy();
@@ -99,10 +99,10 @@ test("MC-19/20 My games shows how many joined and the person's limit when the ga
 test("MC-30 a person with no games and no failures sees one calm first-game line", async () => {
   const api: any = { listGames: async () => ({ rows: [], failed: [], off: [] }) };
   const o = fresh();
-  await renderHome(o, { api, names: {}, colors: {}, email: "x@y.example" });
+  await renderHome(o, { api, names: {}, colors: {}, email: "demo6@demo-test.invalid" });
   expect(o.querySelector("#first-game")!.textContent).toContain("Keep ready: the date and time, how many people will play, the prizes, and your company name.");
   const o2 = fresh();
-  await renderHome(o2, { api: { listGames: async () => ({ rows: [], failed: ["bingo"], off: [] }) }, names: { bingo: "Bingo" }, colors: {}, email: "x@y.example" });
+  await renderHome(o2, { api: { listGames: async () => ({ rows: [], failed: ["bingo"], off: [] }) }, names: { bingo: "Bingo" }, colors: {}, email: "demo6@demo-test.invalid" });
   expect(o2.querySelector("#first-game")).toBe(null); // not when the games simply did not answer
 });
 

@@ -43,4 +43,4 @@ Roles per game by e-mail (invite, accept with the invited mailbox, remove), keys
 - Account creation by the console records no Terms consent in the game (the game's own sign-up records K2); the console shows its own consent box. Lawyer / owner to decide the wording.
 - `game_role` rows (hash + sealed e-mail) are not yet deleted with the game or at account close; W16 must add that to `eraseEverything` and account close in each game.
 - The hand-off for the Tic Tac Toe tournament page (`host.html`) and the big screen currently opens the organizer screen; the `target` is not yet remembered.
-- The test-login addresses (`demo1/2/3@xyz.in`) work on live Snakes without a test-mode check; the bridge never uses them.
+- The test-login addresses (`demo1/2/demo7@demo-test.invalid`) work on live Snakes without a test-mode check; the bridge never uses them.

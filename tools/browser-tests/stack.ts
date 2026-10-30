@@ -18,7 +18,7 @@ const TYPES: Record<string, string> = { ".html": "text/html; charset=utf-8", ".j
 
 const kp = await makeKeyPair();
 const keys = parseKeyList("k1:" + kp.publicB64u);
-const subs = { alice: await emailHash("alice@acme.example"), bob: await emailHash("bob@bob.example"), carol: await emailHash("carol@carol.example") };
+const subs = { alice: await emailHash("demo5@demo-test.invalid"), bob: await emailHash("demo8@demo-test.invalid"), carol: await emailHash("demo9@demo-test.invalid") };
 const servers: any[] = [], ports: Record<string, string> = {};
 for (const g of cfg.games.filter((x: any) => x.ready)) {
   const S: any = newGame({ game: g.id, name: "Corporate " + g.name, persona: PERSONA[g.id] || "normal", origin: "", keys });
@@ -58,6 +58,6 @@ const con = Bun.serve({
   },
 });
 env.CONSOLE_ORIGIN = `http://127.0.0.1:${con.port}`;
-console.log("STACK " + JSON.stringify({ origin: env.CONSOLE_ORIGIN, games: ports, email: "alice@acme.example" }));
+console.log("STACK " + JSON.stringify({ origin: env.CONSOLE_ORIGIN, games: ports, email: "demo5@demo-test.invalid" }));
 await new Promise(() => {}); // run until stopped
 void servers;

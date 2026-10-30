@@ -10,7 +10,7 @@ export const NAMES: Array<[string, string, string]> = [["tambola", "Tambola", "n
 export async function world(o: { slowMs?: number; timeoutMs?: number } = {}) {
   const kp = await makeKeyPair();
   const keys = parseKeyList("k1:" + kp.publicB64u);
-  const subs = { alice: await emailHash("alice@acme.example"), bob: await emailHash("bob@bob.example"), carol: await emailHash("carol@carol.example") };
+  const subs = { alice: await emailHash("demo5@demo-test.invalid"), bob: await emailHash("demo8@demo-test.invalid"), carol: await emailHash("demo9@demo-test.invalid") };
   const servers: any[] = [], games: any[] = [], states: any = {}, headersSeen: Record<string, Set<string>> = {};
   for (const [id, name, persona] of NAMES) {
     const S: any = newGame({ game: id, name: "Corporate " + name, persona, origin: "", keys });
@@ -38,7 +38,7 @@ export async function world(o: { slowMs?: number; timeoutMs?: number } = {}) {
     return r;
   };
   const api = createApi({ games, consoleOrigin, fetchFn, timeoutMs: o.timeoutMs ?? 1500 });
-  const signIn = async (email = "alice@acme.example") => { await api.auth.request(email, true); const code = /code is (\d{6})/.exec(mails[mails.length - 1]!)![1]!; return api.auth.verify(email, code); };
+  const signIn = async (email = "demo5@demo-test.invalid") => { await api.auth.request(email, true); const code = /code is (\d{6})/.exec(mails[mails.length - 1]!)![1]!; return api.auth.verify(email, code); };
   const stop = () => { for (const s of [...servers, cs]) s.stop(true); };
   return { api, signIn, states, games, headersSeen, stop, mails };
 }

@@ -59,7 +59,7 @@ test("an account is made only if the e-mail in the note really belongs to the pe
   const t = await up();
   try {
     // dave's e-mail but nobody's hash: the claim does not match, nothing is created
-    const bad = await (await t.post("/api/console/session", { create: true, assertion: await t.asr({ act: "session", person: "nobody", mutate: { em: "dave@new.example" } }) })).json();
+    const bad = await (await t.post("/api/console/session", { create: true, assertion: await t.asr({ act: "session", person: "nobody", mutate: { em: "demo14@demo-test.invalid" } }) })).json();
     expect(bad.created).toBe(false); expect(bad.organizer).toBe(null);
     expect(t.h.raw.query("SELECT COUNT(*) c FROM organizer_email").get()).toEqual({ c: 3 });
     const good = await (await t.post("/api/console/session", { create: true, assertion: await t.asr({ act: "session", person: "dave", withEm: true }) })).json();
@@ -160,16 +160,16 @@ test("an invitation mail goes only to the typed address, once; a second invitati
   try {
     const key = (await t.session("alice")).organizer.key;
     const step = await t.asr({ act: "stepup", sa: "role-add", eid: "READY01", person: "alice" });
-    const r = await t.post("/api/console/role", { op: "invite", eid: "READY01", role: "cohost", email: "Helper@Acme.Example" }, { "x-organizer": key, "x-console-step": step });
+    const r = await t.post("/api/console/role", { op: "invite", eid: "READY01", role: "cohost", email: "Demo10@Demo-Test.Invalid" }, { "x-organizer": key, "x-console-step": step });
     expect(r.status).toBe(200);
-    expect(t.h.mails).toEqual([{ to: "helper@acme.example", eid: "READY01", role: "cohost" }]);
+    expect(t.h.mails).toEqual([{ to: "demo10@demo-test.invalid", eid: "READY01", role: "cohost" }]);
     const step2 = await t.asr({ act: "stepup", sa: "role-add", eid: "READY01", person: "alice" });
-    const dup = await t.post("/api/console/role", { op: "invite", eid: "READY01", role: "host", email: "helper@acme.example" }, { "x-organizer": key, "x-console-step": step2 });
+    const dup = await t.post("/api/console/role", { op: "invite", eid: "READY01", role: "host", email: "demo10@demo-test.invalid" }, { "x-organizer": key, "x-console-step": step2 });
     expect(dup.status).toBe(409);
     expect(t.h.mails.length).toBe(1);
     const list = await (await t.post("/api/console/role", { op: "list", eid: "READY01" }, { "x-organizer": key })).json();
     expect(list.roles.length).toBe(1);
-    expect(list.roles[0].emailHint).toBe("h***@acme.example");
+    expect(list.roles[0].emailHint).toBe("d***@demo-test.invalid");
     expect(JSON.stringify(list)).not.toContain("helper@");
   } finally { t.stop(); }
 });

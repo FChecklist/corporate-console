@@ -37,80 +37,80 @@ async function setup(extra: Partial<Env> = {}) {
 
 test("sign-in by code: ask, get one mail with a 6-digit code and a link, verify, get a cookie", async () => {
   const s = await setup();
-  const r = await s.call("POST", "/auth/request", { email: "Asha@Acme.com", consent: true });
+  const r = await s.call("POST", "/auth/request", { email: "Demo4@Demo-Test.invalid", consent: true });
   expect(r.status).toBe(200);
   expect(s.mails.length).toBe(1);
-  expect(s.mails[0].to).toBe("asha@acme.com");
+  expect(s.mails[0].to).toBe("demo4@demo-test.invalid");
   expect(s.mails[0].subject).toBe(`Your sign-in code is ${/code is (\d{6})/.exec(s.mails[0].text)![1]}`); // the code is readable in the inbox list
   expect(s.mails[0].text).toMatch(/code is \d{6}/);
   expect(s.mails[0].text).toContain(ORIGIN + "/signin.html?t=");
-  const v = await s.call("POST", "/auth/verify", { email: "asha@acme.com", code: s.codeOf() });
+  const v = await s.call("POST", "/auth/verify", { email: "demo4@demo-test.invalid", code: s.codeOf() });
   expect(v.status).toBe(200);
   const me = await s.call("GET", "/auth/me", undefined, { cookie: /(cbsess=[0-9a-f]{64})/.exec(v.headers.get("set-cookie")!)![1] });
-  expect(me.json).toEqual({ ok: true, signedIn: true, email: "asha@acme.com" });
+  expect(me.json).toEqual({ ok: true, signedIn: true, email: "demo4@demo-test.invalid" });
 });
 
 test("consent is required; a bad e-mail is refused before anything is sent", async () => {
   const s = await setup();
-  expect((await s.call("POST", "/auth/request", { email: "a@b.co" })).json.error).toBe("consent");
+  expect((await s.call("POST", "/auth/request", { email: "demo11@demo-test.invalid" })).json.error).toBe("consent");
   expect((await s.call("POST", "/auth/request", { email: "nonsense", consent: true })).json.error).toBe("invalid");
   expect(s.mails.length).toBe(0);
 });
 
 test("the cookie has exactly these flags: HttpOnly, Secure, SameSite=Strict, Path=/, 30 days", async () => {
   const s = await setup();
-  const { v } = await s.signIn("asha@acme.com");
+  const { v } = await s.signIn("demo4@demo-test.invalid");
   expect(v.headers.get("set-cookie")).toMatch(/^cbsess=[0-9a-f]{64}; HttpOnly; Secure; SameSite=Strict; Path=\/; Max-Age=2592000$/);
 });
 
 test("5 wrong codes lock the code: even the right one fails afterwards", async () => {
   const s = await setup();
-  await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true });
+  await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true });
   const right = s.codeOf(), wrong = right === "000000" ? "111111" : "000000";
-  for (let i = 0; i < 5; i++) expect((await s.call("POST", "/auth/verify", { email: "asha@acme.com", code: wrong })).status).toBe(401);
-  expect((await s.call("POST", "/auth/verify", { email: "asha@acme.com", code: right })).status).toBe(401);
+  for (let i = 0; i < 5; i++) expect((await s.call("POST", "/auth/verify", { email: "demo4@demo-test.invalid", code: wrong })).status).toBe(401);
+  expect((await s.call("POST", "/auth/verify", { email: "demo4@demo-test.invalid", code: right })).status).toBe(401);
 });
 
 test("4 wrong codes do not lock: the right one still works", async () => {
   const s = await setup();
-  await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true });
+  await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true });
   const right = s.codeOf(), wrong = right === "000000" ? "111111" : "000000";
-  for (let i = 0; i < 4; i++) await s.call("POST", "/auth/verify", { email: "asha@acme.com", code: wrong });
-  expect((await s.call("POST", "/auth/verify", { email: "asha@acme.com", code: right })).status).toBe(200);
+  for (let i = 0; i < 4; i++) await s.call("POST", "/auth/verify", { email: "demo4@demo-test.invalid", code: wrong });
+  expect((await s.call("POST", "/auth/verify", { email: "demo4@demo-test.invalid", code: right })).status).toBe(200);
 });
 
 test("a code works once and only for 10 minutes", async () => {
   const s = await setup();
-  await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true });
+  await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true });
   const code = s.codeOf();
-  expect((await s.call("POST", "/auth/verify", { email: "asha@acme.com", code }, { now: NOW + 10 * 60_000 + 1 })).status).toBe(401);
-  await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true });
+  expect((await s.call("POST", "/auth/verify", { email: "demo4@demo-test.invalid", code }, { now: NOW + 10 * 60_000 + 1 })).status).toBe(401);
+  await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true });
   const c2 = s.codeOf();
-  expect((await s.call("POST", "/auth/verify", { email: "asha@acme.com", code: c2 })).status).toBe(200);
-  expect((await s.call("POST", "/auth/verify", { email: "asha@acme.com", code: c2 })).status).toBe(401);
+  expect((await s.call("POST", "/auth/verify", { email: "demo4@demo-test.invalid", code: c2 })).status).toBe(200);
+  expect((await s.call("POST", "/auth/verify", { email: "demo4@demo-test.invalid", code: c2 })).status).toBe(401);
 });
 
 test("the 9th mail within an hour is refused and says how long to wait, the 9th after an hour is fine", async () => {
   const s = await setup();
-  for (let i = 0; i < 8; i++) expect((await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { ip: "9.9.9." + i })).status).toBe(200);
-  const refused = await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { ip: "9.9.9.9" });
+  for (let i = 0; i < 8; i++) expect((await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true }, { ip: "9.9.9." + i })).status).toBe(200);
+  const refused = await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true }, { ip: "9.9.9.9" });
   expect(refused.status).toBe(429);
   expect(refused.json.message).toMatch(/wait \d+ minutes? and try again, or write to hello@corporatetambola\.com/);
   expect(s.mails.length).toBe(8);
-  expect((await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { now: NOW + 3600_000 + 1, ip: "9.9.9.9" })).status).toBe(200);
+  expect((await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true }, { now: NOW + 3600_000 + 1, ip: "9.9.9.9" })).status).toBe(200);
 });
 
 test("one office address (IP) may ask for 60 mails an hour, the 61st is refused", async () => {
   const s = await setup();
   for (let i = 0; i < 60; i++) expect((await s.call("POST", "/auth/request", { email: `p${i}@acme.com`, consent: true }, { ip: "7.7.7.7" })).status).toBe(200);
-  expect((await s.call("POST", "/auth/request", { email: "p99@acme.com", consent: true }, { ip: "7.7.7.7" })).status).toBe(429);
+  expect((await s.call("POST", "/auth/request", { email: "demo25@demo-test.invalid", consent: true }, { ip: "7.7.7.7" })).status).toBe(429);
 });
 
 test("a known and an unknown e-mail get the same answer, byte for byte", async () => {
   const s = await setup();
-  await s.signIn("known@acme.com");
-  const a = await s.call("POST", "/auth/request", { email: "known@acme.com", consent: true }, { ip: "5.5.5.5" });
-  const b = await s.call("POST", "/auth/request", { email: "stranger@acme.com", consent: true }, { ip: "5.5.5.6" });
+  await s.signIn("demo15@demo-test.invalid");
+  const a = await s.call("POST", "/auth/request", { email: "demo15@demo-test.invalid", consent: true }, { ip: "5.5.5.5" });
+  const b = await s.call("POST", "/auth/request", { email: "demo26@demo-test.invalid", consent: true }, { ip: "5.5.5.6" });
   expect(a.status).toBe(b.status);
   expect(a.text).toBe(b.text);
   expect(a.text).not.toContain("exists");
@@ -118,7 +118,7 @@ test("a known and an unknown e-mail get the same answer, byte for byte", async (
 
 test("the one-tap link: opening it (GET) consumes nothing; the button (POST) works once", async () => {
   const s = await setup();
-  await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true });
+  await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true });
   const t = s.linkOf();
   for (let i = 0; i < 3; i++) expect((await s.call("GET", "/auth/link?t=" + t)).status).toBe(200); // a mail scanner opening it three times
   const first = await s.call("POST", "/auth/link", { t });
@@ -129,47 +129,47 @@ test("the one-tap link: opening it (GET) consumes nothing; the button (POST) wor
 
 test("a link older than 10 minutes does nothing", async () => {
   const s = await setup();
-  await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true });
+  await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true });
   expect((await s.call("POST", "/auth/link", { t: s.linkOf() }, { now: NOW + 10 * 60_000 + 1 })).status).toBe(401);
 });
 
 test("every POST needs the X-Console header and the console's own Origin", async () => {
   const s = await setup();
-  const body = { email: "asha@acme.com", consent: true };
+  const body = { email: "demo4@demo-test.invalid", consent: true };
   expect((await s.call("POST", "/auth/request", body, { headers: { "x-console": "" } })).status).toBe(403);
   expect((await s.call("POST", "/auth/request", body, { headers: { origin: "https://evil.example" } })).status).toBe(403);
   expect((await s.call("POST", "/auth/request", body)).status).toBe(200);
   expect(s.mails.length).toBe(1);
 });
 
-test("test logins demo1/2/3@xyz.in with code 123456 exist ONLY when TEST_MODE is set, and send no mail", async () => {
+test("test logins demo1/2/demo7@demo-test.invalid with code 123456 exist ONLY when TEST_MODE is set, and send no mail", async () => {
   const off = await setup();
-  await off.call("POST", "/auth/request", { email: "demo1@xyz.in", consent: true });
+  await off.call("POST", "/auth/request", { email: "demo1@demo-test.invalid", consent: true });
   expect(off.mails.length).toBe(1); // a normal address: a real mail with a random code
-  expect((await off.call("POST", "/auth/verify", { email: "demo1@xyz.in", code: "123456" })).status).toBe(off.codeOf() === "123456" ? 200 : 401);
+  expect((await off.call("POST", "/auth/verify", { email: "demo1@demo-test.invalid", code: "123456" })).status).toBe(off.codeOf() === "123456" ? 200 : 401);
   const on = await setup({ TEST_MODE: "1" });
-  await on.call("POST", "/auth/request", { email: "demo2@xyz.in", consent: true });
+  await on.call("POST", "/auth/request", { email: "demo2@demo-test.invalid", consent: true });
   expect(on.mails.length).toBe(0);
-  expect((await on.call("POST", "/auth/verify", { email: "demo2@xyz.in", code: "123456" })).status).toBe(200);
-  await on.call("POST", "/auth/request", { email: "other@xyz.in", consent: true });
+  expect((await on.call("POST", "/auth/verify", { email: "demo2@demo-test.invalid", code: "123456" })).status).toBe(200);
+  await on.call("POST", "/auth/request", { email: "demo24@demo-test.invalid", consent: true });
   expect(on.mails.length).toBe(1); // only the three demo addresses are special
 });
 
 test("the e-mail is stored sealed: the database never holds it in plain letters", async () => {
   const s = await setup();
-  await s.signIn("asha.secret@acme.com");
+  await s.signIn("demo13@demo-test.invalid");
   const all = JSON.stringify([s.raw.query("SELECT * FROM console_email").all(), s.raw.query("SELECT * FROM login_code").all(), s.raw.query("SELECT * FROM session").all(), s.raw.query("SELECT * FROM rate").all()]);
   expect(all).not.toContain("asha.secret");
-  expect(all).toContain(await emailHashOf("asha.secret@acme.com"));
+  expect(all).toContain(await emailHashOf("demo13@demo-test.invalid"));
 });
 
 test("sessions slide for 30 days and die after 30 idle days; sign-out ends one, 'everywhere' ends all", async () => {
   const s = await setup();
-  const { cookie } = await s.signIn("asha@acme.com");
+  const { cookie } = await s.signIn("demo4@demo-test.invalid");
   const day = 86400_000;
   for (let d = 1; d <= 3; d++) expect(((await s.call("GET", "/auth/me", undefined, { cookie, now: NOW + d * 29 * day })).json).signedIn).toBe(true); // used every 29 days: stays alive
   expect(((await s.call("GET", "/auth/me", undefined, { cookie, now: NOW + 3 * 29 * day + 31 * day })).json).signedIn).toBe(false);
-  const a = await s.signIn("asha@acme.com", { now: NOW + 200 * day }), b = await s.signIn("asha@acme.com", { now: NOW + 200 * day, ip: "2.2.2.2" });
+  const a = await s.signIn("demo4@demo-test.invalid", { now: NOW + 200 * day }), b = await s.signIn("demo4@demo-test.invalid", { now: NOW + 200 * day, ip: "2.2.2.2" });
   await s.call("POST", "/auth/signout", {}, { cookie: a.cookie, now: NOW + 200 * day });
   expect(((await s.call("GET", "/auth/me", undefined, { cookie: a.cookie, now: NOW + 200 * day })).json).signedIn).toBe(false);
   expect(((await s.call("GET", "/auth/me", undefined, { cookie: b.cookie, now: NOW + 200 * day })).json).signedIn).toBe(true);
@@ -179,12 +179,12 @@ test("sessions slide for 30 days and die after 30 idle days; sign-out ends one, 
 
 test("assertions: one per game, 60 seconds, made for that game's address, single-purpose, never the same twice", async () => {
   const s = await setup();
-  const { cookie } = await s.signIn("asha@acme.com");
+  const { cookie } = await s.signIn("demo4@demo-test.invalid");
   const r = await s.call("POST", "/auth/assert", { requests: [{ game: "tambola", act: "games" }, { game: "bingo", act: "games" }, { game: "nope", act: "games" }, { game: "bingo", act: "bogus" }] }, { cookie });
   expect(r.status).toBe(200);
   const [t, b, bad1, bad2] = r.json.assertions;
   expect(bad1.assertion).toBe(null); expect(bad2.assertion).toBe(null);
-  const sub = await emailHashOf("asha@acme.com");
+  const sub = await emailHashOf("demo4@demo-test.invalid");
   const vt = await verifyAssertion(t.assertion, { keys: s.keys, aud: GAMES.tambola, nowS: Math.floor(NOW / 1000) + 59, act: "games" });
   expect(vt.ok).toBe(true);
   if (vt.ok) { expect(vt.payload.sub).toBe(sub); expect(vt.payload.exp - vt.payload.iat).toBe(60); expect(vt.payload.em).toBeUndefined(); }
@@ -197,10 +197,10 @@ test("assertions: one per game, 60 seconds, made for that game's address, single
 test("assertions need a session, and the plain e-mail travels only when asked for AND only for session / role", async () => {
   const s = await setup();
   expect((await s.call("POST", "/auth/assert", { requests: [{ game: "bingo", act: "games" }] })).status).toBe(401);
-  const { cookie } = await s.signIn("asha@acme.com");
+  const { cookie } = await s.signIn("demo4@demo-test.invalid");
   const r = await s.call("POST", "/auth/assert", { requests: [{ game: "bingo", act: "session", em: true }, { game: "bingo", act: "games", em: true }, { game: "bingo", act: "session" }, { game: "bingo", act: "stepup", sa: "pay", eid: "ABCD1" }, { game: "bingo", act: "stepup" }] }, { cookie });
   const ok = async (a: string) => { const v = await verifyAssertion(a, { keys: s.keys, aud: GAMES.bingo, nowS: Math.floor(NOW / 1000) }); return v.ok ? v.payload : null; };
-  expect((await ok(r.json.assertions[0].assertion))!.em).toBe("asha@acme.com");
+  expect((await ok(r.json.assertions[0].assertion))!.em).toBe("demo4@demo-test.invalid");
   expect((await ok(r.json.assertions[1].assertion))!.em).toBeUndefined();
   expect((await ok(r.json.assertions[2].assertion))!.em).toBeUndefined();
   const st = (await ok(r.json.assertions[3].assertion))!;
@@ -221,10 +221,10 @@ test("purge: an address seen 364 days ago stays, one seen 366 days ago goes, and
   const s = await setup();
   const now = ist(2027, 1, 11, 0, 0);
   const put = async (email: string, lastSeen: number) => s.raw.query("INSERT INTO console_email(email_hash,email_sealed,created_ms,last_seen_ms) VALUES(?,?,?,?)").run(await emailHashOf(email), "x", lastSeen, lastSeen);
-  await put("young@acme.com", now - 364 * DAY_MS);
-  await put("old@acme.com", now - 366 * DAY_MS);
-  await put("edge@acme.com", ist(2026, 1, 10, 22, 30)); // exactly at its deleteAt
-  await put("justbefore@acme.com", ist(2026, 1, 11, 9, 0)); // its deleteAt is a day later
+  await put("demo28@demo-test.invalid", now - 364 * DAY_MS);
+  await put("demo23@demo-test.invalid", now - 366 * DAY_MS);
+  await put("demo20@demo-test.invalid", ist(2026, 1, 10, 22, 30)); // exactly at its deleteAt
+  await put("demo21@demo-test.invalid", ist(2026, 1, 11, 9, 0)); // its deleteAt is a day later
   const calls: string[] = [];
   const out = await purgeExpired(s.env, now, (async (u: string) => { calls.push(String(u)); return new Response("{}", { status: 200 }); }) as any);
   const left = s.raw.query("SELECT email_hash FROM console_email").all().length;
@@ -249,7 +249,7 @@ test("purge: a game that cannot be reached postpones the deletion for up to a we
 
 test("purge also clears old codes, finished sessions and counters (no personal data is left behind)", async () => {
   const s = await setup();
-  const { cookie } = await s.signIn("asha@acme.com");
+  const { cookie } = await s.signIn("demo4@demo-test.invalid");
   void cookie;
   const out = await purgeExpired(s.env, NOW + 40 * DAY_MS, (async () => new Response("{}")) as any);
   expect(out.sessions).toBe(1);
@@ -260,16 +260,16 @@ test("purge also clears old codes, finished sessions and counters (no personal d
 test("Close my account: needs a sign-in, then the e-mail, every session and any pending code are gone, and the cookie is cleared", async () => {
   const s = await setup();
   expect((await s.call("POST", "/auth/close", {})).status).toBe(401);
-  const a = await s.signIn("asha@acme.com");
-  const b = await s.signIn("asha@acme.com", { ip: "9.9.9.9" });
-  await s.signIn("bela@acme.com", { ip: "8.8.8.8" });
-  await s.call("POST", "/auth/request", { email: "asha@acme.com", consent: true }, { ip: "7.7.7.7" }); // a code is pending
+  const a = await s.signIn("demo4@demo-test.invalid");
+  const b = await s.signIn("demo4@demo-test.invalid", { ip: "9.9.9.9" });
+  await s.signIn("demo18@demo-test.invalid", { ip: "8.8.8.8" });
+  await s.call("POST", "/auth/request", { email: "demo4@demo-test.invalid", consent: true }, { ip: "7.7.7.7" }); // a code is pending
   const r = await s.call("POST", "/auth/close", {}, { cookie: a.cookie });
   expect(r.status).toBe(200);
   expect(r.headers.get("set-cookie")).toContain("Max-Age=0");
   expect((await s.call("GET", "/auth/me", undefined, { cookie: a.cookie })).json.signedIn).toBe(false);
   expect((await s.call("GET", "/auth/me", undefined, { cookie: b.cookie })).json.signedIn).toBe(false); // every device
-  const h = await emailHashOf("asha@acme.com");
+  const h = await emailHashOf("demo4@demo-test.invalid");
   expect(s.raw.query("SELECT COUNT(*) c FROM console_email WHERE email_hash=?").get(h)).toEqual({ c: 0 });
   expect(s.raw.query("SELECT COUNT(*) c FROM login_code WHERE email_hash=?").get(h)).toEqual({ c: 0 });
   expect(s.raw.query("SELECT COUNT(*) c FROM session WHERE email_hash=?").get(h)).toEqual({ c: 0 });

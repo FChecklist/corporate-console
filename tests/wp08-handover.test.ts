@@ -46,7 +46,7 @@ test("MC-11/16 Home: a draft that starts within a day is on the attention strip 
   const seen: any[] = [];
   const api: any = { listGames: async () => ({ rows: [row("DRAFT001", { status: "draft", startMs: Date.now() + 3 * 3600_000, nextAction: "publish" }), row("WAIT0001", { status: "waiting_payment", nextAction: "pay" }), row("FAR00001", { status: "draft", startMs: Date.now() + 9 * 86400_000 })], failed: [], off: [] }), handoff: async (g: string, o: any) => { seen.push(o); return { ok: true, url: "https://bingo.test/signin.html?t=" + "0".repeat(48) + "&go=console&e=" + o.eid }; } };
   const o = fresh();
-  await renderHome(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "x@y.example", go: () => {} });
+  await renderHome(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "demo6@demo-test.invalid", go: () => {} });
   expect([...o.querySelectorAll(".row")].map((r: any) => r.dataset.eid).sort()).toEqual(["DRAFT001", "WAIT0001"]); // the draft 9 days away is not nagging yet
   expect(o.querySelector('[data-eid="DRAFT001"]')!.textContent).toContain("Not published yet");
   click(byText(o.querySelector('[data-eid="DRAFT001"]')!, "button", "Publish"));
@@ -59,7 +59,7 @@ test("MC-11 Billing: Pay opens the game's payment step (target pay), not step on
   const seen: any[] = [];
   const api: any = { byId: {}, listGames: async () => ({ rows: [row("WAIT0001", { status: "waiting_payment", nextAction: "pay" })], failed: [], off: [] }), billing: async () => ({ rows: [], credits: [], failed: [], off: [] }), handoff: async (g: string, o: any) => { seen.push(o); return { ok: true, url: "https://bingo.test/signin.html?t=" + "0".repeat(48) + "&go=console&e=" + o.eid }; } };
   const o = fresh();
-  await renderBilling(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "x@y.example", go: () => {} });
+  await renderBilling(o, { api, names: { bingo: "Bingo" }, colors: {}, email: "demo6@demo-test.invalid", go: () => {} });
   click(byText(o, "button", "Pay"));
   await until(() => seen.length === 1);
   expect(seen[0].target).toBe("pay");

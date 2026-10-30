@@ -228,7 +228,7 @@ if (import.meta.main) {
   const kp = await makeKeyPair();
   const keys = parseKeyList("k1:" + kp.publicB64u);
   const names = [["tambola", "Corporate Tambola", "normal"], ["bingo", "Corporate Bingo", "slow"], ["tictactoe", "Corporate Tic Tac Toe", "down"], ["snakesladders", "Corporate Snakes and Ladders", "empty"], ["luckbychance", "Corporate Luck by Chance", "many"], ["luckydraw", "Corporate Lucky Draw", "old"]];
-  const subs = { alice: await emailHash("alice@acme.example"), bob: await emailHash("bob@bob.example"), carol: await emailHash("carol@carol.example") };
+  const subs = { alice: await emailHash("demo5@demo-test.invalid"), bob: await emailHash("demo8@demo-test.invalid"), carol: await emailHash("demo9@demo-test.invalid") };
   names.forEach(([game, name, persona], i) => {
     const port = 8781 + i, origin = `http://127.0.0.1:${port}`, S = newGame({ game, name, persona, origin, keys });
     seedGames(S, subs);
