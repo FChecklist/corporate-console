@@ -1,0 +1,1 @@
+{"id": "empid-keeps-dash", "repo": ".", "file": "packages/game-pack/employee-id.js", "find": ".replace(/[^A-Z0-9]/g, \"\"); }\n\n/** what", "replace": ".replace(/[^A-Z0-9-]/g, \"\"); }\n\n/** what", "test": "tests/employee-id.test.ts", "note": "empid-keeps-dash"}

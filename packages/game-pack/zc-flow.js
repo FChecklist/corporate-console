@@ -205,19 +205,21 @@
   const boardLink = (origin, eid) => origin + "/board.html?e=" + eid;
   const shareMessage = (name, link, eid) => "You are welcome to join our " + name + " game." + (eid ? " Game ID: " + eid + "." : "") + " Open this game link on your phone: " + link;
   const PAY_PRINT = "The payment is small, so many organizers pay it themselves and claim it back (recommended). You can also copy the payment link and share it with the person who will pay. The payment link works for 7 days.";
+  /* employee ID: the same function as employee-id.js (a test keeps the two identical). An employee ID is always shown in this one cleaned form. */
+  function cleanEmployeeId(raw) { return String(raw == null ? "" : raw).normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
   /** The waiting table: Ticket number always; Name, Employee ID, Email ID, Mobile and Referred by only when somebody gave them. */
   function waitColumns(rows) {
     const all = [
       { label: "Ticket number", get: (w) => (w.ticket != null ? String(w.ticket) : ""), always: true },
       { label: "Name", get: (w) => String(w.name || w.firstName || "") },
-      { label: "Employee ID", get: (w) => String(w.empId || w.employeeId || "") },
+      { label: "Employee ID", get: (w) => cleanEmployeeId(w.empId || w.employeeId) },
       { label: "Email ID", get: (w) => String(w.email || "") },
       { label: "Mobile", get: (w) => (w.mobile ? String(w.mobile) : w.last4 ? "ends " + w.last4 : "") },
       { label: "Referred by", get: (w) => String(w.via || w.referredBy || "") },
     ];
     return all.filter((c) => c.always || rows.some((w) => c.get(w)));
   }
-  const waitLabel = (w) => [w.ticket != null ? "Ticket " + w.ticket : "", w.name || w.firstName || "", w.empId || w.employeeId || "", w.email || "", w.last4 ? "ends " + w.last4 : ""].filter(Boolean).join(" \u00b7 ") || "A participant";
+  const waitLabel = (w) => [w.ticket != null ? "Ticket " + w.ticket : "", w.name || w.firstName || "", cleanEmployeeId(w.empId || w.employeeId), w.email || "", w.last4 ? "ends " + w.last4 : ""].filter(Boolean).join(" \u00b7 ") || "A participant";
   /** Tickets claimed: real claims only (practice rows are left out). */
   const claimedCount = (claims) => (Array.isArray(claims) ? claims.filter((c) => !c.bogey).length : 0);
   const REPORT_NOTE = "After the game, download your game report within 24 hours. All personal information of participants is deleted within 24 hours of the game. The game log (by ticket number only) and the records of the organizer, winners, Host and Co-host are kept 365 days.";
@@ -293,7 +295,7 @@
   }
   /** What the winner of a prize is shown with: the ticket number first, then only the details that are held. */
   function winnerDetails(p) {
-    const parts = [["Name", p.name], ["Employee ID", p.empId || p.employeeId], ["Email ID", p.email], ["Mobile", p.phone || p.mobile], ["Referred by", p.via || p.referredBy]].filter(([, v]) => v && String(v).trim());
+    const parts = [["Name", p.name], ["Employee ID", cleanEmployeeId(p.empId || p.employeeId)], ["Email ID", p.email], ["Mobile", p.phone || p.mobile], ["Referred by", p.via || p.referredBy]].filter(([, v]) => v && String(v).trim());
     return parts.length ? parts.map(([k, v]) => k + ": " + v).join(" · ") : "No other details were given";
   }
   const prizeKey = (p) => [p.round || 1, p.pattern, p.ordinal || 1, p.seat].join("|");

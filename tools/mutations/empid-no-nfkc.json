@@ -1,0 +1,1 @@
+{"id": "empid-no-nfkc", "repo": ".", "file": "packages/game-pack/employee-id.js", "find": ".normalize(\"NFKC\").toUpperCase()", "replace": ".toUpperCase()", "test": "tests/employee-id.test.ts", "note": "empid-no-nfkc"}

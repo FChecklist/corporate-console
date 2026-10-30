@@ -1,0 +1,1 @@
+{"id": "empid-copy-differs", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": ".normalize(\"NFKC\").toUpperCase().replace(/[^A-Z0-9]/g, \"\"); }\n  /** The waiting table", "replace": ".toUpperCase().replace(/[^A-Z0-9]/g, \"\"); }\n  /** The waiting table", "test": "tests/employee-id.test.ts", "note": "empid-copy-differs"}

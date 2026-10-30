@@ -147,7 +147,7 @@ test("the vendored copy is the pack byte for byte, and ONE changed byte, a missi
   expect(packDrift(g)[0]).toContain("does not exist");
   const m = vendorPack(g);
   expect(Object.keys(m.files)).toEqual(packFiles());
-  expect(Object.keys(m.files)).toEqual(["confirm.js", "gamelog.html", "gamelog.js", "pack.css", "polish.js", "runbar.js", "zc-flow.css", "zc-flow.js"]);
+  expect(Object.keys(m.files)).toEqual(["confirm.js", "employee-id.js", "gamelog.html", "gamelog.js", "pack.css", "polish.js", "runbar.js", "zc-flow.css", "zc-flow.js"]);
   expect(packDrift(g)).toEqual([]);
   const f = join(g, PACK_DEST_REL, "runbar.js");
   writeFileSync(f, readFileSync(f, "utf8").replace("Add 30 more minutes", "Add 31 more minutes"));

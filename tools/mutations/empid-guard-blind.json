@@ -1,0 +1,1 @@
+{"id": "empid-guard-blind", "repo": ".", "file": "public/screens/home.js", "find": "export const rowNote =", "replace": "const employeeId = \"raw\"; export const rowNote =", "test": "tests/employee-id.test.ts", "note": "a screen that handles an employee ID without the cleaner"}

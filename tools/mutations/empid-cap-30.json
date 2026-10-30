@@ -1,0 +1,1 @@
+{"id": "empid-cap-30", "repo": ".", "file": "packages/game-pack/employee-id.js", "find": "export const EMPLOYEE_ID_MAX = 30;", "replace": "export const EMPLOYEE_ID_MAX = 300;", "test": "tests/employee-id.test.ts", "note": "empid-cap-30"}

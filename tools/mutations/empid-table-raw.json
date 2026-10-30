@@ -1,0 +1,1 @@
+{"id": "empid-table-raw", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "{ label: \"Employee ID\", get: (w) => cleanEmployeeId(w.empId || w.employeeId) }", "replace": "{ label: \"Employee ID\", get: (w) => String(w.empId || w.employeeId || \"\") }", "test": "tests/employee-id.test.ts", "note": "empid-table-raw"}

@@ -1,0 +1,1 @@
+{"id": "empid-keeps-lowercase", "repo": ".", "file": "packages/game-pack/employee-id.js", "find": ".normalize(\"NFKC\").toUpperCase().replace(/[^A-Z0-9]/g, \"\")", "replace": ".normalize(\"NFKC\").replace(/[^A-Za-z0-9]/g, \"\")", "test": "tests/employee-id.test.ts", "note": "empid-keeps-lowercase"}
