@@ -30,7 +30,8 @@ for (const g of cfg.games.filter((x: any) => x.ready)) {
 // the console itself: same games list, with the fake games' addresses in the test slot
 const testCfg = { ...cfg, games: cfg.games.map((g: any) => ({ ...g, test: ports[g.id] || g.test })), consoleOrigin: { ...cfg.consoleOrigin, test: "http://127.0.0.1:0" } };
 const dist = mkdtempSync(join(tmpdir(), "stack-dist-"));
-build({ env: "test", out: dist });
+const rel = JSON.parse(readFileSync(new URL("../../releases.json", import.meta.url), "utf8"))[0]; // the real version and release time, so every screen shows its version line
+build({ env: "test", out: dist, version: rel.version, releasedAt: rel.releasedAt });
 writeFileSync(join(dist, "core/games.config.js"), gamesConfigJs(testCfg, "test"));
 const headers = headersFile(testCfg, "test");
 writeFileSync(join(dist, "_headers"), headers);

@@ -17,7 +17,7 @@ export async function renderMyGames(outlet, ctx) {
   clear(outlet);
   const body = el("div", { id: "mg-body" }, el("p", { class: "hintline", text: "One moment." }));
   const seg = el("div", { class: "seg", role: "radiogroup", "aria-label": "Show" }, FILTERS.map(([v, t]) => el("label", {}, el("input", { type: "radio", name: "mf", value: v, checked: v === filter, onchange: () => { filter = v; draw(); } }), el("span", { text: t }))));
-  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "My games" }), el("p", { class: "lead", text: "Every game you organize, host or help with, in one list." }), el("p", { class: "hintline", id: "approval-note", text: approvalNote(ctx.games || []).join(" ") }), seg, body)));
+  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "My games" }), el("p", { class: "lead", text: "Every game you organize, host or help with, in one list." }), el("ul", { class: "approve", id: "approval-note" }, approvalNote(ctx.games || []).map((l) => el("li", { text: l }))), seg, body)));
 
   const EID = /^[A-Za-z0-9_-]{4,40}$/;
   async function removeDraft(g, card) {
