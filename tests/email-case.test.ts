@@ -39,6 +39,10 @@ test("spaces, a tab, a wide space, the full-width @ and full-width letters are r
   for (const v of ["  demo1@demo-test.invalid  ", "\t" + base + "\n", "　demo1@demo-test.invalid　", "demo1＠demo-test.invalid", "ＤＥＭＯ1" + "@demo-test.invalid", "ＤＥＭＯ１＠ＤＥＭＯ－ＴＥＳＴ．ＩＮＶＡＬＩＤ"]) expect([v, normEmail(v)]).toEqual([v, base]);
 });
 
+test("spaces inside an address are removed too", () => {
+  expect(normEmail(" demo1 @ demo-test .invalid ")).toBe("demo1@demo-test.invalid");
+});
+
 test("signing in as every variant reaches the same account: request, code, link, session, display, no second record", async () => {
   const w = await world(), base = "demo1@demo-test.invalid";
   for (const v of variants(base)) {

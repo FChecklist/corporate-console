@@ -4,7 +4,7 @@ import { el, clear } from "../core/dom.js";
 import { button } from "./ui.js";
 
 /* e-mail ID: the same function as packages/bridge/src/email.ts (a test keeps the two identical). The system reads an address in lower case, so it shows it that way. */
-const normEmail = (e) => String(e == null ? "" : e).normalize("NFKC").trim().toLowerCase();
+const normEmail = (e) => String(e == null ? "" : e).normalize("NFKC").replace(/\s+/g, "").toLowerCase(); // inner spaces go too (checklist A3)
 export const RESEND_AFTER_MS = 30_000;
 const clock = (ms) => new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(" AM", " am").replace(" PM", " pm");
 
