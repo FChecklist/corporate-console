@@ -1,6 +1,6 @@
-// FALSIFIED BY: gamesbar-copy-edited, gamesbar-missing-from-page
+// FALSIFIED BY: gamesbar-bare-name, gamesbar-copy-edited, gamesbar-missing-from-page
 // The Corporate Games bar is ONE shared component: this site's copy must equal the canonical files in C:\ct\test-sites\corporate-games-bar
-// byte for byte (SHA-256 below, printed by that folder's src/build.py, VERSION 2). If this fails, copy the canonical files again; never edit the copy here.
+// byte for byte (SHA-256 below, printed by that folder's src/build.py, VERSION 3). If this fails, copy the canonical files again; never edit the copy here.
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
@@ -8,7 +8,7 @@ const sha = (f: string) => createHash("sha256").update(readFileSync(new URL("../
 const CANON = "C:/ct/test-sites/corporate-games-bar/";
 describe("the shared Corporate Games bar", () => {
   test("gamesbar.js and gamesbar.css are identical to the canonical copy", () => {
-    expect(sha("gamesbar.js")).toBe("16f02208af3c84cef63d81cdfcbc788f1baf23957ed71e912d44cafd4f881b98");
+    expect(sha("gamesbar.js")).toBe("d2e437bf46b71699f4dd55769d028cad32aca2f62e1afbc563ee7cf2a0594934");
     expect(sha("gamesbar.css")).toBe("6b0311de98525de646e637a28102163dfecf9fde35b8befe0344a5e16fff8b5b");
   });
   test("while the canonical folder is on this laptop, it still has the same hashes (a newer bar means: copy again)", () => {
@@ -21,8 +21,8 @@ describe("the shared Corporate Games bar", () => {
   test("both pages of the console load the bar, and the bar needs no inline script or style", () => {
     for (const page of ["index.html", "signin.html"]) {
       const html = readFileSync(new URL("../public/" + page, import.meta.url), "utf8");
-      expect(html).toContain('<link rel="stylesheet" href="/gamesbar.css?v=2">');
-      expect(html).toContain('<script src="/gamesbar.js?v=2" defer></script>');
+      expect(html).toContain('<link rel="stylesheet" href="/gamesbar.css?v=3">');
+      expect(html).toContain('<script src="/gamesbar.js?v=3" defer></script>');
     }
     const js = readFileSync(new URL("../public/gamesbar.js", import.meta.url), "utf8");
     expect(js).not.toMatch(/setAttribute\(\s*["']style["']|\.cssText|innerHTML\s*=\s*["'`]<style/);
@@ -33,5 +33,12 @@ describe("the shared Corporate Games bar", () => {
     expect(js).toContain("https://home.corporatetambola.com/");
     expect(js).not.toContain("console.corporatetambola.com");
     expect(js).not.toContain("games.corporatetambola.com");
+  });
+  test("the bar says each game by its full name and the Lucky Draw row says plainly that it is coming soon", () => {
+    const js = readFileSync(new URL("../public/gamesbar.js", import.meta.url), "utf8");
+    for (const n of ["Corporate Tambola", "Corporate Bingo", "Corporate Tic Tac Toe", "Corporate Snakes and Ladders", "Corporate Luck by Chance", "Corporate Lucky Draw"]) expect(js).toContain('name: "' + n + '"');
+    expect(js).not.toMatch(/name: "(Tambola|Bingo|Tic Tac Toe|Snakes and Ladders|Luck by Chance|Lucky Draw)"/);
+    expect(js).toContain('note: "Coming soon, ask for it"');
+    expect(js).not.toContain("Tell us you want it");
   });
 });

@@ -1,0 +1,1 @@
+{"id": "gamesbar-bare-name", "repo": ".", "file": "public/gamesbar.js", "find": "name: \"Corporate Bingo\"", "replace": "name: \"Bingo\"", "test": "tests/gamesbar.test.ts", "note": "a game named without Corporate in the shared bar"}

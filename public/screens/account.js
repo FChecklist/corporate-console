@@ -13,7 +13,7 @@ export const KEPT = [
   ["Winners and the game log (seat numbers only)", "365 days."],
   ["Invoices and legal records", "For the time the law requires. They are not deleted when you close the account."],
 ];
-/** the legal pages the console links to (they live on the Tambola site until the console has its own) */
+/** the legal pages the console links to (they live on the Corporate Tambola site until the console has its own) */
 export const LEGAL = [["Terms of Use", "/terms.html"], ["Privacy Policy", "/privacy.html"], ["Data Processing Agreement", "/dpa.html"]];
 
 /** what Close my account would leave behind, from the person's own games and billing: paid games still to come, and credit */

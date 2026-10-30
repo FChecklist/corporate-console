@@ -1,0 +1,1 @@
+{"id": "dist-stale-passes", "repo": ".", "file": "tools/deploy/check-dist.mjs", "find": "if (n.ms > built + 1) problems.push(", "replace": "if (false) problems.push(", "test": "tests/deploy-dist.test.ts", "note": "dist-stale-passes"}

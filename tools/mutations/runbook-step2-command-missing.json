@@ -1,0 +1,1 @@
+{"id": "runbook-step2-command-missing", "repo": ".", "file": "docs/GO_LIVE_RUNBOOK.md", "find": "$W d1 execute corporate-console --remote --file=migrations/0001_console.sql\n", "replace": "", "test": "tests/deploy-dist.test.ts", "note": "runbook-step2-command-missing"}

@@ -1,7 +1,8 @@
-// FALSIFIED BY: status-short-name, status-pill-same-colours, status-theme-contrast, status-helper-gets-pay, status-late-reads-pending, status-banner-we, status-cohost-approves, status-approval-everywhere, status-family-unlimited, status-pill-class
+// FALSIFIED BY: status-tap-too-small, status-short-name, status-pill-same-colours, status-theme-contrast, status-helper-gets-pay, status-late-reads-pending, status-banner-we, status-cohost-approves, status-approval-everywhere, status-family-unlimited, status-pill-class
 // Master console rows (2026-10-30): Game ID, ONE status pill with its plain banner, the role line (who lets whom in, for what each game's engine does), the buttons a person may press, and the wording rules.
 // Logic tests, a wire test (the built config), regression of the console's own words, and a STREAMED scenario matrix over games x roles x row status x payment x next action x start time x preview x link type x device x theme x answered
-// (1,451,520 scenarios, none stored: each is checked and forgotten).
+// (1,451,520 scenarios, none stored: each is checked and forgotten). What a scenario really asserts: its row's status, banner, buttons and approval line (rows, preview, link type), the answer of the game (answered), the REAL designFor of the console at that width (device),
+// and the WCAG contrast of that status's pill, the banner and the role line in that theme read from the css (theme). Tap sizes are NOT a per-scenario check: they are one fact per control and design, asserted once each in 'tap sizes' below and not counted.
 import { test, expect } from "bun:test";
 import { readFileSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
@@ -35,9 +36,7 @@ const pillPair = (cls: string, theme: string) => { const re = theme === "dark" ?
 const PILL: any = { light: {}, dark: {} };
 for (const th of THEMES) for (const cls of new Set(Object.values(STATUSES).map((s: any) => s.cls))) PILL[th][cls as string] = pillPair(cls as string, th);
 const TEXT_RATIO: any = { light: Math.min(contrastRatio(TOK.light["ink"], TOK.light["soft"]), contrastRatio(TOK.light["ink2"], TOK.light["card"])), dark: Math.min(contrastRatio(TOK.dark["ink"], TOK.dark["soft"]), contrastRatio(TOK.dark["ink2"], TOK.dark["card"])) };
-// tap targets of the controls a person presses on each design: the buttons, the filter chips (.seg) and the menu are at least 44 px
 const tapPx = Number(/--tap:\s*(\d+)px/.exec(tokCss)![1]);
-const TAP_OK: any = { phone: tapPx >= 44 && /\.btn\.sm \{ min-height: 44px/.test(appCss) && /\.btn \{[^}]*min-height: 48px/.test(appCss) && /\.seg label span \{[^}]*min-height: var\(--tap\)/.test(appCss) && /\.tabbar a \{/.test(appCss), laptop: tapPx >= 44 && /\.btn\.sm \{ min-height: 44px/.test(appCss) && /\.top nav a \{[^}]*min-height: var\(--tap\)/.test(appCss) };
 const BANNED = [/\bwe\b/i, /\bour\b/i, /\bprivate\b/i, /\bRs\.?\s?\d/, /\bseats?\b/i, /in the office/i, /\bcash\b/i, /coming soon/i];
 const PAYEE = /Razorpay|IT Services|Projexa|Corporate Tambola Pvt|Stripe|PayPal/i;
 const HELPER_BANNED_ACTIONS = ["pay", "publish", "copy", "delete-draft"];
@@ -114,6 +113,15 @@ test("wire: the built config carries each game's own approvals, every game has i
   expect(read("public/screens/create.js")).not.toMatch(/Try the new organizer/);
 });
 
+test("tap sizes: every control a person presses is at least 44 px, one rule per control and design (a fact about the css, not counted as scenarios)", () => {
+  expect(tapPx).toBeGreaterThanOrEqual(44);
+  expect(appCss).toMatch(/\.btn \{[^}]*min-height: 4[89]px/);                      // every button
+  expect(appCss).toMatch(/\.btn\.sm \{ min-height: 44px/);                        // the small buttons on a game card
+  expect(appCss).toMatch(/\.seg label span \{[^}]*min-height: var\(--tap\)/);   // the filter chips (radio buttons)
+  expect(appCss).toMatch(/\.tabbar a \{[^}]*min-height: 5\d+px/);                 // phone: the bottom menu
+  expect(appCss).toMatch(/\.top nav a \{[^}]*min-height: var\(--tap\)/);        // laptop: the top menu
+});
+
 test("the pill colours exist in light and in dark for every status", () => {
   const css = read("public/core/app.css");
   for (const cls of new Set(Object.values(STATUSES).map((s: any) => s.cls))) {
@@ -168,7 +176,7 @@ test("scenario matrix, streamed: 1,451,520 scenarios keep every rule", () => {
           must(m.rows.length === (ans === "ok" ? 1 : 0) && m.failed.length === (ans === "failed" ? 1 : 0) && m.off.length === (ans === "off" ? 1 : 0), "merge " + ans + " " + tag);
           // the device: the real designFor of the console, and the controls of that design are tappable (44 px or more)
           const design = boot.designFor(w);
-          must(design === (w >= 900 ? "laptop" : "phone") && TAP_OK[design] === true, "design and tap size " + w + " " + tag);
+          must(design === (w >= 900 ? "laptop" : "phone"), "design " + w + " " + tag);
           // the theme: this status's pill, the banner and the role line read well (WCAG AA) in light and in dark
           must(PILL[theme][STATUSES[s as keyof typeof STATUSES].cls] >= 4.5 && TEXT_RATIO[theme] >= 4.5, "contrast " + theme + " " + tag);
         }

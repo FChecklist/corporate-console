@@ -37,13 +37,84 @@ Verify: `https://itservices-rajat-agarwal.pages.dev/payframe/pay.js` contains `l
 
 ## Step 2. The console on its own pages.dev address (no custom address yet)
 
-1. Create the sign-in database: `wrangler d1 create corporate-console`, put its id into `wrangler.toml` and `apps/cron/wrangler.toml`, apply `migrations/0001_console.sql`. (If Step 0 chose prefixed tables: point `DB` at the existing database, set `TABLE_PREFIX = "con_"` in BOTH files, apply the output of `bun tools/prefix-migration.mjs con_`, and create nothing else.)
-2. Create the Pages project `corporate-console`; build with `node build.mjs --env preview`; deploy `dist`.
-3. The owner sets the three secrets by NAME in the Pages project settings: `RESEND_API_KEY`, `CONSOLE_SIGNING_KEY` (a new Ed25519 key), `SESSION_PEPPER`. Plain settings come from `wrangler.toml`.
-4. Deploy the cron Worker `corporate-console-cron` from `apps/cron` (daily clean-up).
-5. First on a COPY with `TEST_MODE=1`: sign in with `demo1@xyz.in`, code `123456`. Then remove `TEST_MODE`.
+Copy and paste, in this order, from a bash window. Nothing here runs by itself. Do each block only after the owner's "go" for this step and a QUIET guard (see above).
 
-Verify: `https://corporate-console.pages.dev/` shows the sign-in screen and the Corporate Games bar; `/auth/me` answers `{"ok":true,"signedIn":false}`; the response headers carry the Content-Security-Policy and `frame-ancestors 'none'`; a real sign-in code arrives by e-mail. Rollback: unlink the project's domain and disable the cron Worker; nothing else depends on them.
+**Who gives what.** The owner gives ONE thing: `RESEND_API_KEY` (from the owner's Resend account; only the owner has it). You can make the other two yourself with the repo's own tool in 2.5: `CONSOLE_SIGNING_KEY` (a new Ed25519 key) and `SESSION_PEPPER` (a new random value). The tool shows them once on the screen and saves nothing. Nobody else needs to see them.
+
+**2.0 Get ready** (the console folder, the tests, the tool name for wrangler):
+
+```bash
+cd /c/ct/test-sites/console
+git status --short            # must print nothing
+git checkout claude/master-console-complete-882589
+bun test --isolate tests      # must end with: 0 fail
+W="node C:/ct/tools/wrangler3/node_modules/wrangler/bin/wrangler.js"
+```
+
+**2.1 Make the sign-in database** (the output shows a `database_id`; keep that window open):
+
+```bash
+$W d1 create corporate-console
+```
+
+**2.2 Put that id into BOTH settings files** (replace `PASTE-THE-ID` with the id printed above):
+
+```bash
+ID=PASTE-THE-ID
+sed -i "s/REPLACE_AFTER_THE_DATABASE_EXISTS/$ID/" wrangler.toml apps/cron/wrangler.toml
+grep -n database_id wrangler.toml apps/cron/wrangler.toml     # both lines must show the id
+```
+
+**2.3 Make the tables** (one migration, `migrations/0001_console.sql`). If Step 0 chose prefixed tables, do NOT run 2.1-2.3: point `DB` at the existing database, set `TABLE_PREFIX = "con_"` in BOTH files and run `bun tools/prefix-migration.mjs con_ > .tmp/prefixed.sql` then `$W d1 execute <existing database name> --remote --file=.tmp/prefixed.sql`.
+
+```bash
+$W d1 execute corporate-console --remote --file=migrations/0001_console.sql
+```
+
+**2.4 Tell the console its own address.** On pages.dev the browser's Origin is `https://corporate-console.pages.dev`; the sign-in service refuses anything else (that is the protection against forged requests). So for THIS step set that address in both files. Step 9 sets it back to `https://console.corporatetambola.com`.
+
+```bash
+sed -i 's#CONSOLE_ORIGIN = "https://console.corporatetambola.com"#CONSOLE_ORIGIN = "https://corporate-console.pages.dev"#' wrangler.toml apps/cron/wrangler.toml
+grep -n CONSOLE_ORIGIN wrangler.toml apps/cron/wrangler.toml
+```
+
+**2.5 Make the two secrets you can make** (copy each line when asked in 2.7; the window then closes and they are gone):
+
+```bash
+node tools/deploy/make-secrets.mjs
+```
+
+**2.6 Build the console for this address and check the build is fresh** (preview = the pages.dev addresses; the guard prints STALE if anything changed after the build):
+
+```bash
+node build.mjs --env preview
+node tools/deploy/check-dist.mjs        # must print: dist/ is fresh and carries the version
+```
+
+**2.7 Make the Pages project, set the three secrets by name, deploy:**
+
+```bash
+$W pages project create corporate-console --production-branch main
+$W pages secret put CONSOLE_SIGNING_KEY --project-name corporate-console     # paste the value from 2.5
+$W pages secret put SESSION_PEPPER --project-name corporate-console          # paste the value from 2.5
+$W pages secret put RESEND_API_KEY --project-name corporate-console          # the owner's key
+node tools/deploy/check-dist.mjs
+$W pages deploy dist --project-name corporate-console --branch main --commit-dirty=true
+```
+
+**2.8 The daily clean-up Worker** (it needs the SAME signing key and pepper as 2.7, so paste the same two values again):
+
+```bash
+cd apps/cron
+$W deploy
+$W secret put CONSOLE_SIGNING_KEY
+$W secret put SESSION_PEPPER
+cd ../..
+```
+
+**2.9 First sign-in on a COPY with `TEST_MODE=1`**: in the Pages project settings add the plain variable `TEST_MODE` = `1`, sign in with `demo1@xyz.in`, code `123456` (no e-mail is sent), then delete `TEST_MODE` again and sign in with a real address.
+
+Verify: `https://corporate-console.pages.dev/` shows the sign-in screen, the Corporate Games bar and the version line ("Version 0.1.0, released ... IST"); `https://corporate-console.pages.dev/version.json` carries `version`, `releasedAt` and `releasedAtIST`; `/auth/me` answers `{"ok":true,"signedIn":false}`; the response headers carry the Content-Security-Policy and `frame-ancestors 'none'`; a real sign-in code arrives by e-mail. Rollback: unlink the project's domain, `$W pages project delete corporate-console` and `$W delete --name corporate-console-cron` if nothing else uses them, and put `CONSOLE_ORIGIN` back with `git checkout wrangler.toml apps/cron/wrangler.toml` (the database can stay: it holds only sign-in codes and sessions).
 
 ## Step 3. Each game's console work, merged locally and deployed with the bridge DARK (order: Bingo, Tic Tac Toe, Snakes and Ladders, Luck by Chance, Tambola last)
 
