@@ -1,1 +1,0 @@
-{"id": "status-tryit-everywhere", "repo": ".", "file": "public/core/status.js", "find": "if (!game || game.id !== \"tambola\" || !game.newScreens || !game.origin) return null;", "replace": "if (!game || !game.newScreens || !game.origin) return null;", "test": "tests/status-matrix.test.ts", "note": "status-tryit-everywhere"}

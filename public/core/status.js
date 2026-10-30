@@ -2,15 +2,15 @@
 // Pure: no network, nothing stored. A status the game's console answer cannot show (paused, refund requested) is not here: the console hides what the engine does not tell it.
 
 export const STATUSES = {
-  draft: { label: "Draft", cls: "draft" },
-  pending: { label: "Published, payment pending", cls: "pay" },
-  paid: { label: "Published and paid", cls: "ready" },
-  free: { label: "Published, free game", cls: "ready" },
-  overdue: { label: "Payment pending, start time passed", cls: "nostart" },
-  live: { label: "Live now", cls: "live" },
-  completed: { label: "Completed", cls: "done" },
-  cancelled: { label: "Cancelled", cls: "cancel" },
-  deleted: { label: "Data deleted", cls: "cancel" },
+  draft: { label: "Draft", cls: "s-draft" },
+  pending: { label: "Published, payment pending", cls: "s-pending" },
+  paid: { label: "Published and paid", cls: "s-paid" },
+  free: { label: "Published, free game", cls: "s-paid" },
+  overdue: { label: "Payment pending, start time passed", cls: "s-overdue" },
+  live: { label: "Live now", cls: "s-live" },
+  completed: { label: "Completed", cls: "s-done" },
+  cancelled: { label: "Cancelled", cls: "s-cancel" },
+  deleted: { label: "Data deleted", cls: "s-cancel" },
 };
 
 /** the ONE status of a game row (the row's own status word, its payment and its start time) */
@@ -47,13 +47,15 @@ export function bannerFor(status, g, when) {
   }
 }
 
-/** who lets people in, in plain words, for the role this person has (only what the engine does today: the organizer and the Hosts let in people who are not on the list) */
+/** who lets people in, in plain words, for the role this person has. A game whose engine lets a Co-host approve (game.approvals has "cohost-link") says so; the others say only what they do. */
 export const ROLE_LINE = {
   organizer: "You let in the people who are not on your list. Your Hosts can help.",
   host: "You help the organizer. You and the organizer let in the people who are not on the list.",
   cohost: "You help bring people. The organizer and the Hosts let in the people who are not on the list.",
 };
-export const roleLine = (role) => ROLE_LINE[role] || "";
+const COHOST_APPROVES = "You help bring people. You, the Hosts and the organizer let in the people who came with your link.";
+export const supports = (game, linkType) => !!game && Array.isArray(game.approvals) && game.approvals.includes(linkType);
+export const roleLine = (role, game) => (role === "cohost" && supports(game, "cohost-link") ? COHOST_APPROVES : ROLE_LINE[role] || "");
 
 /** the buttons a row may have. id = what happens; target = which page of the game opens. */
 export function rowActions(g, caps = {}, status = rowStatus(g)) {
@@ -73,18 +75,22 @@ export function rowActions(g, caps = {}, status = rowStatus(g)) {
   return out;
 }
 
-/** the entry for a game's new organizer screens (Corporate Tambola only, until another game has them): its address, or null */
-export function newScreensLink(game) {
-  if (!game || game.id !== "tambola" || !game.newScreens || !game.origin) return null;
-  return { href: game.origin + game.newScreens, label: "Try the new organizer screens" };
-}
-
-/** who lets someone in, by the kind of link they came with. Only what the engine does today is told: a person on the list needs nothing else; a person who is not on the list waits for the organizer or a Host.
-    Co-host approval, family passes and the open-join form are not in the engine yet: null = nothing is shown about them. */
+/** who lets whom in, by the kind of link a person came with, for a game. Organizer and Host links are the same everywhere. The rest is told only for a game whose engine does it (null = nothing is shown). */
 export const LINK_TYPES = ["organizer-link", "host-link", "cohost-link", "open-link", "family-link"];
-export function approverFor(linkType) {
+export function approverFor(linkType, game) {
   if (linkType === "organizer-link" || linkType === "host-link") return "The organizer or a Host lets in a person who is not on the list.";
+  if (!supports(game, linkType)) return null;
+  if (linkType === "cohost-link") return "A person who came with a Co-host\u2019s link is let in by that Co-host, a Host or the organizer.";
+  if (linkType === "family-link") return "A family host lets in their own family and friends, up to 15 minutes before the game begins. They need no ID.";
+  if (linkType === "open-link") return "In an open game nobody needs to let anyone in. A person gives their name, mobile number and email ID, and comes in.";
   return null;
 }
-/** the two lines My games shows under its title */
-export const approvalNote = () => ["A person who is on your list comes in with nothing else.", approverFor("organizer-link")];
+/** the lines My games shows under its title: the two that hold everywhere, then one line for each kind of link that only some games do */
+export function approvalNote(games = []) {
+  const lines = ["A person who is on your list comes in with nothing else.", approverFor("organizer-link")];
+  for (const lt of ["cohost-link", "family-link", "open-link"]) {
+    const who = games.filter((g) => supports(g, lt)).map((g) => g.name);
+    if (who.length) lines.push(who.join(", ") + ": " + approverFor(lt, { approvals: [lt] }));
+  }
+  return lines;
+}

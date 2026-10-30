@@ -1,0 +1,1 @@
+{"id": "status-pill-class", "repo": ".", "file": "public/core/status.js", "find": "completed: { label: \"Completed\", cls: \"s-done\" }", "replace": "completed: { label: \"Completed\", cls: \"s-missing\" }", "test": "tests/status-matrix.test.ts", "note": "status-pill-class"}

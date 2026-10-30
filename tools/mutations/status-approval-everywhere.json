@@ -1,0 +1,1 @@
+{"id": "status-approval-everywhere", "repo": ".", "file": "public/core/status.js", "find": "export const supports = (game, linkType) => !!game && Array.isArray(game.approvals) && game.approvals.includes(linkType);", "replace": "export const supports = (game, linkType) => true;", "test": "tests/status-matrix.test.ts", "note": "status-approval-everywhere"}

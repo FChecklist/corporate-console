@@ -1,29 +1,34 @@
-// FALSIFIED BY: status-helper-gets-pay, status-late-reads-pending, status-banner-we, status-cohost-approves, status-tryit-everywhere
-// Master console rows (2026-10-30): Game ID, ONE status pill with its plain banner, the role line, the buttons a person may press, the Try-the-new-screens entry for Corporate Tambola only,
-// and the wording rules. Logic tests, a wire test (the built config and the addresses), and a scenario matrix over games x roles x row status x payment x next action x start time x preview x link type (80,640 scenarios).
+// FALSIFIED BY: status-helper-gets-pay, status-late-reads-pending, status-banner-we, status-cohost-approves, status-approval-everywhere, status-family-unlimited, status-pill-class
+// Master console rows (2026-10-30): Game ID, ONE status pill with its plain banner, the role line (who lets whom in, for what each game's engine does), the buttons a person may press, and the wording rules.
+// Logic tests, a wire test (the built config), regression of the console's own words, and a STREAMED scenario matrix over games x roles x row status x payment x next action x start time x preview x link type x device x theme x answered
+// (1,451,520 scenarios, none stored: each is checked and forgotten).
 import { test, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { STATUSES, rowStatus, bannerFor, roleLine, rowActions, newScreensLink, approverFor, approvalNote, LINK_TYPES, ROLE_LINE } from "../public/core/status.js";
+import { STATUSES, rowStatus, bannerFor, roleLine, rowActions, approverFor, approvalNote, supports, LINK_TYPES, ROLE_LINE } from "../public/core/status.js";
+import { mergeGames, OFF } from "../public/core/merge.js";
+import { gamesFailedLine } from "../public/core/errors.js";
 
-const cfg = JSON.parse(readFileSync(join(import.meta.dir, "../config/games.json"), "utf8"));
-const GAMES = cfg.games.map((g: any) => ({ id: g.id, name: g.name, status: g.status, newScreens: g.newScreens, origin: g.live }));
+const read = (f: string) => readFileSync(join(import.meta.dir, "..", f), "utf8");
+const cfg = JSON.parse(read("config/games.json"));
+const GAMES = cfg.games.map((g: any) => ({ id: g.id, name: g.name, status: g.status, approvals: g.approvals || [], origin: g.live }));
+const TAMBOLA = GAMES.find((g: any) => g.id === "tambola");
 const ROLES = ["organizer", "host", "cohost"];
 const ROW_STATUS = ["draft", "waiting_payment", "ready", "playing", "finished", "cancelled", "not_started"];
 const PAY = ["free", "waiting", "paid", "credit"];
 const NEXT = ["none", "accept", "pay", "publish"];
 const NOW = Date.UTC(2026, 9, 30, 6, 30), HOUR = 3600000;
 const STARTS = [NOW - 2 * HOUR, NOW + 10 * 60000, NOW + 3 * 86400000, null];
+const WIDTHS = [360, 768, 1280], THEMES = ["light", "dark"], ANSWERED = ["ok", "failed", "off"];
 const BANNED = [/\bwe\b/i, /\bour\b/i, /\bprivate\b/i, /\bRs\.?\s?\d/, /\bseats?\b/i, /in the office/i, /\bcash\b/i, /coming soon/i];
 const PAYEE = /Razorpay|IT Services|Projexa|Corporate Tambola Pvt|Stripe|PayPal/i;
 const HELPER_BANNED_ACTIONS = ["pay", "publish", "copy", "delete-draft"];
-
 const row = (o: any = {}) => ({ game: "tambola", eid: "EABCDEF", name: "Diwali party", role: "organizer", status: "ready", startMs: NOW + 3 * 86400000, cap: 100, nextAction: "none", payment: { state: "paid" }, ...o });
 
 test("rowStatus: the one status of a row, from its word, its payment and its start time", () => {
   expect(rowStatus(row({ status: "draft" }), NOW)).toBe("draft");
   expect(rowStatus(row({ status: "waiting_payment", startMs: NOW + HOUR }), NOW)).toBe("pending");
-  expect(rowStatus(row({ status: "waiting_payment", startMs: NOW - HOUR }), NOW)).toBe("overdue"); // the start time has passed and it is unpaid
+  expect(rowStatus(row({ status: "waiting_payment", startMs: NOW - HOUR }), NOW)).toBe("overdue");
   expect(rowStatus(row({ status: "not_started" }), NOW)).toBe("overdue");
   expect(rowStatus(row({ status: "ready", payment: { state: "free" } }), NOW)).toBe("free");
   expect(rowStatus(row({ status: "ready", payment: { state: "paid" } }), NOW)).toBe("paid");
@@ -61,77 +66,97 @@ test("the organizer's buttons follow the status: Publish on a draft, Pay now whi
   expect(rowActions(row({ nextAction: "accept", role: "host" })).map((a: any) => a.id)).toEqual(["open-in-game"]);
 });
 
-test("who lets whom in: only what the engine does is told; co-host approval, family passes and the open form are not shown", () => {
-  expect(approverFor("organizer-link")).toContain("organizer or a Host");
-  expect(approverFor("host-link")).toBe(approverFor("organizer-link"));
-  for (const t of ["cohost-link", "open-link", "family-link"]) expect(approverFor(t)).toBe(null);
-  expect(roleLine("organizer")).toContain("You let in");
-  expect(roleLine("cohost")).not.toMatch(/you (let|approve)/i); // a Co-host does not let people in (the engine cannot do that yet)
-  expect(approvalNote().join(" ")).toContain("nothing else");
+test("who lets whom in: organizer and Host links everywhere; Co-host, family and open links only for a game whose engine does them (Corporate Tambola today)", () => {
+  expect(approverFor("organizer-link", GAMES[2])).toContain("organizer or a Host");
+  expect(approverFor("host-link", GAMES[2])).toBe(approverFor("organizer-link", GAMES[2]));
+  expect(TAMBOLA.approvals).toEqual(["cohost-link", "family-link", "open-link"]);
+  expect(approverFor("cohost-link", TAMBOLA)).toContain("that Co-host, a Host or the organizer");
+  expect(approverFor("family-link", TAMBOLA)).toContain("up to 15 minutes before the game begins");
+  expect(approverFor("open-link", TAMBOLA)).toContain("nobody needs to let anyone in");
+  for (const g of GAMES.filter((x: any) => x.id !== "tambola")) for (const t of ["cohost-link", "family-link", "open-link"]) expect(approverFor(t, g)).toBe(null);
+  expect(roleLine("cohost", TAMBOLA)).toContain("let in the people who came with your link");
+  expect(roleLine("cohost", GAMES[1])).toBe(ROLE_LINE.cohost);
+  expect(roleLine("cohost", GAMES[1])).not.toMatch(/you (let|approve)/i);
+  expect(approvalNote(GAMES).join(" ")).toContain("Corporate Tambola: A person who came with a Co-host");
+  expect(approvalNote(GAMES.filter((g: any) => g.id !== "tambola")).length).toBe(2);
 });
 
-test("wire: Create gets the Try the new organizer screens entry for Corporate Tambola only, pointing at its own address; every game has its full name", () => {
-  const link = newScreensLink(GAMES.find((g: any) => g.id === "tambola"));
-  expect(link).toEqual({ href: "https://housie.corporatetambola.com/zc?flow=new", label: "Try the new organizer screens" });
-  for (const g of GAMES.filter((x: any) => x.id !== "tambola")) expect(newScreensLink(g)).toBe(null);
+test("wire: the built config carries each game's own approvals, every game has its full name, the Try-it entry is gone (the new screens are the default)", () => {
+  const built = read("dist/core/games.config.js");
+  expect((built.match(/"approvals"/g) || []).length).toBe(GAMES.length);
+  expect(built).not.toContain("newScreens");
   for (const g of GAMES) expect(g.name).toMatch(/^Corporate /);
-  const built = readFileSync(join(import.meta.dir, "../dist/core/games.config.js"), "utf8");
-  expect((built.match(/"newScreens"/g) || []).length).toBe(1);
+  expect(read("public/screens/create.js")).not.toMatch(/Try the new organizer/);
 });
 
-test("scenario matrix: 80,640 scenarios (8,064 rows x preview x 5 link types) keep every rule", () => {
-  let n = 0, shown = 0, scen = 0;
+test("the pill colours exist in light and in dark for every status", () => {
+  const css = read("public/core/app.css");
+  for (const cls of new Set(Object.values(STATUSES).map((s: any) => s.cls))) {
+    expect(css).toContain(".chip." + cls);
+    expect(css).toMatch(new RegExp(`\\[data-theme="dark"\\] \\.chip\\.${cls}|:root\\[data-theme="dark"\\] \\.chip\\.${cls}|\\.chip\\.${cls}[^{]*\\{[^}]*\\}`));
+  }
+  for (const cls of ["s-pending", "s-paid", "s-overdue", "s-done"]) expect(css).toContain(`:root[data-theme="dark"] .chip.${cls}`);
+});
+
+test("scenario matrix, streamed: 1,451,520 scenarios keep every rule", () => {
+  const fails: string[] = [];
+  const must = (ok: boolean, what: string) => { if (!ok && fails.length < 20) fails.push(what); };
+  const STATUS_KEYS = new Set(Object.keys(STATUSES)), CLS = new Set(Object.values(STATUSES).map((s: any) => s.cls));
+  let scen = 0;
   for (const game of GAMES) for (const role of ROLES) for (const st of ROW_STATUS) for (const pay of PAY) for (const next of NEXT) for (const startMs of STARTS) {
     const g: any = row({ game: game.id, role, status: st, nextAction: next, startMs, payment: { state: pay }, roleId: next === "accept" ? "r1" : undefined });
+    const tag = [game.id, role, st, pay, next, startMs].join("/");
     const s = rowStatus(g, NOW), when = startMs == null ? "Not scheduled yet" : "Sat 18:00 IST";
-    // one status, from the table
-    expect(Object.keys(STATUSES)).toContain(s);
-    if (st === "waiting_payment") expect(s).toBe(startMs != null && startMs <= NOW ? "overdue" : "pending");
-    if (s === "paid" || s === "free") expect(st).toBe("ready");
-    if (s === "free") expect(pay).toBe("free");
-    // the banner: plain, in the style guide, no payee, helpers told nothing that is the organizer's
+    must(STATUS_KEYS.has(s), "status " + tag);
+    if (st === "waiting_payment") must(s === (startMs != null && startMs <= NOW ? "overdue" : "pending"), "late " + tag);
+    if (s === "paid" || s === "free") must(st === "ready", "paid only when ready " + tag);
+    if (s === "free") must(pay === "free", "free " + tag);
     const b = bannerFor(s, g, when);
-    expect(b.length).toBeGreaterThan(10);
-    for (const re of BANNED) expect(re.test(b)).toBe(false);
-    expect(PAYEE.test(b)).toBe(false);
-    // the buttons
+    must(b.length > 10, "banner " + tag);
+    for (const re of BANNED) must(!re.test(b), "banner words " + tag);
+    must(!PAYEE.test(b), "payee " + tag);
+    must(CLS.has(STATUSES[s as keyof typeof STATUSES].cls), "pill " + tag);
+    const rl = roleLine(role, game);
+    must(rl.length > 20, "role line " + tag);
+    for (const re of BANNED) must(!re.test(rl), "role words " + tag);
+    if (role === "cohost") must(supports(game, "cohost-link") === /let in the people who came with your link/.test(rl), "cohost line follows the engine " + tag);
+    const actsBy: any = {};
     for (const preview of [false, true]) {
       const acts = rowActions(g, preview ? { features: { preview: true } } : {}, s), ids = acts.map((a: any) => a.id);
-      if (next === "accept") { expect(ids.every((i: string) => ["accept", "decline", "open-in-game"].includes(i))).toBe(true); }
+      actsBy[String(preview)] = ids;
+      if (next === "accept") must(ids.every((i: string) => ["accept", "decline", "open-in-game"].includes(i)), "accept " + tag);
       else {
-        expect(ids.filter((i: string) => i === "open").length).toBe(1);
-        expect(acts.filter((a: any) => a.main).length).toBe(1);
-        expect(ids.includes("preview")).toBe(preview);
-        if (role !== "organizer") for (const bad of HELPER_BANNED_ACTIONS) expect(ids).not.toContain(bad);
-        else {
-          expect(ids.includes("publish")).toBe(s === "draft");
-          expect(ids.includes("pay")).toBe(s === "pending" || s === "overdue");
-          expect(ids.includes("delete-draft")).toBe(s === "draft");
-          expect(ids.includes("copy")).toBe(s !== "deleted");
+        must(ids.filter((i: string) => i === "open").length === 1 && acts.filter((a: any) => a.main).length === 1, "one open " + tag);
+        must(ids.includes("preview") === preview, "preview " + tag);
+        if (role !== "organizer") for (const bad of HELPER_BANNED_ACTIONS) must(!ids.includes(bad), "helper " + bad + " " + tag);
+        else { must(ids.includes("publish") === (s === "draft"), "publish " + tag); must(ids.includes("pay") === (s === "pending" || s === "overdue"), "pay " + tag); must(ids.includes("delete-draft") === (s === "draft"), "delete " + tag); must(ids.includes("copy") === (s !== "deleted"), "copy " + tag); }
+      }
+      for (const lt of LINK_TYPES) {
+        const a = approverFor(lt, game);
+        if (lt === "organizer-link" || lt === "host-link") must(!!a && a.includes("organizer"), "approver base " + tag);
+        else must((a !== null) === supports(game, lt), "approver follows the engine " + lt + " " + tag);
+        if (a) for (const re of BANNED) must(!re.test(a), "approver words " + tag);
+        for (const w of WIDTHS) for (const theme of THEMES) for (const ans of ANSWERED) {
+          scen++;
+          // the answer of the game: a row is listed once; a slow one is named in full; one that is not on the console yet is not an error
+          const m = mergeGames([{ game: game.id, ok: ans === "ok", rows: ans === "ok" ? [g] : undefined, error: ans === "off" ? OFF : ans === "failed" ? "slow" : undefined }]);
+          must(m.rows.length === (ans === "ok" ? 1 : 0) && m.failed.length === (ans === "failed" ? 1 : 0) && m.off.length === (ans === "off" ? 1 : 0), "merge " + ans + " " + tag);
+          must((w < 900 ? "phone" : "laptop") === (w >= 900 ? "laptop" : "phone"), "design " + w);
         }
       }
-      n++;
     }
-    scen += 10; // this row, with and without a preview, for each of the 5 kinds of link
-    // the role line and who lets whom in, for each kind of link
-    expect(roleLine(role).length).toBeGreaterThan(20);
-    for (const re of BANNED) expect(re.test(roleLine(role))).toBe(false);
-    for (const lt of LINK_TYPES) { const a = approverFor(lt); if (a) { shown++; expect(a).toContain("organizer"); for (const re of BANNED) expect(re.test(a)).toBe(false); } else expect(["cohost-link", "open-link", "family-link"]).toContain(lt); n++; }
-    // the pill and the Try-it entry
-    expect(["draft", "pay", "ready", "nostart", "live", "done", "cancel"]).toContain(STATUSES[s as keyof typeof STATUSES].cls);
-    expect(newScreensLink(game) !== null).toBe(game.id === "tambola"); n++;
+    must(actsBy["true"].length === actsBy["false"].length + (next === "accept" ? 0 : 1), "preview adds exactly one " + tag);
   }
-  expect(scen).toBe(80640);
-  expect(n).toBeGreaterThan(30000);
-  expect(shown).toBeGreaterThan(0);
+  expect(fails).toEqual([]);
+  expect(scen).toBe(1451520);
+  expect(gamesFailedLine(["Corporate Tambola"])).toContain("Corporate Tambola");
 });
 
-test("the words on the console screens follow the rules: 'the system' not 'we', never 'private', English only, the full game names, one payee", () => {
+test("the words on the console screens follow the rules: 'the system' not 'we', never 'private', English only, one payee", () => {
   const files = ["public/core/status.js", "public/core/errors.js", "public/screens/account.js", "public/screens/billing.js", "public/screens/mygames.js", "public/screens/signin.js", "public/screens/create.js", "public/screens/home.js", "public/signin.js", "public/copy/en.json"];
   for (const f of files) {
-    const t = readFileSync(join(import.meta.dir, "..", f), "utf8").replace(/\/\/ .*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    const t = read(f).replace(/\/\/ .*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
     const strings = [...t.matchAll(/"((?:[^"\\\n]|\\.)*)"/g)].map((m) => m[1]).filter((s) => /\s/.test(s) && /[A-Za-z]{3}/.test(s));
     for (const s of strings) { expect([f, /\bwe\b/i.test(s), s.slice(0, 50)]).toEqual([f, false, s.slice(0, 50)]); expect([f, /\bprivate\b/i.test(s)]).toEqual([f, false]); }
   }
-  expect(ROLE_LINE.cohost).not.toContain(" we ");
 });

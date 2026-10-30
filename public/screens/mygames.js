@@ -17,7 +17,7 @@ export async function renderMyGames(outlet, ctx) {
   clear(outlet);
   const body = el("div", { id: "mg-body" }, el("p", { class: "hintline", text: "One moment." }));
   const seg = el("div", { class: "seg", role: "radiogroup", "aria-label": "Show" }, FILTERS.map(([v, t]) => el("label", {}, el("input", { type: "radio", name: "mf", value: v, checked: v === filter, onchange: () => { filter = v; draw(); } }), el("span", { text: t }))));
-  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "My games" }), el("p", { class: "lead", text: "Every game you organize, host or help with, in one list." }), el("p", { class: "hintline", id: "approval-note", text: approvalNote().join(" ") }), seg, body)));
+  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "My games" }), el("p", { class: "lead", text: "Every game you organize, host or help with, in one list." }), el("p", { class: "hintline", id: "approval-note", text: approvalNote(ctx.games || []).join(" ") }), seg, body)));
 
   const EID = /^[A-Za-z0-9_-]{4,40}$/;
   async function removeDraft(g, card) {
@@ -60,7 +60,7 @@ export async function renderMyGames(outlet, ctx) {
       g.nextAction === "accept" ? null : el("p", { class: "banner2", dataset: { banner: st }, text: bannerFor(st, g, whenText(g.startMs)) }),
       el("ul", { class: "facts" }, el("li", { text: whenText(g.startMs) }), el("li", { text: `up to ${g.cap} people${Number.isInteger(g.joined) ? `, ${g.joined} joined` : ""}${Number.isInteger(g.yourLimit) ? `, you can add up to ${g.yourLimit}` : ""}` })),
       g.role !== "organizer" && g.invitedBy ? el("p", { class: "by", text: `Invited by ${g.invitedBy}` }) : null,
-      el("p", { class: "who", dataset: { who: g.role }, text: roleLine(g.role) }),
+      el("p", { class: "who", dataset: { who: g.role }, text: roleLine(g.role, (ctx.games || []).find((x) => x.id === g.game)) }),
       el("div", { class: "btns" }, btns)), colors[g.game] || "#0B3D91");
     return c;
   }

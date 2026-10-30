@@ -5,7 +5,7 @@
    "id": "tambola",
    "name": "Corporate Tambola",
    "short": "Tambola",
-   "newScreens": "/zc?flow=new",
+   "approvals": ["cohost-link", "family-link", "open-link"],
    "accent": "#7A1C33",
    "freeCap": 10,
    "ready": true,

@@ -95,6 +95,8 @@ test("My games: the seven status words are exactly the console's, each card has 
   const w = await world({ slowMs: 0 }); spies();
   try {
     await w.signIn(); await w.api.connect();
+    w.games.find((g: any) => g.id === "tambola").approvals = ["cohost-link", "family-link", "open-link"]; // Corporate Tambola does these
+    w.games.find((g: any) => g.id === "tambola").name = "Corporate Tambola";
     const o = fresh();
     await renderMyGames(o, ctxOf(w));
     const cards = [...o.querySelectorAll(".gcard")] as any[];
@@ -105,6 +107,13 @@ test("My games: the seven status words are exactly the console's, each card has 
     expect(statusOf("DONE001")).toBe("Completed"); expect(statusOf("CANC001")).toBe("Cancelled"); expect(statusOf("NOST001")).toBe("Payment pending, start time passed");
     expect(Object.values(STATUS_TEXT)).toEqual(["Draft", "Waiting for payment", "Ready", "Playing now", "Finished", "Cancelled", "Did not start"]); // the console's own words are kept for the filters
     for (const c of cards) expect(c.querySelector(".role")!.textContent).toMatch(/^(Organizer|Host|Co-host)$/);
+    for (const c of cards) { // the Game ID, the role line, and (unless it is an invitation) ONE pill with its plain banner
+      expect(c.querySelector(".gid")!.textContent).toBe("Game ID " + c.dataset.eid);
+      expect(c.querySelector(".who")!.textContent.length).toBeGreaterThan(20);
+      if (!c.querySelector(".chip.ready")) { expect(c.querySelectorAll(".chip[data-status]").length).toBe(1); expect(c.querySelector(".banner2")!.textContent.length).toBeGreaterThan(20); }
+    }
+    expect(o.querySelector("#approval-note")!.textContent).toContain("comes in with nothing else");
+    expect(o.querySelector("#approval-note")!.textContent).toContain("Corporate Tambola:");
     const names = (eid: string) => [...tam.find((c) => c.dataset.eid === eid).querySelectorAll("button, a.btn")].map((b: any) => b.textContent);
     expect(names("DRAFT01")).toEqual(["Open", "Publish", "See what players see", "Make a copy", "Delete draft"]);
     expect(names("READY01")).toEqual(["Open", "See what players see", "Make a copy"]);

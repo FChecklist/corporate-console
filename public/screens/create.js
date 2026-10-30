@@ -4,7 +4,6 @@ import { el, clear } from "../core/dom.js";
 import { withColor, button, toast } from "./ui.js";
 import { priceLine } from "../core/prices.js";
 import { openError } from "../core/errors.js";
-import { newScreensLink } from "../core/status.js";
 
 const WORDS = {
   tambola: "Numbers are called, players mark their tickets.",
@@ -41,8 +40,7 @@ export async function renderCreate(outlet, ctx) {
     b.addEventListener("click", () => start(g.id, b));
     const free = button("Try a free game", { sm: true, label: `Try a free ${title} game for up to 10 people`, onclick: () => start(g.id, free, { free: true }) });
     prices[g.id] = price;
-    const nu = newScreensLink(g);
-    tiles.append(withColor(el("article", { class: "tile", dataset: { game: g.id } }, el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), price, el("div", { class: "btns" }, b, free, nu ? el("a", { class: "btn sm", id: "try-new-" + g.id, href: nu.href, target: "_blank", rel: "noopener", text: nu.label }) : null)), colors[g.id] || "#0B3D91"));
+    tiles.append(withColor(el("article", { class: "tile", dataset: { game: g.id } }, el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), price, el("div", { class: "btns" }, b, free)), colors[g.id] || "#0B3D91"));
   }
   const caps = await api.capabilities().catch(() => []);
   for (const c of caps) if (c.ok && prices[c.game]) prices[c.game].textContent = priceLine(c.caps);

@@ -173,3 +173,19 @@ body.has-tabbar .updatebar { bottom: 92px; }
 .gid { margin: 2px 0; font-size: 14px; opacity: .85; }
 .banner2 { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--soft, #eef2fb); font-size: 15px; line-height: 1.4; }
 .who { margin: 6px 0; font-size: 14px; opacity: .9; }
+
+.chip.s-draft, .chip.s-cancel { background: var(--soft); color: var(--ink2); }
+.chip.s-pending { background: #FBEBC8; color: #6B4200; }
+.chip.s-paid { background: #D6F0E2; color: #0F5A3B; }
+.chip.s-overdue, .chip.s-live { background: #F6DAD6; color: #8E1C14; }
+.chip.s-done { background: #DCE7FB; color: #0B2F78; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chip.s-pending { background: #4A3610; color: #FBE3A8; }
+  :root:not([data-theme="light"]) .chip.s-paid { background: #123A2B; color: #9BE5C2; }
+  :root:not([data-theme="light"]) .chip.s-overdue, :root:not([data-theme="light"]) .chip.s-live { background: #4A1B17; color: #FFC2BC; }
+  :root:not([data-theme="light"]) .chip.s-done { background: #1C2C55; color: #BFD1FF; }
+}
+:root[data-theme="dark"] .chip.s-pending { background: #4A3610; color: #FBE3A8; }
+:root[data-theme="dark"] .chip.s-paid { background: #123A2B; color: #9BE5C2; }
+:root[data-theme="dark"] .chip.s-overdue, :root[data-theme="dark"] .chip.s-live { background: #4A1B17; color: #FFC2BC; }
+:root[data-theme="dark"] .chip.s-done { background: #1C2C55; color: #BFD1FF; }

@@ -1,0 +1,1 @@
+{"id": "status-family-unlimited", "repo": ".", "file": "public/core/status.js", "find": "lets in their own family and friends, up to 15 minutes before the game begins.", "replace": "lets in their own family and friends.", "test": "tests/status-matrix.test.ts", "note": "the family pass loses its 15-minute cutoff"}
