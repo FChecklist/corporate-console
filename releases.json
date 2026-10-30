@@ -1,1 +1,7 @@
-[{ "version": "0.1.0", "releasedAt": "2026-10-29T10:45:00.000Z", "note": "first complete master console (local build, not live)" }]
+[
+ {
+  "version": "0.1.0",
+  "releasedAt": "2026-10-30T02:48:24.487Z",
+  "note": "first complete master console (local build, not live)"
+ }
+]
