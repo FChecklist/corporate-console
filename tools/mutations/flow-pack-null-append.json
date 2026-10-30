@@ -1,0 +1,1 @@
+{"id": "flow-pack-null-append", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "i.label, ...(i.optional ? [el(\"i\", { text: \" (optional)\" })] : []));", "replace": "i.label, i.optional ? el(\"i\", { text: \" (optional)\" }) : null);", "test": "tests/flow-pack.test.ts", "note": "flow-pack-null-append"}

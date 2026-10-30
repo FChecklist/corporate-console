@@ -234,3 +234,10 @@ test("Which ID?: the words follow idKind (add-person placeholder, list column, j
   expect(box.querySelector("#zf-idhint").textContent).toContain("raj@demo.com");
   for (const k of ["emp", "email"]) for (const s of Object.values(F.idWords(k)) as string[]) expect(F.badWords(s)).toEqual([]);
 });
+
+test("the pack never gives a native append() a null: the Ready check no longer prints 'Paymentnull' (fix of Tambola 1.8.4 b6ee745)", () => {
+  expect(src.includes('i.label, ...(i.optional ? [el("i", { text: " (optional)" })] : []));')).toBe(true);
+  expect(/i\.label, i\.optional \? el\("i"[^)]*\) : null\)/.test(src)).toBe(false);
+  const bad = src.split("\n").filter((l) => /(^|[^a-zA-Z])(li|row|card|frame|bar|ul|box)\.append\(/.test(l) && /\) : null\)/.test(l) && !/bar\.append\(el\("li"/.test(l)); // el(...) skips a null child, a native append does not
+  expect(bad).toEqual([]);
+});

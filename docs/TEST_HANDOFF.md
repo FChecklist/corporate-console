@@ -1,0 +1,3 @@
+# Test hand-off notes
+## Pack fix that every re-vendor must keep (30 Oct 2026)
+Bug "Paymentnull" / "Prizes chosennull": in the Ready check, `li.append(..., cond ? el(...) : null)` printed the word null, because the browser's native append turns null into text. Fixed in the pack source (packages/game-pack/zc-flow.js) the same way as Tambola 1.8.4 commit b6ee745: the optional note is added with a spread, `...(i.optional ? [el("i", ...)] : [])`. Test: tests/flow-pack.test.ts "the pack never gives a native append() a null". When a game re-vendors the pack, its copy must contain this line; the game's own source guard (no-null-text) will fail if it does not.
