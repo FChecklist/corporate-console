@@ -1,0 +1,1 @@
+{"id": "lazy-wrapper-wrong-path", "repo": ".", "file": "functions/auth/[[path]].ts", "find": "path === \"/auth/me\"", "replace": "path === \"/auth/mee\"", "test": "tests/lazy-purge.test.ts", "note": "lazy-wrapper-wrong-path"}

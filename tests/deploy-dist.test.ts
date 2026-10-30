@@ -1,11 +1,14 @@
-// FALSIFIED BY: dist-stale-passes, dist-version-ignored, secrets-pepper-short, secrets-key-unusable, runbook-step2-command-missing
+// FALSIFIED BY: build-commit-dev, dist-commit-ignored, dist-deploy-age-ignored, dist-deploy-head-ignored, stamp-changes-version, dist-stale-passes, dist-version-ignored, secrets-pepper-short, secrets-key-unusable, runbook-step2-command-missing
 // The deploy-day guards (2026-10-30): dist/ must be fresh and carry the version (check-dist), the two secrets that can be made are made well (make-secrets), and step 2 of the runbook is a copy-paste list.
 import { test, expect } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, existsSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { distProblems } from "../tools/deploy/check-dist.mjs";
 import { makeSecrets } from "../tools/deploy/make-secrets.mjs";
+import { stampRelease } from "../tools/deploy/stamp-release.mjs";
+import { build } from "../build.mjs";
 
 const REL = { version: "0.1.0", releasedAt: "2026-10-29T10:45:00.000Z" };
 function tree(over: any = {}) {
@@ -15,7 +18,7 @@ function tree(over: any = {}) {
   writeFileSync(join(root, "releases.json"), JSON.stringify([REL]));
   const t = Date.now() / 1000;
   for (const f of ["public/index.html", "config/games.json", "build.mjs", "releases.json"]) utimesSync(join(root, f), t - 100, t - 100);
-  if (over.version !== null) { writeFileSync(join(dist, "version.json"), JSON.stringify({ version: "0.1.0", releasedAt: REL.releasedAt, releasedAtIST: "29 Oct 2026, 16:15 IST", ...(over.version || {}) })); utimesSync(join(dist, "version.json"), t - 10, t - 10); }
+  if (over.version !== null) { writeFileSync(join(dist, "version.json"), JSON.stringify({ version: "0.1.0", releasedAt: REL.releasedAt, releasedAtIST: "29 Oct 2026, 16:15 IST", commit: "0123456789ab", builtAt: new Date().toISOString(), ...(over.version || {}) })); utimesSync(join(dist, "version.json"), t - 10, t - 10); }
   return { root, dist, t };
 }
 
@@ -78,4 +81,34 @@ test("runbook step 2 is a copy-paste list: every command, in order, with who giv
   expect(step).toContain("The owner gives ONE thing");
   expect(step).toContain("`RESEND_API_KEY`");
   expect(/(re_[A-Za-z0-9]{20,}|[A-Fa-f0-9]{40,})/.test(step)).toBe(false); // no secret value
+});
+
+test("check-dist: a build that carries no real commit (the placeholder 'dev', or nothing) is refused", () => {
+  for (const commit of ["dev", "", "HEAD", "not-a-sha"]) { const t = tree({ version: { commit } }); expect([commit, distProblems(t.root, t.dist).join(" ").includes("no real git commit")]).toEqual([commit, true]); }
+});
+
+test("check-dist --deploy: the commit must be the one checked out, the release time must be today's (not future, not more than 30 minutes before the build)", () => {
+  const git = (cwd: string, ...a: string[]) => execFileSync("git", ["-c", "user.email=t@t", "-c", "user.name=t", ...a], { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  const make = (v: any) => { const t = tree({ version: v }); writeFileSync(join(t.root, "releases.json"), JSON.stringify([{ version: "0.1.0", releasedAt: v.releasedAt }])); git(t.root, "init", "-q"); git(t.root, "add", "-A"); git(t.root, "commit", "-q", "-m", "x"); const head = git(t.root, "rev-parse", "--short=12", "HEAD"); writeFileSync(join(t.dist, "version.json"), JSON.stringify({ version: "0.1.0", releasedAt: REL.releasedAt, releasedAtIST: "29 Oct 2026, 16:15 IST", commit: head, builtAt: new Date().toISOString(), ...v })); const ft = Date.now() / 1000 + 5; utimesSync(join(t.dist, "version.json"), ft, ft); return { ...t, head }; };
+  const now = Date.now();
+  const ok = make({ releasedAt: new Date(now - 5 * 60000).toISOString() }); expect(distProblems(ok.root, ok.dist, { deploy: true })).toEqual([]);
+  const other = make({ releasedAt: new Date(now - 5 * 60000).toISOString(), commit: "ffffffffffff" }); expect(distProblems(other.root, other.dist, { deploy: true }).join(" ")).toContain("is checked out");
+  const old = make({ releasedAt: new Date(now - 3 * 3600000).toISOString() }); expect(distProblems(old.root, old.dist, { deploy: true }).join(" ")).toContain("stamp-release");
+  const future = make({ releasedAt: new Date(now + 3 * 3600000).toISOString() }); expect(distProblems(future.root, future.dist, { deploy: true }).join(" ")).toContain("in the future");
+  expect(distProblems(old.root, old.dist)).toEqual([]); // the everyday check (tests, local work) does not mind the age
+});
+
+test("stamp-release sets only the release time to now; a live build refuses a placeholder commit; the build command stamps the real commit of the git folder", () => {
+  const dir = mkdtempSync(join(tmpdir(), "rel-")); const f = join(dir, "releases.json");
+  writeFileSync(f, JSON.stringify([{ version: "0.1.0", releasedAt: "2026-10-29T10:45:00.000Z", note: "first" }]));
+  const now = new Date("2026-10-30T08:00:00.000Z");
+  expect(stampRelease(f, now)).toEqual({ version: "0.1.0", releasedAt: "2026-10-30T08:00:00.000Z", note: "first" });
+  expect(JSON.parse(readFileSync(f, "utf8"))[0].releasedAt).toBe("2026-10-30T08:00:00.000Z");
+  expect(() => build({ env: "live", out: mkdtempSync(join(tmpdir(), "b-")), version: "1.0.0", commit: "dev", releasedAt: "2026-10-30T08:00:00.000Z" })).toThrow("real git commit");
+  const out = mkdtempSync(join(tmpdir(), "b2-"));
+  execFileSync("node", [join(import.meta.dir, "../build.mjs"), "--env", "preview", "--out", out], { encoding: "utf8" });
+  const v = JSON.parse(readFileSync(join(out, "version.json"), "utf8"));
+  const head = execFileSync("git", ["rev-parse", "--short=12", "HEAD"], { cwd: join(import.meta.dir, ".."), encoding: "utf8" }).trim();
+  expect(v.commit).toBe(head);
+  expect(v.commit).not.toBe("dev");
 });

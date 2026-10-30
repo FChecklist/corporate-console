@@ -1,0 +1,1 @@
+{"id": "stamp-changes-version", "repo": ".", "file": "tools/deploy/stamp-release.mjs", "find": "rows[0] = { ...rows[0], releasedAt: now.toISOString() };", "replace": "rows[0] = { ...rows[0], version: \"9.9.9\", releasedAt: now.toISOString() };", "test": "tests/deploy-dist.test.ts", "note": "stamp-changes-version"}

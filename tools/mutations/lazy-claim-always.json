@@ -1,0 +1,1 @@
+{"id": "lazy-claim-always", "repo": ".", "file": "functions/_lib/purge.ts", "find": " WHERE rate.win_start_ms<=?\").bind(LAZY_MARKER, now + DAY_MS, now)", "replace": "\").bind(LAZY_MARKER, now + DAY_MS)", "test": "tests/lazy-purge.test.ts", "note": "lazy-claim-always"}

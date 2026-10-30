@@ -1,0 +1,1 @@
+{"id": "dist-deploy-age-ignored", "repo": ".", "file": "tools/deploy/check-dist.mjs", "find": "if (built - rel > 30 * 60_000)", "replace": "if (false)", "test": "tests/deploy-dist.test.ts", "note": "dist-deploy-age-ignored"}

@@ -1,0 +1,1 @@
+{"id": "build-commit-dev", "repo": ".", "file": "build.mjs", "find": "commit: commit || \"dev\", releasedAt", "replace": "commit: \"dev\", releasedAt", "test": "tests/deploy-dist.test.ts", "note": "build-commit-dev"}

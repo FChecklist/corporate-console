@@ -1,0 +1,1 @@
+{"id": "dist-deploy-head-ignored", "repo": ".", "file": "tools/deploy/check-dist.mjs", "find": "if (head && v.commit !== head)", "replace": "if (false)", "test": "tests/deploy-dist.test.ts", "note": "dist-deploy-head-ignored"}

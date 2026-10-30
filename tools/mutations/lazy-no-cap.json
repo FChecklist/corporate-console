@@ -1,0 +1,1 @@
+{"id": "lazy-no-cap", "repo": ".", "file": "functions/_lib/purge.ts", "find": "{ maxEmails: 20 }", "replace": "{ maxEmails: 500 }", "test": "tests/lazy-purge.test.ts", "note": "lazy-no-cap"}

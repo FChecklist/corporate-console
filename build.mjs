@@ -3,6 +3,7 @@
 // stamps version.json, and refuses to finish if the generated _headers breaks a rule (no '*', no inline script, no framing).
 import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const ROOT = new URL("./", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -65,6 +66,7 @@ export function lintHeaders(text) {
 export const istText = (iso) => { const d = new Date(new Date(iso).getTime() + 19_800_000), m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getUTCMonth()], p = (n) => String(n).padStart(2, "0"); return `${p(d.getUTCDate())} ${m} ${d.getUTCFullYear()}, ${p(d.getUTCHours())}:${p(d.getUTCMinutes())} IST`; };
 
 export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.0.0", commit = "dev", releasedAt = "" } = {}) {
+  if (env === "live" && (!commit || commit === "dev")) throw new Error("a live build must carry the real git commit, not a placeholder");
   const cfg = JSON.parse(readFileSync(join(ROOT, "config/games.json"), "utf8"));
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
@@ -81,6 +83,9 @@ export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const a = process.argv.slice(2), get = (n, d) => { const i = a.indexOf(n); return i >= 0 ? a[i + 1] : d; };
   const rel = existsSync(join(ROOT, "releases.json")) ? JSON.parse(readFileSync(join(ROOT, "releases.json"), "utf8"))[0] : undefined;
-  const r = build({ env: get("--env", "preview"), out: resolve(get("--out", join(ROOT, "dist"))), version: rel?.version || "0.0.0", releasedAt: rel?.releasedAt || "" });
+  let commit = "";
+  try { commit = execFileSync("git", ["rev-parse", "--short=12", "HEAD"], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { /* handled below */ }
+  if (!/^[0-9a-f]{7,40}$/.test(commit) && get("--env", "preview") !== "test") { console.error("The git commit could not be read, so the build would carry no real commit. Run it inside the git folder."); process.exit(1); }
+  const r = build({ env: get("--env", "preview"), out: resolve(get("--out", join(ROOT, "dist"))), version: rel?.version || "0.0.0", commit: commit || "dev", releasedAt: rel?.releasedAt || "" });
   console.log("built into " + r.out);
 }

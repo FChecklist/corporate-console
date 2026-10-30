@@ -1,0 +1,1 @@
+{"id": "lazy-wrapper-awaited", "repo": ".", "file": "functions/auth/[[path]].ts", "find": "ctx.waitUntil(lazyPurge(ctx.env, now)", "replace": "void (lazyPurge(ctx.env, now)", "test": "tests/lazy-purge.test.ts", "note": "lazy-wrapper-awaited"}

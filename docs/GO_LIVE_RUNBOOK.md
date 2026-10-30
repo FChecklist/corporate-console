@@ -87,8 +87,10 @@ node tools/deploy/make-secrets.mjs
 **2.6 Build the console for this address and check the build is fresh** (preview = the pages.dev addresses; the guard prints STALE if anything changed after the build):
 
 ```bash
-node build.mjs --env preview
-node tools/deploy/check-dist.mjs        # must print: dist/ is fresh and carries the version
+node tools/deploy/stamp-release.mjs     # the release time becomes NOW, so every screen shows the true date and time (IST) of this release
+git add releases.json && git commit -m "Release stamp for the deploy"   # commit nothing else after this
+node build.mjs --env preview           # stamps the real git commit into version.json (never a placeholder)
+node tools/deploy/check-dist.mjs --deploy   # must print: dist/ is fresh and carries the version (commit = the one checked out, release time = today)
 ```
 
 **2.7 Make the Pages project, set the three secrets by name, deploy:**
@@ -98,11 +100,11 @@ $W pages project create corporate-console --production-branch main
 $W pages secret put CONSOLE_SIGNING_KEY --project-name corporate-console     # paste the value from 2.5
 $W pages secret put SESSION_PEPPER --project-name corporate-console          # paste the value from 2.5
 $W pages secret put RESEND_API_KEY --project-name corporate-console          # the owner's key
-node tools/deploy/check-dist.mjs
+node tools/deploy/check-dist.mjs --deploy
 $W pages deploy dist --project-name corporate-console --branch main --commit-dirty=true
 ```
 
-**2.8 The daily clean-up Worker** (it needs the SAME signing key and pepper as 2.7, so paste the same two values again):
+**2.8 The daily clean-up Worker** (optional: if the Cloudflare token cannot deploy Workers, skip it; the console's own pages then do the same clean-up themselves, once a day, in the background, when the console is opened or a code is asked for: old codes, sessions and counters, and the 365-day e-mail rule, 20 e-mails per day at most) (it needs the SAME signing key and pepper as 2.7, so paste the same two values again):
 
 ```bash
 cd apps/cron

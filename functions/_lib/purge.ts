@@ -15,14 +15,14 @@ export const istDayStart = (ms: number) => Math.floor((ms + IST_MS) / DAY_MS) * 
 /** the moment (UTC ms) an e-mail last seen at lastSeenMs must be gone: 00:00 IST on the day after day 365 */
 export const deleteAtMs = (lastSeenMs: number) => istDayStart(lastSeenMs) + (RETENTION_DAYS + 1) * DAY_MS;
 
-export async function purgeExpired(env: Env, now: number, doFetch: typeof fetch = fetch) {
+export async function purgeExpired(env: Env, now: number, doFetch: typeof fetch = fetch, opts: { maxEmails?: number } = {}) {
   const out = { codes: 0, sessions: 0, rates: 0, emails: 0, deferred: 0, gameCalls: 0, gameFailures: 0 };
   out.codes = (await tables(env).prepare("DELETE FROM login_code WHERE expires_ms<?").bind(now - DAY_MS).run()).meta.changes;
   out.sessions = (await tables(env).prepare("DELETE FROM session WHERE expires_ms<?").bind(now).run()).meta.changes;
   out.rates = (await tables(env).prepare("DELETE FROM rate WHERE win_start_ms<?").bind(now - 2 * 3600_000).run()).meta.changes;
   // e-mails whose time has come: last_seen + 366 IST days (midnight) is not after now
   // anything due was last seen more than 365 days ago (the exact IST-midnight rule is checked per row)
-  const rows = (await tables(env).prepare("SELECT email_hash, last_seen_ms FROM console_email WHERE last_seen_ms<=? ORDER BY last_seen_ms LIMIT 500").bind(now - RETENTION_DAYS * DAY_MS).all<{ email_hash: string; last_seen_ms: number }>()).results;
+  const rows = (await tables(env).prepare("SELECT email_hash, last_seen_ms FROM console_email WHERE last_seen_ms<=? ORDER BY last_seen_ms LIMIT ?").bind(now - RETENTION_DAYS * DAY_MS, Math.max(1, Math.min(500, opts.maxEmails ?? 500))).all<{ email_hash: string; last_seen_ms: number }>()).results;
   const due = rows.filter((r) => now >= deleteAtMs(r.last_seen_ms));
   if (!due.length) return out;
   let origins: Record<string, string> = {};
@@ -46,4 +46,14 @@ export async function purgeExpired(env: Env, now: number, doFetch: typeof fetch 
     out.emails++;
   }
   return out;
+}
+
+/** The same clean-up, done by the console's own pages when the daily Worker cannot run: at most ONCE a day (whoever opens the console first after the day is up does it, in the background).
+    The claim is one atomic write: a marker row in the rate table whose time lies a day AHEAD, so the clean-up itself (which only removes OLD rate rows) never removes it.
+    A small number of e-mails per run keeps it quick; a bigger backlog is finished on the following days. Returns null when today's clean-up was already claimed. */
+export const LAZY_MARKER = "purge:daily";
+export async function lazyPurge(env: Env, now: number, doFetch: typeof fetch = fetch) {
+  const claim = await tables(env).prepare("INSERT INTO rate(k,n,win_start_ms) VALUES(?,1,?) ON CONFLICT(k) DO UPDATE SET n=n+1, win_start_ms=excluded.win_start_ms WHERE rate.win_start_ms<=?").bind(LAZY_MARKER, now + DAY_MS, now).run();
+  if (claim.meta.changes !== 1) return null;
+  return purgeExpired(env, now, doFetch, { maxEmails: 20 });
 }

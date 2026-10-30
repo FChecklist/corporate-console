@@ -1,0 +1,1 @@
+{"id": "dist-commit-ignored", "repo": ".", "file": "tools/deploy/check-dist.mjs", "find": "if (!/^[0-9a-f]{7,40}$/.test(String(v.commit || \"\")))", "replace": "if (false)", "test": "tests/deploy-dist.test.ts", "note": "dist-commit-ignored"}
