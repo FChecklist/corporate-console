@@ -5,11 +5,11 @@ compatibility_date = "2026-10-01"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "corporate-console"
-database_id = "REPLACE_AFTER_THE_DATABASE_EXISTS"
+database_name = "corporate-games-master-console"
+database_id = "d5f65919-d99f-4813-8420-aa976b08e36f"
 
 [vars]
-CONSOLE_ORIGIN = "https://console.corporatetambola.com"
+CONSOLE_ORIGIN = "https://corporate-console.pages.dev"
 GAME_ORIGINS = '{"tambola":"https://housie.corporatetambola.com","bingo":"https://bingo.corporatetambola.com","tictactoe":"https://tictactoe.corporatetambola.com","snakesladders":"https://snakes.corporatetambola.com","luckbychance":"https://luck.corporatetambola.com","luckydraw":"https://lucky.corporatetambola.com"}'
 # THE ONE LINE: "" = the console has its own database. If the account has no free database left, point "DB" above at an existing database,
 # set a prefix such as "con_" here AND in apps/cron/wrangler.toml, and apply the output of `bun tools/prefix-migration.mjs con_`.

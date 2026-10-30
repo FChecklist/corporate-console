@@ -8,10 +8,10 @@ crons = ["30 18 * * *"]   # 00:00 IST
 
 [[d1_databases]]
 binding = "DB"
-database_name = "corporate-console"
-database_id = "REPLACE_AFTER_THE_DATABASE_EXISTS"
+database_name = "corporate-games-master-console"
+database_id = "d5f65919-d99f-4813-8420-aa976b08e36f"
 
 [vars]
-CONSOLE_ORIGIN = "https://console.corporatetambola.com"
+CONSOLE_ORIGIN = "https://corporate-console.pages.dev"
 GAME_ORIGINS = '{"tambola":"https://housie.corporatetambola.com","bingo":"https://bingo.corporatetambola.com","tictactoe":"https://tictactoe.corporatetambola.com","snakesladders":"https://snakes.corporatetambola.com","luckbychance":"https://luck.corporatetambola.com","luckydraw":"https://lucky.corporatetambola.com"}'
 TABLE_PREFIX = ""   # must equal TABLE_PREFIX in the console's own wrangler.toml
