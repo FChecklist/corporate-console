@@ -1,3 +1,4 @@
+import { showVersion } from "/core/version.js";
 // The page behind the one-tap link in the sign-in mail. Opening it does nothing; the button finishes the sign-in (a mail scanner that only opens links changes nothing).
 const t = new URLSearchParams(location.search).get("t") || "";
 const msg = document.getElementById("msg"), go = document.getElementById("go");
@@ -13,5 +14,4 @@ go.addEventListener("click", async () => {
   go.disabled = false;
 });
 
-// the version and release time, on this screen too
-fetch("/version.json").then((r) => r.json()).then((v) => { if (v && v.version && v.releasedAtIST) document.getElementById("version-line").textContent = `Version ${v.version}, released ${v.releasedAtIST}`; }).catch(() => {});
+showVersion(); // the version and release time on this page too

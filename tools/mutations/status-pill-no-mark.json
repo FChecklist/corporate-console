@@ -1,0 +1,1 @@
+{"id": "status-pill-no-mark", "repo": ".", "file": "public/core/app.css", "find": ".chip.s-live::before { content: \"\\25CF \"; margin-right: 4px; }", "replace": ".chip.s-live::before { content: \"\"; margin-right: 4px; }", "test": "tests/contrast.test.ts", "note": "a pill with no mark"}

@@ -174,18 +174,45 @@ body.has-tabbar .updatebar { bottom: 92px; }
 .banner2 { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--soft, #eef2fb); font-size: 15px; line-height: 1.4; }
 .who { margin: 6px 0; font-size: 14px; opacity: .9; }
 
-.chip.s-draft, .chip.s-cancel { background: var(--soft); color: var(--ink2); }
+.versionline { margin: 18px 16px 90px; text-align: center; font-size: 13px; opacity: .8; }
+
+/* the status pills of a game row: every status has its own colours AND its own mark, so colour is never the only cue */
+.chip.s-draft { background: #E6E9EF; color: #2F3748; }
+.chip.s-draft::before { content: "\270E "; margin-right: 4px; }
 .chip.s-pending { background: #FBEBC8; color: #6B4200; }
+.chip.s-pending::before { content: "\25D4 "; margin-right: 4px; }
 .chip.s-paid { background: #D6F0E2; color: #0F5A3B; }
-.chip.s-overdue, .chip.s-live { background: #F6DAD6; color: #8E1C14; }
-.chip.s-done { background: #DCE7FB; color: #0B2F78; }
+.chip.s-paid::before { content: "\2714 "; margin-right: 4px; }
+.chip.s-free { background: #CFEFF2; color: #0A4B52; }
+.chip.s-free::before { content: "\25C7 "; margin-right: 4px; }
+.chip.s-overdue { background: #F6DAD6; color: #8E1C14; }
+.chip.s-overdue::before { content: "\0021 "; margin-right: 4px; }
+.chip.s-live { background: #DCE7FB; color: #0B2F78; }
+.chip.s-live::before { content: "\25CF "; margin-right: 4px; }
+.chip.s-done { background: #E8DDF7; color: #4A2A85; }
+.chip.s-done::before { content: "\25A0 "; margin-right: 4px; }
+.chip.s-cancel { background: #EDEDED; color: #4A4A4A; }
+.chip.s-cancel::before { content: "\2715 "; margin-right: 4px; }
+.chip.s-deleted { background: #D2D2D2; color: #2A2A2A; }
+.chip.s-deleted::before { content: "\232B "; margin-right: 4px; }
+.chip.s-cancel { text-decoration: line-through; }
 @media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chip.s-draft { background: #2B3142; color: #D6DBE8; }
   :root:not([data-theme="light"]) .chip.s-pending { background: #4A3610; color: #FBE3A8; }
   :root:not([data-theme="light"]) .chip.s-paid { background: #123A2B; color: #9BE5C2; }
-  :root:not([data-theme="light"]) .chip.s-overdue, :root:not([data-theme="light"]) .chip.s-live { background: #4A1B17; color: #FFC2BC; }
-  :root:not([data-theme="light"]) .chip.s-done { background: #1C2C55; color: #BFD1FF; }
+  :root:not([data-theme="light"]) .chip.s-free { background: #0F3B40; color: #9EE3EA; }
+  :root:not([data-theme="light"]) .chip.s-overdue { background: #4A1B17; color: #FFC2BC; }
+  :root:not([data-theme="light"]) .chip.s-live { background: #1C2C55; color: #BFD1FF; }
+  :root:not([data-theme="light"]) .chip.s-done { background: #33264F; color: #D9C8F5; }
+  :root:not([data-theme="light"]) .chip.s-cancel { background: #333333; color: #CFCFCF; }
+  :root:not([data-theme="light"]) .chip.s-deleted { background: #1E1E1E; color: #BEBEBE; }
 }
+:root[data-theme="dark"] .chip.s-draft { background: #2B3142; color: #D6DBE8; }
 :root[data-theme="dark"] .chip.s-pending { background: #4A3610; color: #FBE3A8; }
 :root[data-theme="dark"] .chip.s-paid { background: #123A2B; color: #9BE5C2; }
-:root[data-theme="dark"] .chip.s-overdue, :root[data-theme="dark"] .chip.s-live { background: #4A1B17; color: #FFC2BC; }
-:root[data-theme="dark"] .chip.s-done { background: #1C2C55; color: #BFD1FF; }
+:root[data-theme="dark"] .chip.s-free { background: #0F3B40; color: #9EE3EA; }
+:root[data-theme="dark"] .chip.s-overdue { background: #4A1B17; color: #FFC2BC; }
+:root[data-theme="dark"] .chip.s-live { background: #1C2C55; color: #BFD1FF; }
+:root[data-theme="dark"] .chip.s-done { background: #33264F; color: #D9C8F5; }
+:root[data-theme="dark"] .chip.s-cancel { background: #333333; color: #CFCFCF; }
+:root[data-theme="dark"] .chip.s-deleted { background: #1E1E1E; color: #BEBEBE; }

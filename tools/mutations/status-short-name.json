@@ -1,0 +1,1 @@
+{"id": "status-short-name", "repo": ".", "file": "build.mjs", "find": "name: g.name, accent:", "replace": "name: g.name, short: g.name, accent:", "test": "tests/status-matrix.test.ts", "note": "the short name is exported to the browser again"}

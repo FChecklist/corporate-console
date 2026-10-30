@@ -1,0 +1,1 @@
+{"id": "shell-version-every-page", "repo": ".", "file": "public/signin.js", "find": "showVersion(); // the version and release time on this page too", "replace": "// no version here", "test": "tests/shell.test.ts", "note": "a page without the version line"}

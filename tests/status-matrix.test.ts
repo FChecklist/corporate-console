@@ -1,10 +1,13 @@
-// FALSIFIED BY: status-helper-gets-pay, status-late-reads-pending, status-banner-we, status-cohost-approves, status-approval-everywhere, status-family-unlimited, status-pill-class
+// FALSIFIED BY: status-short-name, status-pill-same-colours, status-theme-contrast, status-helper-gets-pay, status-late-reads-pending, status-banner-we, status-cohost-approves, status-approval-everywhere, status-family-unlimited, status-pill-class
 // Master console rows (2026-10-30): Game ID, ONE status pill with its plain banner, the role line (who lets whom in, for what each game's engine does), the buttons a person may press, and the wording rules.
 // Logic tests, a wire test (the built config), regression of the console's own words, and a STREAMED scenario matrix over games x roles x row status x payment x next action x start time x preview x link type x device x theme x answered
 // (1,451,520 scenarios, none stored: each is checked and forgotten).
 import { test, expect } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { build } from "../build.mjs";
+import { contrastRatio } from "../tools/browser-tests/viewport-kit.mjs";
 import { STATUSES, rowStatus, bannerFor, roleLine, rowActions, approverFor, approvalNote, supports, LINK_TYPES, ROLE_LINE } from "../public/core/status.js";
 import { mergeGames, OFF } from "../public/core/merge.js";
 import { gamesFailedLine } from "../public/core/errors.js";
@@ -20,6 +23,21 @@ const NEXT = ["none", "accept", "pay", "publish"];
 const NOW = Date.UTC(2026, 9, 30, 6, 30), HOUR = 3600000;
 const STARTS = [NOW - 2 * HOUR, NOW + 10 * 60000, NOW + 3 * 86400000, null];
 const WIDTHS = [360, 768, 1280], THEMES = ["light", "dark"], ANSWERED = ["ok", "failed", "off"];
+// a FRESH build for this run (never a stale dist/): the config the browser gets, and the real designFor of boot.js
+const OUT = mkdtempSync(join(tmpdir(), "mc-matrix-"));
+build({ env: "preview", out: OUT, version: "0.0.0-test", releasedAt: "2026-10-30T00:00:00.000Z" });
+const boot = await import(join(OUT, "core/boot.js").replace(/\\/g, "/"));
+// the colours the pills, banner and role line really get, in each theme, read from the css files
+const appCss = read("public/core/app.css"), tokCss = read("public/core/tokens.css");
+const tokVars = (b: string) => Object.fromEntries([...b.matchAll(/--([a-z0-9-]+):\s*(#[0-9A-Fa-f]{3,6})/g)].map((m) => [m[1], m[2]]));
+const TOK = { light: tokVars(/:root \{([^}]*)\}/.exec(tokCss)![1]), dark: {} as any }; TOK.dark = { ...TOK.light, ...tokVars(/@media \(prefers-color-scheme: dark\) \{\s*:root \{([^}]*)\}/.exec(tokCss)![1]) };
+const pillPair = (cls: string, theme: string) => { const re = theme === "dark" ? new RegExp(String.raw`:root\[data-theme="dark"\] \.chip\.${cls}\s*\{\s*background:\s*(#[0-9A-Fa-f]{6});\s*color:\s*(#[0-9A-Fa-f]{6});`) : new RegExp(String.raw`^\.chip\.${cls}\s*\{\s*background:\s*(#[0-9A-Fa-f]{6});\s*color:\s*(#[0-9A-Fa-f]{6});`, "m"); const m = re.exec(appCss)!; return contrastRatio(m[2], m[1]); };
+const PILL: any = { light: {}, dark: {} };
+for (const th of THEMES) for (const cls of new Set(Object.values(STATUSES).map((s: any) => s.cls))) PILL[th][cls as string] = pillPair(cls as string, th);
+const TEXT_RATIO: any = { light: Math.min(contrastRatio(TOK.light["ink"], TOK.light["soft"]), contrastRatio(TOK.light["ink2"], TOK.light["card"])), dark: Math.min(contrastRatio(TOK.dark["ink"], TOK.dark["soft"]), contrastRatio(TOK.dark["ink2"], TOK.dark["card"])) };
+// tap targets of the controls a person presses on each design: the buttons, the filter chips (.seg) and the menu are at least 44 px
+const tapPx = Number(/--tap:\s*(\d+)px/.exec(tokCss)![1]);
+const TAP_OK: any = { phone: tapPx >= 44 && /\.btn\.sm \{ min-height: 44px/.test(appCss) && /\.btn \{[^}]*min-height: 48px/.test(appCss) && /\.seg label span \{[^}]*min-height: var\(--tap\)/.test(appCss) && /\.tabbar a \{/.test(appCss), laptop: tapPx >= 44 && /\.btn\.sm \{ min-height: 44px/.test(appCss) && /\.top nav a \{[^}]*min-height: var\(--tap\)/.test(appCss) };
 const BANNED = [/\bwe\b/i, /\bour\b/i, /\bprivate\b/i, /\bRs\.?\s?\d/, /\bseats?\b/i, /in the office/i, /\bcash\b/i, /coming soon/i];
 const PAYEE = /Razorpay|IT Services|Projexa|Corporate Tambola Pvt|Stripe|PayPal/i;
 const HELPER_BANNED_ACTIONS = ["pay", "publish", "copy", "delete-draft"];
@@ -82,10 +100,17 @@ test("who lets whom in: organizer and Host links everywhere; Co-host, family and
 });
 
 test("wire: the built config carries each game's own approvals, every game has its full name, the Try-it entry is gone (the new screens are the default)", () => {
-  const built = read("dist/core/games.config.js");
-  expect((built.match(/"approvals"/g) || []).length).toBe(GAMES.length);
+  const built = readFileSync(join(OUT, "core/games.config.js"), "utf8"); // built fresh for this run: never a stale dist/
+  const exported = JSON.parse(/Object\.freeze\(([\s\S]*)\);\s*$/.exec(built)![1]);
+  expect(exported.map((g: any) => g.id)).toEqual(GAMES.map((g: any) => g.id));
+  for (const g of exported) {
+    expect(Object.keys(g).sort()).toEqual(["accent", "approvals", "freeCap", "id", "name", "origin", "ready", "status"]); // no short name, no new-screens entry
+    expect(g.name).toMatch(/^Corporate /);
+    expect(g.approvals).toEqual(GAMES.find((x: any) => x.id === g.id).approvals);
+    // every string the browser is given follows the wording rules
+    for (const v of Object.values(g).flat()) if (typeof v === "string") for (const re of BANNED) expect([g.id, v, re.test(v)]).toEqual([g.id, v, false]);
+  }
   expect(built).not.toContain("newScreens");
-  for (const g of GAMES) expect(g.name).toMatch(/^Corporate /);
   expect(read("public/screens/create.js")).not.toMatch(/Try the new organizer/);
 });
 
@@ -141,7 +166,11 @@ test("scenario matrix, streamed: 1,451,520 scenarios keep every rule", () => {
           // the answer of the game: a row is listed once; a slow one is named in full; one that is not on the console yet is not an error
           const m = mergeGames([{ game: game.id, ok: ans === "ok", rows: ans === "ok" ? [g] : undefined, error: ans === "off" ? OFF : ans === "failed" ? "slow" : undefined }]);
           must(m.rows.length === (ans === "ok" ? 1 : 0) && m.failed.length === (ans === "failed" ? 1 : 0) && m.off.length === (ans === "off" ? 1 : 0), "merge " + ans + " " + tag);
-          must((w < 900 ? "phone" : "laptop") === (w >= 900 ? "laptop" : "phone"), "design " + w);
+          // the device: the real designFor of the console, and the controls of that design are tappable (44 px or more)
+          const design = boot.designFor(w);
+          must(design === (w >= 900 ? "laptop" : "phone") && TAP_OK[design] === true, "design and tap size " + w + " " + tag);
+          // the theme: this status's pill, the banner and the role line read well (WCAG AA) in light and in dark
+          must(PILL[theme][STATUSES[s as keyof typeof STATUSES].cls] >= 4.5 && TEXT_RATIO[theme] >= 4.5, "contrast " + theme + " " + tag);
         }
       }
     }

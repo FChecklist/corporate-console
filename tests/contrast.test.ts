@@ -1,4 +1,4 @@
-// FALSIFIED BY: contrast-muted-too-pale, contrast-dark-link-too-dark
+// FALSIFIED BY: contrast-muted-too-pale, contrast-dark-link-too-dark, contrast-pill-unreadable, status-pill-same-colours, status-pill-no-mark
 // The colours of the design (core/tokens.css) must read well in light AND dark: WCAG AA (4.5 for text, 3 for the focus ring). No browser needed: the colours are read from the file.
 import { test, expect } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -33,8 +33,24 @@ test("the dark colours really exist (a missing dark block would silently reuse t
 test("the status chips and the gold button (colours written in app.css) read well in light and dark", () => {
   const app = readFileSync(new URL("../public/core/app.css", import.meta.url), "utf8");
   const pairs: Array<[string, string, string]> = [];
-  for (const m of app.matchAll(/\.chip\.([a-z, .]+)\s*\{\s*background:\s*(#[0-9A-Fa-f]{6});\s*color:\s*(#[0-9A-Fa-f]{6});/g)) pairs.push([m[1]!, m[3]!, m[2]!]);
-  expect(pairs.length).toBe(8); // four light, four dark
+  for (const m of app.matchAll(/\.chip\.([a-z0-9_, .-]+)\s*\{\s*background:\s*(#[0-9A-Fa-f]{6});\s*color:\s*(#[0-9A-Fa-f]{6});/g)) pairs.push([m[1]!, m[3]!, m[2]!]);
+  expect(pairs.length).toBe(35); // 8 older (four light, four dark) + the nine status pills: 9 light + 9 for the dark media block + 9 for the dark switch
   for (const [n, fg, bg] of pairs) expect([n, contrastRatio(fg, bg) >= 4.5]).toEqual([n, true]);
   expect(contrastRatio("#2b1a05", L["gold"]!)).toBeGreaterThanOrEqual(4.5);
+});
+
+test("the nine status pills each have their own colours in light and in dark, their own mark, and the cancelled one is struck through (colour is never the only cue)", () => {
+  const app = readFileSync(new URL("../public/core/app.css", import.meta.url), "utf8");
+  const classes = ["s-draft", "s-pending", "s-paid", "s-free", "s-overdue", "s-live", "s-done", "s-cancel", "s-deleted"];
+  const DARK_SWITCH = String.raw`:root\[data-theme="dark"\] `;
+  const colours = (cls: string, dark: boolean) => { const re = new RegExp(String.raw`${dark ? DARK_SWITCH : "^"}\.chip\.${cls}\s*\{\s*background:\s*(#[0-9A-Fa-f]{6});\s*color:\s*(#[0-9A-Fa-f]{6});`, "m"); const m = re.exec(app); return m ? m[1] + "/" + m[2] : ""; };
+  for (const dark of [false, true]) {
+    const seen = classes.map((c) => colours(c, dark));
+    expect(seen.every((x) => x !== "")).toBe(true);
+    expect(new Set(seen).size).toBe(classes.length); // no two pills share their colours
+  }
+  const marks = classes.map((c) => new RegExp(String.raw`\.chip\.${c}::before\s*\{\s*content:\s*"([^"]+) "`).exec(app)?.[1] || "");
+  expect(marks.every((x) => x !== "")).toBe(true);
+  expect(new Set(marks).size).toBe(classes.length);   // no two pills share their mark
+  expect(app).toContain(".chip.s-cancel { text-decoration: line-through; }");
 });

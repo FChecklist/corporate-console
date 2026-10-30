@@ -46,6 +46,7 @@ async function settle(page, screen) {
 
 async function checks(page, w, theme, screen) {
   add(w, theme, screen, "no sideways scroll", await noSidewaysScroll(page));
+  add(w, theme, screen, "the version and release time show on this screen", { ok: await page.evaluate(() => /^Version \d+\.\d+\.\d+, released \d+ \w+ \d{4}, \d{2}:\d{2} IST$/.test((document.getElementById("version-line") || {}).textContent || "")) });
   add(w, theme, screen, "tap targets are at least 44 px (menu, buttons, links in the page)", await tapTargets(page, ".priv button, main button, main a.btn, main a.door, .top nav a, .tabbar a, main input:not([type=checkbox]):not([type=radio])"));
   const bar = await page.evaluate(() => { const b = document.querySelector(".cgb"); if (!b) return null; const r = b.getBoundingClientRect(); return { top: Math.round(r.top), h: Math.round(r.height), text: b.textContent.replace(/\s+/g, " ").slice(0, 80) }; });
   add(w, theme, screen, "the Corporate Games bar is the first thing on the page", { ok: !!bar && bar.top <= 1 && bar.h >= 30, detail: JSON.stringify(bar) });

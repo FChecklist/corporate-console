@@ -1,0 +1,1 @@
+{"id": "status-theme-contrast", "repo": ".", "file": "public/core/app.css", "find": ".chip.s-paid { background: #D6F0E2; color: #0F5A3B; }", "replace": ".chip.s-paid { background: #D6F0E2; color: #9FD8BA; }", "test": "tests/status-matrix.test.ts", "note": "a pill unreadable in light"}

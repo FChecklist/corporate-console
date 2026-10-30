@@ -1,0 +1,1 @@
+{"id": "status-pill-same-colours", "repo": ".", "file": "public/core/app.css", "find": ".chip.s-cancel { background: #EDEDED; color: #4A4A4A; }", "replace": ".chip.s-cancel { background: #E6E9EF; color: #2F3748; }", "test": "tests/contrast.test.ts", "note": "Draft and Cancelled share their colours"}

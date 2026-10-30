@@ -4,7 +4,6 @@
   {
    "id": "tambola",
    "name": "Corporate Tambola",
-   "short": "Tambola",
    "approvals": ["cohost-link", "family-link", "open-link"],
    "accent": "#7A1C33",
    "freeCap": 10,
@@ -17,7 +16,6 @@
   {
    "id": "bingo",
    "name": "Corporate Bingo",
-   "short": "Bingo",
    "accent": "#0B3D91",
    "freeCap": 10,
    "ready": true,
@@ -29,7 +27,6 @@
   {
    "id": "tictactoe",
    "name": "Corporate Tic Tac Toe",
-   "short": "Tic-Tac-Toe",
    "accent": "#1B6B4A",
    "freeCap": 10,
    "ready": false,
@@ -41,7 +38,6 @@
   {
    "id": "snakesladders",
    "name": "Corporate Snakes and Ladders",
-   "short": "Snakes and Ladders",
    "accent": "#A9741F",
    "freeCap": 10,
    "ready": false,
@@ -53,7 +49,6 @@
   {
    "id": "luckbychance",
    "name": "Corporate Luck by Chance",
-   "short": "Luck by Chance",
    "accent": "#6B3FA0",
    "freeCap": 10,
    "ready": false,
@@ -65,7 +60,6 @@
   {
    "id": "luckydraw",
    "name": "Corporate Lucky Draw",
-   "short": "Lucky Draw",
    "accent": "#C2570C",
    "freeCap": 10,
    "ready": false,

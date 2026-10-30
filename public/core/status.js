@@ -5,12 +5,12 @@ export const STATUSES = {
   draft: { label: "Draft", cls: "s-draft" },
   pending: { label: "Published, payment pending", cls: "s-pending" },
   paid: { label: "Published and paid", cls: "s-paid" },
-  free: { label: "Published, free game", cls: "s-paid" },
+  free: { label: "Published, free game", cls: "s-free" },
   overdue: { label: "Payment pending, start time passed", cls: "s-overdue" },
   live: { label: "Live now", cls: "s-live" },
   completed: { label: "Completed", cls: "s-done" },
   cancelled: { label: "Cancelled", cls: "s-cancel" },
-  deleted: { label: "Data deleted", cls: "s-cancel" },
+  deleted: { label: "Data deleted", cls: "s-deleted" },
 };
 
 /** the ONE status of a game row (the row's own status word, its payment and its start time) */

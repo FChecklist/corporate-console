@@ -1,6 +1,6 @@
-// FALSIFIED BY: shell-brand-in-menu, shell-version-line-missing, shell-wildcard-connect, shell-sw-caches-auth, shell-breakpoint-901, shell-csp-inline-script
+// FALSIFIED BY: shell-version-every-page, shell-version-twice, shell-brand-in-menu, shell-version-line-missing, shell-wildcard-connect, shell-sw-caches-auth, shell-breakpoint-901, shell-csp-inline-script
 import { test, expect } from "bun:test";
-import { mkdtempSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, readFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { build, lintHeaders, headersFile } from "../build.mjs";
@@ -136,5 +136,37 @@ test("version.json has version, releasedAt and releasedAtIST from releases.json,
   expect(v.releasedAtIST).toMatch(/^\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}, \d{2}:\d{2} IST$/);
   expect(istText("2026-10-29T10:45:00.000Z")).toBe("29 Oct 2026, 16:15 IST");
   expect(istText("2026-12-31T20:00:00.000Z")).toBe("01 Jan 2027, 01:30 IST");
-  expect(readFileSync(join(import.meta.dir, "../public/core/boot.js"), "utf8")).toContain("`Version ${v.version}, released ${");
+  expect(readFileSync(join(import.meta.dir, "../public/core/version.js"), "utf8")).toContain("`Version ${v.version}, released ${");
+});
+
+test("the version and release time show on EVERY page: each shipped html page loads a script that imports version.js and calls showVersion()", () => {
+  const pub = join(import.meta.dir, "../public");
+  const pages: string[] = [];
+  const walk = (d: string) => { for (const e of readdirSync(d, { withFileTypes: true })) { const p = join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name.endsWith(".html")) pages.push(p); } };
+  walk(pub);
+  expect(pages.length).toBeGreaterThanOrEqual(2);
+  for (const page of pages) {
+    const html = readFileSync(page, "utf8");
+    const mods = [...html.matchAll(/<script[^>]*type="module"[^>]*src="([^"]+)"/g)].map((m) => m[1]);
+    expect([page, mods.length > 0]).toEqual([page, true]);
+    const shows = mods.some((src) => { const js = readFileSync(join(pub, src.replace(/^\//, "")), "utf8"); return /import \{ showVersion \} from "[^"]*version\.js"/.test(js) && /showVersion\(\)/.test(js); });
+    expect([page, shows]).toEqual([page, true]);
+  }
+});
+
+test("showVersion makes ONE footer line outside the screens with 'Version X, released DD Mon YYYY, HH:MM IST'; a failed fetch leaves it empty and never throws", async () => {
+  const { showVersion, versionText } = await import("../public/core/version.js");
+  const { Window } = await import("happy-dom");
+  const win: any = new Window({ url: "http://localhost/" });
+  win.document.body.innerHTML = '<div id="app"></div>';
+  const ok = async () => ({ json: async () => ({ version: "0.1.0", releasedAtIST: "29 Oct 2026, 16:15 IST" }) });
+  const line = await showVersion(win.document, ok);
+  await showVersion(win.document, ok);
+  expect(win.document.querySelectorAll("#version-line").length).toBe(1);
+  expect(line.textContent).toBe("Version 0.1.0, released 29 Oct 2026, 16:15 IST");
+  expect(win.document.getElementById("app").contains(line)).toBe(false); // a screen change clears #app, never this line
+  const bare: any = new Window({ url: "http://localhost/" });
+  const l2 = await showVersion(bare.document, async () => { throw new Error("offline"); });
+  expect(l2.textContent).toBe("");
+  expect(versionText({ version: "1.2.3" })).toBe("");
 });

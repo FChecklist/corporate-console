@@ -1,0 +1,1 @@
+{"id": "status-tap-too-small", "repo": ".", "file": "public/core/tokens.css", "find": "--tap: 44px;", "replace": "--tap: 40px;", "test": "tests/status-matrix.test.ts", "note": "tap size under 44"}

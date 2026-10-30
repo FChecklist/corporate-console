@@ -1,0 +1,1 @@
+{"id": "shell-version-twice", "repo": ".", "file": "public/core/version.js", "find": "let line = doc.getElementById(\"version-line\");\n  if (!line)", "replace": "let line = null;\n  if (!line)", "test": "tests/shell.test.ts", "note": "the version line made twice"}

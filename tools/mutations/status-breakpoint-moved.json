@@ -1,0 +1,1 @@
+{"id": "status-breakpoint-moved", "repo": ".", "file": "public/core/boot.js", "find": "export const BREAKPOINT = 900;", "replace": "export const BREAKPOINT = 1300;", "test": "tests/status-matrix.test.ts", "note": "the phone/laptop switch moved"}

@@ -1,0 +1,1 @@
+{"id": "contrast-pill-unreadable", "repo": ".", "file": "public/core/app.css", "find": ".chip.s-pending { background: #FBEBC8; color: #6B4200; }", "replace": ".chip.s-pending { background: #FBEBC8; color: #FBE0B0; }", "test": "tests/contrast.test.ts", "note": "a status pill the contrast test cannot read well"}
