@@ -203,3 +203,34 @@ test("the roll button is green when ready and grey with a countdown after a pres
   expect(F.nextControlText("manual", 4100)).toBe("Wait 5 s");
   expect(F.nextControlText("manual", 100)).toBe("Wait 1 s");
 });
+
+test("Which ID?: the control appears in step 2 only for a game that declares idKind, defaults to Employee ID, and the saved setting is idKind 'emp' or 'email'", () => {
+  const withIt = page("window.ZFLOW_GAME = { idKind: true };"), without = page("window.ZFLOW_GAME = {};");
+  for (const [win, shown] of [[withIt, true], [without, false]] as const) {
+    const F = win.ZFLOW, box = win.document.createElement("div");
+    F.state.packs = []; F.registry[2](box);
+    expect([shown, !!box.querySelector("#zf-idkind")]).toEqual([shown, shown]);
+    expect([shown, box.textContent.includes("Which ID?")]).toEqual([shown, shown]);
+  }
+  const F = withIt.ZFLOW, box = withIt.document.createElement("div");
+  F.state.packs = []; F.registry[2](box);
+  expect([...box.querySelectorAll("#zf-idkind button")].map((b: any) => b.textContent + ":" + b.getAttribute("aria-checked"))).toEqual(["Employee ID:true", "Email ID:false"]);
+  expect(box.querySelector("#zf-idhint").textContent).toBe("The system will read this as capital letters and numbers only, for example 1b-678 becomes 1B678.");
+  expect(F.audienceSettings("people", 100).idKind).toBeUndefined(); // a game without the setting never receives it
+  expect(F.audienceSettings("people", 100, "email").idKind).toBe("email");
+  expect(F.audienceSettings("people", 100, "emp").idKind).toBe("emp");
+  expect(F.audienceSettings("people", 100, "anything else").idKind).toBe("emp");
+});
+
+test("Which ID?: the words follow idKind (add-person placeholder, list column, join page, hint) and the saved choice is read back from the game's info", () => {
+  const win = page("window.ZFLOW_GAME = { idKind: true };"), F = win.ZFLOW;
+  expect(F.idWords("emp")).toMatchObject({ add: "Employee ID of the person", column: "Employee ID", join: "Your Employee ID" });
+  expect(F.idWords("email")).toMatchObject({ add: "Email ID of the person", column: "Email ID", join: "Your Email ID" });
+  expect(F.idWords("email").hint).toBe("The system will read this in small letters with no spaces, for example Raj@Demo.com becomes raj@demo.com.");
+  expect(F.idWords(undefined)).toEqual(F.idWords("emp"));
+  F.state.raw = { idKind: "email" }; F.state.packs = [];
+  const box = win.document.createElement("div"); F.registry[2](box);
+  expect(box.querySelector("[data-idkind=email]").getAttribute("aria-checked")).toBe("true");
+  expect(box.querySelector("#zf-idhint").textContent).toContain("raj@demo.com");
+  for (const k of ["emp", "email"]) for (const s of Object.values(F.idWords(k)) as string[]) expect(F.badWords(s)).toEqual([]);
+});

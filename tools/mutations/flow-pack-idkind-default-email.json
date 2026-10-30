@@ -1,0 +1,1 @@
+{"id": "flow-pack-idkind-default-email", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "const idKindOf = (v) => (v === \"email\" ? \"email\" : \"emp\");", "replace": "const idKindOf = (v) => (v === \"emp\" ? \"emp\" : \"email\");", "test": "tests/flow-pack.test.ts", "note": "flow-pack-idkind-default-email"}

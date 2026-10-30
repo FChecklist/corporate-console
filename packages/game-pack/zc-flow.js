@@ -5,7 +5,7 @@
 (function () {
   "use strict";
   /** What this game says about itself (zc-flow-game.js). Nothing here is a game rule: the prize list comes from the game's own table (ZG.PRIZE_HOUSES). */
-  const G = Object.assign({ brand: "Corporate Games", tickets: [1, 2], bumper: false, boardMax: 90, boardCols: 10, boardTitle: "GAME", sample: true, board: true, claims: true, handover: true, presence: false, feed: false, rehearsal: false, control: false, lucky: false, callSeconds: 12, popular: [], recommended: [] }, (typeof window !== "undefined" && window.ZFLOW_GAME) || {});
+  const G = Object.assign({ brand: "Corporate Games", tickets: [1, 2], bumper: false, boardMax: 90, boardCols: 10, boardTitle: "GAME", sample: true, board: true, claims: true, handover: true, presence: false, feed: false, rehearsal: false, control: false, lucky: false, idKind: false, callSeconds: 12, popular: [], recommended: [] }, (typeof window !== "undefined" && window.ZFLOW_GAME) || {});
   const COPY = {
     top: "No personal details needed. All participant information is deleted within 24 hours of the game.",
     dash: "Game dashboard",
@@ -90,10 +90,19 @@
   /** The size choices, from the game's real pack ladder (smallest first). */
   const packChoices = (packs) => (Array.isArray(packs) && packs.length ? packs : FALLBACK_PACKS).filter((k) => Number(k.upTo) > 0).map((k) => ({ upTo: Number(k.upTo), inr: Number(k.inr) || 0, label: "Up to " + k.upTo + " participants" + (k.inr ? " · " + money(k.inr) : "") })).sort((a, b) => a.upTo - b.upTo);
   /** What the system saves for a card: only people the organizer lets in take part; family cards allow 4 more people each. */
-  function audienceSettings(cardId, upTo) {
+  function audienceSettings(cardId, upTo, idKind) {
     const c = CARDS.find((x) => x.id === cardId) || CARDS[0];
-    return { cap: Number(upTo), whoCanJoin: "list", callMode: "auto", demo: false, invites: { on: c.invites, per: 4, cats: c.cats } };
+    const out = { cap: Number(upTo), whoCanJoin: "list", callMode: "auto", demo: false, invites: { on: c.invites, per: 4, cats: c.cats } };
+    if (idKind !== undefined) out.idKind = idKindOf(idKind);
+    return out;
   }
+  /* ---- Which ID? (owner rule): the game setting idKind is "emp" (Employee ID, the default) or "email" (Email ID). Shown only when the game declares idKind in its descriptor. ---- */
+  const idKindOf = (v) => (v === "email" ? "email" : "emp");
+  const ID_WORDS = {
+    emp: { choice: "Employee ID", label: "Employee ID", column: "Employee ID", add: "Employee ID of the person", join: "Your Employee ID", hint: "The system will read this as capital letters and numbers only, for example 1b-678 becomes 1B678." },
+    email: { choice: "Email ID", label: "Email ID", column: "Email ID", add: "Email ID of the person", join: "Your Email ID", hint: "The system will read this in small letters with no spaces, for example Raj@Demo.com becomes raj@demo.com." },
+  };
+  const idWords = (kind) => ID_WORDS[idKindOf(kind)];
   function whoProblems(f, choices) {
     if (!CARDS.some((c) => c.id === f.card)) return ["Please choose who the game is for."];
     if (!choices.some((k) => k.upTo === Number(f.upTo))) return ["Please choose the size of your game."];
@@ -340,7 +349,7 @@
   const luckyBreaks = () => (G.lucky && prizes.lucky.on ? [{ kind: "lucky", title: prizeLine(prizes.lucky.gift, prizes.lucky.other, prizes.lucky.worth, prizes.cur) || "Lucky draw", winners: Number(prizes.lucky.n) || 1 }] : []);
   const registry = {}; // step number -> function(el, ctx) that draws the step body (each step adds its own)
 
-  const api = { COPY, STEPS, canOpen, nextAfter, dashboardOpen, badWords, registry, OCC, ZONES, wallToMs, todayIn, timeOptions, elsewhere, gameName, whenProblems, clockIn, CARDS, money, packChoices, audienceSettings, whoProblems, housesOf, tagsOf, GIFTS, prizeLine, defaultPrizes, defaultBumper, buildRewards, prizeProblems, breakMax, brandNameClean, linkKind, brandProblems, breakProblems, buildBrandPatch, contactProblems, readBack, readyItems, readyAll, prizesNamed, startWarning, winnerDetails, prizeKey, prizeCounts, feedLines, nextControlText, rehearsalCards, NEXT_LOCK_MS, NEXT_TOAST, REHEARSAL_LOCKED, luckyBreaks, bannerOf, gameLink, payLink, boardLink, shareMessage, claimedCount, BANNER_UNPAID, PAY_PRINT, waitColumns, waitLabel, STATUSES, statusOf, statusBanner, claimLine, CLAIM_OK_MS, sampleTickets };
+  const api = { COPY, STEPS, canOpen, nextAfter, dashboardOpen, badWords, registry, OCC, ZONES, wallToMs, todayIn, timeOptions, elsewhere, gameName, whenProblems, clockIn, CARDS, money, packChoices, audienceSettings, idKindOf, idWords, whoProblems, housesOf, tagsOf, GIFTS, prizeLine, defaultPrizes, defaultBumper, buildRewards, prizeProblems, breakMax, brandNameClean, linkKind, brandProblems, breakProblems, buildBrandPatch, contactProblems, readBack, readyItems, readyAll, prizesNamed, startWarning, winnerDetails, prizeKey, prizeCounts, feedLines, nextControlText, rehearsalCards, NEXT_LOCK_MS, NEXT_TOAST, REHEARSAL_LOCKED, luckyBreaks, bannerOf, gameLink, payLink, boardLink, shareMessage, claimedCount, BANNER_UNPAID, PAY_PRINT, waitColumns, waitLabel, STATUSES, statusOf, statusBanner, claimLine, CLAIM_OK_MS, sampleTickets };
   if (typeof window !== "undefined") window.ZFLOW = api;
   if (typeof module !== "undefined") module.exports = api;
   if (typeof document === "undefined") return;
@@ -446,12 +455,13 @@
   };
 
   /* ---- Step 2 ---- */
-  const who = { card: "people", upTo: 0, how: "self" };
+  const who = { card: "people", upTo: 0, how: "self", idKind: "emp" };
   api.who = who;
   registry[2] = (box) => {
     if (!state.packs) { fetch(BASE + "/api/z/ai-manifest").then((r) => r.json()).then((j) => { state.packs = j.packs || []; draw(); }).catch(() => { state.packs = []; draw(); }); box.append(el("p", { text: "Loading the sizes…" })); return; }
     const choices = packChoices(state.packs);
     if (!who.upTo) who.upTo = choices[0].upTo; // the smallest size is already chosen for you
+    if (G.idKind && state.raw && state.raw.idKind) who.idKind = idKindOf(state.raw.idKind); // what is saved wins
     const msg = el("p", { class: "zf-msg", role: "status", id: "zf-msg2" });
     box.append(el("p", { class: "zf-lead", text: "You choose who the game is for. The system takes care of the rest." }));
     const cards = el("div", { class: "zf-cards", role: "radiogroup", "aria-label": "Who is this game for" });
@@ -462,12 +472,18 @@
     const sel = el("select", { id: "zf-size", "aria-label": "Size of your game", onchange: (e) => { who.upTo = Number(e.target.value); draw(); } });
     for (const k of choices) sel.append(el("option", { value: String(k.upTo), ...(who.upTo === k.upTo ? { selected: "" } : {}) }, k.label));
     box.append(sel);
+    if (G.idKind) {
+      box.append(el("h3", { text: "Which ID?" }), el("p", { class: "zf-small", text: "Your people are known to the system by one ID. Choose the one your list has." }));
+      const ids = el("div", { class: "zf-chips", role: "radiogroup", "aria-label": "Which ID", id: "zf-idkind" });
+      for (const k of ["emp", "email"]) ids.append(el("button", { type: "button", role: "radio", class: "zf-chip" + (who.idKind === k ? " on" : ""), "aria-checked": String(who.idKind === k), "data-idkind": k, onclick: () => { who.idKind = k; draw(); } }, ID_WORDS[k].choice));
+      box.append(ids, el("p", { class: "zf-small", id: "zf-idhint", text: ID_WORDS[who.idKind].hint }));
+    }
     const go = el("button", { type: "button", class: "zf-go", id: "zf-save2", onclick: async () => {
       const bad = whoProblems(who, choices);
       if (bad.length) { msg.textContent = bad[0]; return; }
       if (!state.eid) { msg.textContent = "Please save step 1 first."; return; }
       go.disabled = true; msg.textContent = "Saving…";
-      try { await call("PATCH", `/api/z/${state.eid}/settings`, audienceSettings(who.card, who.upTo)); done(2); }
+      try { await call("PATCH", `/api/z/${state.eid}/settings`, audienceSettings(who.card, who.upTo, G.idKind ? who.idKind : undefined)); done(2); }
       catch (e) { go.disabled = false; msg.textContent = e.message; }
     } }, "Save and continue");
     box.append(msg, go);
@@ -617,6 +633,7 @@
       for (const v of t.flat()) grid.append(v === null ? el("div", { class: "e" }) : el("div", { class: marked.has(v) ? "m" : "", text: String(v) }));
       frame.append(el("p", { class: "zf-pvlabel" }, el("b", { text: label }), " · Ticket number " + (101 + i) + " (sample)"), grid);
     });
+    if (G.idKind) { const w = idWords(who.idKind); frame.append(el("label", { class: "zf-small", for: "zf-pvid", id: "zf-pvidlabel", text: w.join }), el("input", { type: "text", id: "zf-pvid", disabled: "" }), el("p", { class: "zf-small", id: "zf-pvidhint", text: w.hint })); }
     frame.append(el("label", { class: "zf-small", for: "zf-pvname", text: "Your name (optional)" }), el("input", { type: "text", id: "zf-pvname", disabled: "" }));
     const houses = housesOf(window.ZG), shown = buildRewards(prizes.sel || {}, prizes.bumper, tix, prizes.cur);
     const seen = new Set();

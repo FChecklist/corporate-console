@@ -1,0 +1,1 @@
+{"id": "flow-pack-idkind-not-saved", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "audienceSettings(who.card, who.upTo, G.idKind ? who.idKind : undefined)", "replace": "audienceSettings(who.card, who.upTo)", "test": "tests/flow-pack.test.ts", "note": "flow-pack-idkind-not-saved"}

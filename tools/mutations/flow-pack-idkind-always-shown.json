@@ -1,0 +1,1 @@
+{"id": "flow-pack-idkind-always-shown", "repo": ".", "file": "packages/game-pack/zc-flow.js", "find": "if (G.idKind) {\n      box.append(el(\"h3\", { text: \"Which ID?\" })", "replace": "if (true) {\n      box.append(el(\"h3\", { text: \"Which ID?\" })", "test": "tests/flow-pack.test.ts", "note": "flow-pack-idkind-always-shown"}
