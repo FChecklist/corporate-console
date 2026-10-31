@@ -1,4 +1,5 @@
 // Owner rules R10 (retention) and R13 (wording guard).
+import { fileURLToPath } from "node:url";
 import { test, expect } from "bun:test";
 import { readFileSync, readdirSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
@@ -7,7 +8,7 @@ import { RETENTION, COPY_LINE, HOUR_MS, DAY_MS, participantDataDueMs, winnersRec
 import { build } from "../../build.mjs";
 
 const LINE = "No personal details needed. All participant information is deleted within 24 hours of the game.";
-const root = new URL("../../", import.meta.url).pathname;
+const root = fileURLToPath(new URL("../../", import.meta.url));
 
 test("R10 all participant data is deleted within 24 hours of game over (promise 24, code 20)", () => {
   expect(RETENTION.participantDataHours).toBe(24);

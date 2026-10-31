@@ -1,4 +1,5 @@
 // Owner rule R9 (spec 410 section 2): start a new game from an earlier one.
+import { fileURLToPath } from "node:url";
 import { test, expect } from "bun:test";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -47,7 +48,7 @@ test("R9 steps that do not apply are skipped when the type changes", () => {
 test("R9 there is NO saved people list anywhere (no code stores or reads one)", () => {
   const files: string[] = [];
   const walk = (d: string) => { for (const e of readdirSync(d, { withFileTypes: true })) { if (["node_modules", ".git", "tests", "tools"].includes(e.name)) continue; const p = join(d, e.name); e.isDirectory() ? walk(p) : /\.(js|ts|mjs|sql|json)$/.test(e.name) && files.push(p); } };
-  const root = new URL("../../", import.meta.url).pathname; walk(root);
+  const root = fileURLToPath(new URL("../../", import.meta.url)); walk(root);
   const hits = files.filter((f) => /saved[_ ]?(people|list|participants)|people_?list\s*(table|\()|CREATE TABLE[^;]*(people|participant)/i.test(readFileSync(f, "utf8")) && !f.endsWith("retention.ts") && !f.endsWith("clone.js"));
   expect(hits).toEqual([]);
   expect(existsSync(join(root, "migrations"))).toBe(true);

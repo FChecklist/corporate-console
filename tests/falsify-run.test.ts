@@ -1,12 +1,12 @@
 // FALSIFIED BY: falsify-noop-accepted
 import { test, expect } from "bun:test";
-import { mkdtempSync, writeFileSync, readFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { runMutation, lintTests } from "../tools/falsify-run.mjs";
 
-const GIT = "C:/Program Files/Git/mingw64/bin/git.exe";
+const GIT = existsSync("C:/Program Files/Git/mingw64/bin/git.exe") ? "C:/Program Files/Git/mingw64/bin/git.exe" : "git"; // the same choice as tools/cleancopy.mjs: the installed git, else the one on PATH
 const g = (cwd: string, ...a: string[]) => execFileSync(GIT, ["-c", "user.name=t", "-c", "user.email=t@t", ...a], { cwd, encoding: "utf8" });
 
 /** a tiny repo: lib.mjs has limit 5, strong.test.ts checks it, weak.test.ts does not */
