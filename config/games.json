@@ -1,5 +1,5 @@
 {
- "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'status' says what the Create screen shows: live = a Start button; opening = 'Opening soon' (the game is still in test mode, the console does not talk to it yet); planned = 'Coming soon' (not built). Only 'live' games are asked anything (ready is true only for them). Boss ruling 29 Oct 2026: Bingo and Tambola first; Tic Tac Toe, Snakes and Ladders and Luck by Chance when each has passed its live check; free demo size 10 everywhere. labels[] are internal (never shown to customers): Claim, Elimination, Lucky Draw. caps = the largest game each game allows (auto play, and manual play where it exists). startModes = the ways a game can start. features = the console pieces a game supports; the console shows a piece only for a game that declares it (report = end-of-game PDF, clone = start a new game from an earlier one, idKind = Which ID?).",
+ "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'status' says what the Create screen shows: live = a Start button; opening = 'Opening soon' (the game is still in test mode, the console does not talk to it yet); planned = 'Coming soon' (not built). Only 'live' games are asked anything (ready is true only for them). Boss ruling 29 Oct 2026: Bingo and Tambola first; Tic Tac Toe, Snakes and Ladders and Luck by Chance when each has passed its live check; free demo size 10 everywhere. labels[] are internal (never shown to customers): Claim, Elimination, Lucky Draw. caps = the largest game each game allows (auto play, and manual play where it exists). startModes = the ways a game can start. features = the console pieces a game supports; the console shows a piece only for a game that declares it (report = end-of-game PDF, clone = start a new game from an earlier one, idKind = Which ID?). Per game also: rehearsalMax (people in 'Try it first'), pause.by (who may pause/resume), prizeModes, organizerFinalSayPrizes, goldenButton (claim = participant presses Claim; announce = auto-claimed, button says You won), roles. reservedLabels: Team is reserved (parked) and given to no game yet.",
  "games": [
   {
    "id": "tambola",
@@ -24,15 +24,35 @@
     "manual": 1000
    },
    "startModes": [
-    "auto-at-published-time",
-    "manual-by-organizer-or-host",
-    "auto-with-countdown",
-    "rehearsal-first"
+    "auto-start-auto-play",
+    "auto-start-manual-play",
+    "manual-start-auto-play",
+    "manual-start-manual-play"
    ],
    "features": [
     "report",
     "clone",
     "idKind"
+   ],
+   "rehearsalMax": 20,
+   "pause": {
+    "by": [
+     "organizer",
+     "host"
+    ]
+   },
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "organizerFinalSayPrizes": true,
+   "goldenButton": "claim",
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
    ]
   },
   {
@@ -53,15 +73,35 @@
     "manual": 1000
    },
    "startModes": [
-    "auto-at-published-time",
-    "manual-by-organizer-or-host",
-    "auto-with-countdown",
-    "rehearsal-first"
+    "auto-start-auto-play",
+    "auto-start-manual-play",
+    "manual-start-auto-play",
+    "manual-start-manual-play"
    ],
    "features": [
     "report",
     "clone",
     "idKind"
+   ],
+   "rehearsalMax": 20,
+   "pause": {
+    "by": [
+     "organizer",
+     "host"
+    ]
+   },
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "organizerFinalSayPrizes": true,
+   "goldenButton": "claim",
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
    ]
   },
   {
@@ -81,12 +121,32 @@
     "auto": 2000
    },
    "startModes": [
-    "auto-at-published-time",
-    "manual-by-organizer-or-host"
+    "auto-start",
+    "manual-start"
    ],
    "features": [
     "report",
     "clone"
+   ],
+   "rehearsalMax": 10,
+   "pause": {
+    "by": [
+     "organizer",
+     "host"
+    ]
+   },
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "organizerFinalSayPrizes": false,
+   "goldenButton": "announce",
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
    ]
   },
   {
@@ -106,12 +166,32 @@
     "auto": 2000
    },
    "startModes": [
-    "auto-at-published-time",
-    "manual-by-organizer-or-host"
+    "auto-start",
+    "manual-start"
    ],
    "features": [
     "report",
     "clone"
+   ],
+   "rehearsalMax": 10,
+   "pause": {
+    "by": [
+     "organizer",
+     "host"
+    ]
+   },
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "organizerFinalSayPrizes": false,
+   "goldenButton": "announce",
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
    ]
   },
   {
@@ -131,12 +211,32 @@
     "auto": 2000
    },
    "startModes": [
-    "auto-at-published-time",
-    "manual-by-organizer-or-host"
+    "auto-start",
+    "manual-start"
    ],
    "features": [
     "report",
     "clone"
+   ],
+   "rehearsalMax": 10,
+   "pause": {
+    "by": [
+     "organizer",
+     "host"
+    ]
+   },
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "organizerFinalSayPrizes": false,
+   "goldenButton": "announce",
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
    ]
   },
   {
@@ -156,12 +256,32 @@
     "auto": 100000
    },
    "startModes": [
-    "auto-at-published-time",
-    "manual-by-organizer-or-host"
+    "auto-start",
+    "manual-start"
    ],
    "features": [
     "report",
     "clone"
+   ],
+   "rehearsalMax": 10,
+   "pause": {
+    "by": [
+     "organizer",
+     "host"
+    ]
+   },
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "organizerFinalSayPrizes": false,
+   "goldenButton": "announce",
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
    ]
   }
  ],
@@ -169,5 +289,8 @@
   "live": "https://console.corporatetambola.com",
   "preview": "https://corporate-console.pages.dev",
   "test": "http://127.0.0.1:9"
- }
+ },
+ "reservedLabels": [
+  "Team"
+ ]
 }

@@ -15,7 +15,6 @@ import { tables } from "./tables";
 
 export const RETRY_AFTER_MS = [24 * 3600_000, 36 * 3600_000, 72 * 3600_000] as const; // after the FIRST failure
 export const HOLD_MAX_MS = 96 * 3600_000;
-export const WATCH_MS = 6 * 3600_000; // after a good send the PDF is kept encrypted this long, only so a bounce notice from the mail service can still be answered
 export const MAX_BODY = 4 * 1024 * 1024;
 const REPORT_FROM = "Corporate Games <hello@corporatetambola.com>"; // the same sender the Tambola mails already use (Resend, same domain)
 const BOUNCE_DEFAULT = "hello@corporatetambola.com";
@@ -71,11 +70,9 @@ export async function handleReport(req: Request, env: Env, now: number): Promise
     if (!env.BOUNCE_TOKEN || !sameText(req.headers.get("x-bounce-token") || "", env.BOUNCE_TOKEN)) return fail(401, "auth", "Not allowed.");
     let b: any; try { b = JSON.parse(await req.text()); } catch { return fail(400, "bad", "Not understood."); }
     if (typeof b?.emailId !== "string" || typeof b?.to !== "string") return fail(400, "bad", "emailId and to are needed.");
-    await ensureHoldTable(env);
-    const w = await tables(env).prepare("SELECT game_id, game_name, pdf_sealed FROM report_hold WHERE id=?").bind("w:" + b.emailId.slice(0, 80)).first<any>();
-    if (!w) return json(200, { ok: true, held: false }); // unknown or too old: nothing to resend
-    await holdFor(env, { gameId: w.game_id, gameName: w.game_name }, normEmail(b.to), await unsealText(env, w.pdf_sealed), String(b.reason || "bounced").slice(0, 120), now, true);
-    return json(200, { ok: true, held: true });
+    // No PDF is kept after a good send (owner rule), so a bounce that arrives later cannot be resent from here: the owner gets the no-names notice and the game may submit again until 20 hours after game over.
+    await failNotice(env, { game_name: String(b.game || "unknown"), game_id: String(b.gameId || b.emailId).slice(0, 80) }, String(b.reason || "bounced").slice(0, 120), 1);
+    return json(200, { ok: true, held: false, resubmit: true });
   }
   if (path === "/report/tick") { // the scheduled caller (GitHub Actions, every 15 minutes): due resends and the clean-up, whether or not anybody opens the console
     if (!env.TICK_SECRET || !sameText(req.headers.get("x-tick-token") || "", env.TICK_SECRET)) return fail(401, "auth", "Not allowed.");
@@ -101,12 +98,7 @@ export async function handleReport(req: Request, env: Env, now: number): Promise
   const pdf = buildReportPdf(r, now), pdfB64 = b64(pdf), to = recipientsOf(r);
   const filename = `game-report-${r.gameId}.pdf`, mail = reportMail(r);
   try {
-    const mailId = await sendMailEx(env, { to, subject: mail.subject, text: mail.text, attachments: [{ filename, contentB64: pdfB64 }], replyTo: bounceAddr(env), from: REPORT_FROM });
-    if (mailId) { // kept encrypted for WATCH_MS only, so a bounce notice can still be answered; deleted by the clean-up below
-      await ensureHoldTable(env);
-      await tables(env).prepare("INSERT OR REPLACE INTO report_hold(id,game_id,game_name,recipient_sealed,pdf_sealed,first_fail_ms,attempts,next_ms,last_reason) VALUES(?,?,?,?,?,?,?,?,?)")
-        .bind("w:" + mailId, r.gameId, r.game.name, await sealText(env, to.join(",")), await sealText(env, pdfB64), now, 0, Number.MAX_SAFE_INTEGER, "watch").run();
-    }
+    await sendMailEx(env, { to, subject: mail.subject, text: mail.text, attachments: [{ filename, contentB64: pdfB64 }], replyTo: bounceAddr(env), from: REPORT_FROM });
   } catch (e: any) {
     // the mail service refused the whole send: every recipient is held, encrypted, for the retry path
     for (const a of to.filter((x) => !isTestAddress(x))) await holdFor(env, { gameId: r.gameId, gameName: r.game.name }, a, pdfB64, String(e?.message || "send failed"), now);
@@ -120,7 +112,7 @@ export async function retryHeldReports(env: Env, now: number, limit = 10) {
   await ensureHoldTable(env);
   const out = { delivered: 0, retried: 0, dropped: 0 };
   // anything past the 96-hour cap goes, delivered or not
-  await tables(env).prepare("DELETE FROM report_hold WHERE id LIKE 'w:%' AND first_fail_ms<=?").bind(now - WATCH_MS).run(); // the bounce-watch copies
+  await tables(env).prepare("DELETE FROM report_hold WHERE id LIKE 'w:%'").run(); // leftovers of the old 6-hour copy: no PDF is kept after a good send
   out.dropped += (await tables(env).prepare("DELETE FROM report_hold WHERE id NOT LIKE 'w:%' AND first_fail_ms<=?").bind(now - HOLD_MAX_MS).run()).meta.changes;
   const due = (await tables(env).prepare("SELECT id,game_id,game_name,recipient_sealed,pdf_sealed,first_fail_ms,attempts FROM report_hold WHERE next_ms<=? AND id NOT LIKE 'w:%' ORDER BY next_ms LIMIT ?").bind(now, limit).all<any>()).results || [];
   for (const h of due) {
