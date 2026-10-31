@@ -1,5 +1,5 @@
 {
- "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'status' says what the Create screen shows: live = a Start button; opening = 'Opening soon' (the game is still in test mode, the console does not talk to it yet); planned = 'Coming soon' (not built). Only 'live' games are asked anything (ready is true only for them). Boss ruling 29 Oct 2026: Bingo and Tambola first; Tic Tac Toe, Snakes and Ladders and Luck by Chance when each has passed its live check; free demo size 10 everywhere. labels[] are internal (never shown to customers): Claim, Elimination, Lucky Draw. caps = the largest game each game allows (auto play, and manual play where it exists). startModes = the ways a game can start. features = the console pieces a game supports; the console shows a piece only for a game that declares it (report = end-of-game PDF, clone = start a new game from an earlier one, idKind = Which ID?). Per game also: rehearsalMax (people in 'Try it first'), pause.by (who may pause/resume), prizeModes, organizerFinalSayPrizes, goldenButton (claim = participant presses Claim; announce = auto-claimed, button says You won), roles. reservedLabels: Team is reserved (parked) and given to no game yet.",
+ "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'status' says what the Create screen shows: live = a Start button; opening = 'Opening soon' (the game is still in test mode, the console does not talk to it yet); planned = 'Coming soon' (not built). Only 'live' games are asked anything (ready is true only for them). Boss ruling 29 Oct 2026: Bingo and Tambola first; Tic Tac Toe, Snakes and Ladders and Luck by Chance when each has passed its live check; free demo size 10 everywhere. labels[] are internal (never shown to customers): Claim, Elimination, Lucky Draw. caps = the largest game each game allows (auto play, and manual play where it exists). startModes = the ways a game can start. features = the console pieces a game supports; the console shows a piece only for a game that declares it (report = end-of-game PDF, clone = start a new game from an earlier one, idKind = Which ID?). Per game also: rehearsalMax (people in 'Try it first'), pause.by (who may pause/resume), prizeModes, organizerFinalSayPrizes, goldenButton (claim = participant presses Claim; announce = auto-claimed, button says You won), roles. reservedLabels: Team is reserved (parked) and given to no game yet. manifestId = the id corporate-game-core uses for the game when it differs from the console's (the live ids snakesladders and luckbychance stay). The build reads vendor/game-core/manifests.json (pinned core version, see vendor/game-core/CORE_VERSION; refresh with bun tools/vendor-core.mjs <core clone>) and takes labels, caps, startModes, rehearsalMax, prizeModes, organizerFinalSayPrizes, goldenButton and pause from it; the same fields in this file are the fallback when no vendored manifests exist, and the build refuses to finish when the two disagree (conformance).",
  "games": [
   {
    "id": "tambola",
@@ -192,7 +192,8 @@
     "cohost",
     "participant",
     "family"
-   ]
+   ],
+   "manifestId": "snakes"
   },
   {
    "id": "luckbychance",
@@ -237,7 +238,8 @@
     "cohost",
     "participant",
     "family"
-   ]
+   ],
+   "manifestId": "luck"
   },
   {
    "id": "luckydraw",

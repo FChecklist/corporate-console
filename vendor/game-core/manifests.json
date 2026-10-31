@@ -1,0 +1,224 @@
+{
+ "version": "0.1.0",
+ "commit": "9c6419d5fda26ae1e3790c29e78b4d1c66032774",
+ "manifests": {
+  "tambola": {
+   "id": "tambola",
+   "title": "Corporate Tambola",
+   "labels": [
+    "Claim"
+   ],
+   "caps": {
+    "auto": 100000,
+    "manual": 1000
+   },
+   "startModes": [
+    "auto",
+    "manual"
+   ],
+   "playModes": [
+    "auto-called",
+    "host-called"
+   ],
+   "goldenButton": "Claim",
+   "name": "tambola",
+   "pauseSupport": true,
+   "claimType": "player-presses",
+   "prizePositions": [
+    "early5",
+    "top",
+    "mid",
+    "bot",
+    "full"
+   ],
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "rehearsalMax": 20,
+   "lateJoin": {
+    "kind": "until-end"
+   },
+   "organizerFinalSay": true
+  },
+  "bingo": {
+   "id": "bingo",
+   "title": "Corporate Bingo",
+   "labels": [
+    "Claim"
+   ],
+   "caps": {
+    "auto": 100000,
+    "manual": 1000
+   },
+   "startModes": [
+    "auto",
+    "manual"
+   ],
+   "playModes": [
+    "auto-called",
+    "host-called"
+   ],
+   "goldenButton": "Claim",
+   "name": "bingo",
+   "pauseSupport": true,
+   "claimType": "player-presses",
+   "prizePositions": [
+    "early5",
+    "top",
+    "mid",
+    "bot",
+    "full"
+   ],
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "rehearsalMax": 20,
+   "lateJoin": {
+    "kind": "until-end"
+   },
+   "organizerFinalSay": true
+  },
+  "tictactoe": {
+   "id": "tictactoe",
+   "title": "Tic Tac Toe",
+   "labels": [
+    "Elimination"
+   ],
+   "caps": {
+    "auto": 2000
+   },
+   "startModes": [
+    "auto",
+    "manual"
+   ],
+   "playModes": [
+    "start-only"
+   ],
+   "goldenButton": "You won",
+   "name": "tictactoe",
+   "pauseSupport": true,
+   "claimType": "auto",
+   "prizePositions": [
+    "1st",
+    "2nd",
+    "3rd"
+   ],
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "rehearsalMax": 10,
+   "lateJoin": {
+    "kind": "none-after-round-1"
+   },
+   "organizerFinalSay": false
+  },
+  "snakes": {
+   "id": "snakes",
+   "title": "Snakes and Ladders",
+   "labels": [
+    "Elimination"
+   ],
+   "caps": {
+    "auto": 2000
+   },
+   "startModes": [
+    "auto",
+    "manual"
+   ],
+   "playModes": [
+    "start-only"
+   ],
+   "goldenButton": "You won",
+   "name": "snakes",
+   "pauseSupport": true,
+   "claimType": "auto",
+   "prizePositions": [
+    "1st",
+    "2nd",
+    "3rd"
+   ],
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "rehearsalMax": 10,
+   "lateJoin": {
+    "kind": "none-after-round-1"
+   },
+   "organizerFinalSay": false
+  },
+  "luck": {
+   "id": "luck",
+   "title": "Luck by Chance",
+   "labels": [
+    "Elimination"
+   ],
+   "caps": {
+    "auto": 2000
+   },
+   "startModes": [
+    "auto",
+    "manual"
+   ],
+   "playModes": [
+    "start-only"
+   ],
+   "goldenButton": "You won",
+   "name": "luck",
+   "pauseSupport": true,
+   "claimType": "auto",
+   "prizePositions": [
+    "1st",
+    "2nd",
+    "3rd"
+   ],
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "rehearsalMax": 10,
+   "lateJoin": {
+    "kind": "none-after-round-1"
+   },
+   "organizerFinalSay": false
+  },
+  "luckydraw": {
+   "id": "luckydraw",
+   "title": "Lucky Draw",
+   "labels": [
+    "Lucky Draw"
+   ],
+   "caps": {
+    "auto": 100000
+   },
+   "startModes": [
+    "auto",
+    "manual"
+   ],
+   "playModes": [
+    "start-only"
+   ],
+   "goldenButton": "You won",
+   "name": "luckydraw",
+   "pauseSupport": true,
+   "claimType": "auto",
+   "prizePositions": [
+    "1st",
+    "2nd",
+    "3rd"
+   ],
+   "prizeModes": [
+    "auto",
+    "manual"
+   ],
+   "rehearsalMax": 10,
+   "lateJoin": {
+    "kind": "until-draw"
+   },
+   "organizerFinalSay": false
+  }
+ }
+}
