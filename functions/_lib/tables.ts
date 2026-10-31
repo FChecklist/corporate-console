@@ -3,7 +3,7 @@
 // (TABLE_PREFIX = "con_" gives con_console_email, con_login_code, con_session, con_rate). One setting, no other change.
 import type { D1 } from "../../packages/bridge/src/d1";
 
-export const TABLES = ["console_email", "login_code", "session", "rate", "report_hold"] as const;
+export const TABLES = ["console_email", "login_code", "session", "rate", "report_hold", "report_watch"] as const;
 /** a prefix is lower-case letters, digits and underscores only, starting with a letter (it is put into SQL text, so nothing else is allowed) */
 export const PREFIX_RE = /^[a-z][a-z0-9_]{0,15}$/;
 

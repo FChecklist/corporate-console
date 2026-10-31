@@ -12,3 +12,12 @@ CREATE TABLE IF NOT EXISTS report_hold (
   last_reason TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS report_hold_next ON report_hold(next_ms);
+
+-- A good send keeps the encrypted PDF here ONLY until the mail service confirms delivery to every recipient (a bounce moves that one recipient to report_hold). Never past 96 hours.
+CREATE TABLE IF NOT EXISTS report_watch (
+  id TEXT PRIMARY KEY,               -- the mail service's e-mail id
+  game_id TEXT NOT NULL, game_name TEXT NOT NULL,
+  recipient_sealed TEXT NOT NULL,    -- recipients not yet confirmed, encrypted
+  pdf_sealed TEXT NOT NULL,
+  created_ms INTEGER NOT NULL
+);

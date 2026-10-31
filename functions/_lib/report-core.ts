@@ -35,6 +35,7 @@ let ensured = false;
 export async function ensureHoldTable(env: Env) {
   if (ensured) return;
   await tables(env).prepare("CREATE TABLE IF NOT EXISTS report_hold (id TEXT PRIMARY KEY, game_id TEXT NOT NULL, game_name TEXT NOT NULL, recipient_sealed TEXT NOT NULL, pdf_sealed TEXT NOT NULL, first_fail_ms INTEGER NOT NULL, attempts INTEGER NOT NULL, next_ms INTEGER NOT NULL, last_reason TEXT NOT NULL)").run();
+  await tables(env).prepare("CREATE TABLE IF NOT EXISTS report_watch (id TEXT PRIMARY KEY, game_id TEXT NOT NULL, game_name TEXT NOT NULL, recipient_sealed TEXT NOT NULL, pdf_sealed TEXT NOT NULL, created_ms INTEGER NOT NULL)").run();
   await tables(env).prepare("CREATE INDEX IF NOT EXISTS report_hold_next ON report_hold(next_ms)").run();
   ensured = true;
 }
@@ -62,6 +63,17 @@ async function holdFor(env: Env, r: { gameId: string; gameName: string }, recipi
   await failNotice(env, { game_name: r.gameName, game_id: r.gameId }, reason, 1);
 }
 
+async function watchRow(env: Env, emailId: string) {
+  const w = await tables(env).prepare("SELECT game_id, game_name, recipient_sealed, pdf_sealed FROM report_watch WHERE id=?").bind(emailId.slice(0, 80)).first<any>();
+  return w ? { game_id: w.game_id as string, game_name: w.game_name as string, pdf: await unsealText(env, w.pdf_sealed), left: (await unsealText(env, w.recipient_sealed)).split(",").filter(Boolean) } : null;
+}
+/** one recipient is settled (delivered, or moved to the hold): the PDF goes the moment nobody is left */
+async function watchLeave(env: Env, emailId: string, w: { left: string[] }, who: string) {
+  const left = w.left.filter((x) => x !== who);
+  if (!left.length) { await tables(env).prepare("DELETE FROM report_watch WHERE id=?").bind(emailId.slice(0, 80)).run(); return; }
+  await tables(env).prepare("UPDATE report_watch SET recipient_sealed=? WHERE id=?").bind(await sealText(env, left.join(",")), emailId.slice(0, 80)).run();
+}
+
 export async function handleReport(req: Request, env: Env, now: number): Promise<Response> {
   const path = new URL(req.url).pathname.replace(/\/+$/, "");
   if (req.method !== "POST") return fail(405, "method", "Use POST.");
@@ -70,9 +82,23 @@ export async function handleReport(req: Request, env: Env, now: number): Promise
     if (!env.BOUNCE_TOKEN || !sameText(req.headers.get("x-bounce-token") || "", env.BOUNCE_TOKEN)) return fail(401, "auth", "Not allowed.");
     let b: any; try { b = JSON.parse(await req.text()); } catch { return fail(400, "bad", "Not understood."); }
     if (typeof b?.emailId !== "string" || typeof b?.to !== "string") return fail(400, "bad", "emailId and to are needed.");
-    // No PDF is kept after a good send (owner rule), so a bounce that arrives later cannot be resent from here: the owner gets the no-names notice and the game may submit again until 20 hours after game over.
-    await failNotice(env, { game_name: String(b.game || "unknown"), game_id: String(b.gameId || b.emailId).slice(0, 80) }, String(b.reason || "bounced").slice(0, 120), 1);
-    return json(200, { ok: true, held: false, resubmit: true });
+    await ensureHoldTable(env);
+    const w = await watchRow(env, b.emailId);
+    if (!w) return json(200, { ok: true, held: false }); // unknown, already confirmed or too old: nothing to resend
+    const who = normEmail(b.to);
+    if (!w.left.includes(who)) return json(200, { ok: true, held: false });
+    await holdFor(env, { gameId: w.game_id, gameName: w.game_name }, who, w.pdf, String(b.reason || "bounced").slice(0, 120), now, true); // only the failed recipient
+    await watchLeave(env, b.emailId, w, who);
+    return json(200, { ok: true, held: true });
+  }
+  if (path === "/report/delivered") { // the mail service confirms delivery to one recipient (Resend event email.delivered): when all have it, the kept PDF is deleted at once
+    if (!env.BOUNCE_TOKEN || !sameText(req.headers.get("x-bounce-token") || "", env.BOUNCE_TOKEN)) return fail(401, "auth", "Not allowed.");
+    let b: any; try { b = JSON.parse(await req.text()); } catch { return fail(400, "bad", "Not understood."); }
+    if (typeof b?.emailId !== "string" || typeof b?.to !== "string") return fail(400, "bad", "emailId and to are needed.");
+    await ensureHoldTable(env);
+    const w = await watchRow(env, b.emailId);
+    if (w) await watchLeave(env, b.emailId, w, normEmail(b.to));
+    return json(200, { ok: true });
   }
   if (path === "/report/tick") { // the scheduled caller (GitHub Actions, every 15 minutes): due resends and the clean-up, whether or not anybody opens the console
     if (!env.TICK_SECRET || !sameText(req.headers.get("x-tick-token") || "", env.TICK_SECRET)) return fail(401, "auth", "Not allowed.");
@@ -98,7 +124,12 @@ export async function handleReport(req: Request, env: Env, now: number): Promise
   const pdf = buildReportPdf(r, now), pdfB64 = b64(pdf), to = recipientsOf(r);
   const filename = `game-report-${r.gameId}.pdf`, mail = reportMail(r);
   try {
-    await sendMailEx(env, { to, subject: mail.subject, text: mail.text, attachments: [{ filename, contentB64: pdfB64 }], replyTo: bounceAddr(env), from: REPORT_FROM });
+    const mailId = await sendMailEx(env, { to, subject: mail.subject, text: mail.text, attachments: [{ filename, contentB64: pdfB64 }], replyTo: bounceAddr(env), from: REPORT_FROM });
+    if (mailId) { // kept encrypted ONLY until the mail service confirms delivery to everybody (or a bounce moves one recipient to the hold); never past 96 hours
+      await ensureHoldTable(env);
+      await tables(env).prepare("INSERT OR REPLACE INTO report_watch(id,game_id,game_name,recipient_sealed,pdf_sealed,created_ms) VALUES(?,?,?,?,?,?)")
+        .bind(mailId.slice(0, 80), r.gameId, r.game.name, await sealText(env, to.filter((x) => !isTestAddress(x)).join(",")), await sealText(env, pdfB64), now).run();
+    }
   } catch (e: any) {
     // the mail service refused the whole send: every recipient is held, encrypted, for the retry path
     for (const a of to.filter((x) => !isTestAddress(x))) await holdFor(env, { gameId: r.gameId, gameName: r.game.name }, a, pdfB64, String(e?.message || "send failed"), now);
@@ -112,7 +143,8 @@ export async function retryHeldReports(env: Env, now: number, limit = 10) {
   await ensureHoldTable(env);
   const out = { delivered: 0, retried: 0, dropped: 0 };
   // anything past the 96-hour cap goes, delivered or not
-  await tables(env).prepare("DELETE FROM report_hold WHERE id LIKE 'w:%'").run(); // leftovers of the old 6-hour copy: no PDF is kept after a good send
+  await tables(env).prepare("DELETE FROM report_hold WHERE id LIKE 'w:%'").run(); // leftovers of the old fixed-time copy
+  await tables(env).prepare("DELETE FROM report_watch WHERE created_ms<=?").bind(now - HOLD_MAX_MS).run(); // no delivery news after 96 hours: gone anyway
   out.dropped += (await tables(env).prepare("DELETE FROM report_hold WHERE id NOT LIKE 'w:%' AND first_fail_ms<=?").bind(now - HOLD_MAX_MS).run()).meta.changes;
   const due = (await tables(env).prepare("SELECT id,game_id,game_name,recipient_sealed,pdf_sealed,first_fail_ms,attempts FROM report_hold WHERE next_ms<=? AND id NOT LIKE 'w:%' ORDER BY next_ms LIMIT ?").bind(now, limit).all<any>()).results || [];
   for (const h of due) {

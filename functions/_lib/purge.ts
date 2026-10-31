@@ -16,6 +16,7 @@ export const istDayStart = (ms: number) => Math.floor((ms + IST_MS) / DAY_MS) * 
 export const deleteAtMs = (lastSeenMs: number) => istDayStart(lastSeenMs) + (RETENTION_DAYS + 1) * DAY_MS;
 
 export async function purgeExpired(env: Env, now: number, doFetch: typeof fetch = fetch, opts: { maxEmails?: number } = {}) {
+  try { await tables(env).prepare("DELETE FROM report_watch WHERE created_ms<=?").bind(now - 96 * 3600_000).run(); } catch { /* table not there yet */ }
   try { await tables(env).prepare("DELETE FROM report_hold WHERE first_fail_ms<=?").bind(now - 96 * 3600_000).run(); } catch { /* the hold table is made the first time a report needs it */ }
   const out = { codes: 0, sessions: 0, rates: 0, emails: 0, deferred: 0, gameCalls: 0, gameFailures: 0 };
   out.codes = (await tables(env).prepare("DELETE FROM login_code WHERE expires_ms<?").bind(now - DAY_MS).run()).meta.changes;
