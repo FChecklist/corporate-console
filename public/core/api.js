@@ -132,6 +132,38 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       }
       return this.handoff(game, { target: "new", free });
     },
+    /** Start / Pause / Resume of one game (docs/CONTROL_CONTRACT.md section 1). The game decides by the key's role; the console only offers the buttons to an Organizer or Host. */
+    async control(game, eid, op) {
+      const g = byId[game]; if (!g || !["start", "pause", "resume"].includes(op)) return { ok: false, error: "invalid" };
+      const h = await headersFor(game, eid);
+      if (!h) return { ok: false, error: "no-key" };
+      const r = await call(g.origin + "/api/console/control", { method: "POST", headers: h, body: JSON.stringify({ eid, op }) });
+      if (!r.ok) return { ok: false, error: r.status === 403 ? "role" : r.status === 409 ? "state" : r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
+      return { ok: true, paused: r.json?.paused === true, state: String(r.json?.state || "") };
+    },
+    /** what an earlier game lets a new game copy (docs/CONTROL_CONTRACT.md section 3a): never people, time or results */
+    async earlier(game, eid) {
+      const g = byId[game]; if (!g) return { ok: false, error: "unknown-game" };
+      const h = await headersFor(game, eid);
+      if (!h) return { ok: false, error: "no-key" };
+      const r = await call(g.origin + "/api/console/earlier", { method: "POST", headers: h, body: JSON.stringify({ eid }) });
+      if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
+      return { ok: true, old: r.json };
+    },
+    /** a new draft in `game` that starts with the copied parts (section 3b); answers { ok, url, eid } */
+    async startFrom(game, copy, fromName) {
+      if (!vault.keyFor(game, null, now())) {
+        const c = await connect({ create: true, only: [game] });
+        if (!c.ok || !c.results[0]?.ok) return { ok: false, error: c.results?.[0]?.error || "no-account" };
+      }
+      const g = byId[game]; const h = await headersFor(game, null);
+      if (!g || !h) return { ok: false, error: "no-key" };
+      const r = await call(g.origin + "/api/console/handoff", { method: "POST", headers: h, body: JSON.stringify({ target: "new", prefill: copy, from: String(fromName || "").slice(0, 80) }) });
+      if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
+      const url = String(r.json?.url || ""), eid = String(r.json?.eid || "");
+      if (!url.startsWith(g.origin + "/signin.html?t=") || !/^[A-Za-z0-9_-]{4,40}$/.test(eid)) return { ok: false, error: "wrong-address" };
+      return { ok: true, url, eid };
+    },
     /** a pay link anyone can open (the game's own route; works for 7 days): for the finance team */
     async payLink(game, eid) {
       const g = byId[game]; const h = await headersFor(game, eid);

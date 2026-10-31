@@ -18,7 +18,7 @@ export async function renderMyGames(outlet, ctx) {
   clear(outlet);
   const body = el("div", { id: "mg-body" }, el("p", { class: "hintline", text: "One moment." }));
   const seg = el("div", { class: "seg", role: "radiogroup", "aria-label": "Show" }, FILTERS.map(([v, t]) => el("label", {}, el("input", { type: "radio", name: "mf", value: v, checked: v === filter, onchange: () => { filter = v; draw(); } }), el("span", { text: t }))));
-  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "My games" }), el("p", { class: "lead", text: "Every game you organize, host or help with, in one list." }), el("ul", { class: "approve", id: "approval-note" }, approvalNote(ctx.games || []).map((l) => el("li", { text: l }))), seg, body)));
+  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "My games" }), el("p", { class: "lead", text: "Every game you organize, host or help with, in one list." }), el("p", {}, el("a", { class: "btn sm", href: "#/control", dataset: { to: "control" }, text: "Control room" })), el("ul", { class: "approve", id: "approval-note" }, approvalNote(ctx.games || []).map((l) => el("li", { text: l }))), seg, body)));
 
   const EID = /^[A-Za-z0-9_-]{4,40}$/;
   async function removeDraft(g, card) {
@@ -46,7 +46,7 @@ export async function renderMyGames(outlet, ctx) {
     const btns = [], st = rowStatus(g);
     const desc = (ctx.games || []).find((x) => x.id === g.game);
     for (const a of rowActions(g, caps[g.game], st)) {
-      if (a.id === "copy" && desc && !has(desc, "clone")) continue; // a game that does not declare copying shows no copy button
+      if (a.id === "copy" && desc && Array.isArray(desc.features) && !has(desc, "clone")) continue; // a game that does not declare copying shows no copy button
       if (a.id === "accept") btns.push(button("Accept", { main: true, sm: true, label: `Accept the invitation to ${g.name}`, onclick: () => answer(g, "accept") }));
       else if (a.id === "decline") btns.push(button("Decline", { sm: true, label: `Decline the invitation to ${g.name}`, onclick: () => answer(g, "decline") }));
       else if (a.id === "open-in-game") btns.push(el("span", { class: "hintline", text: "Open the game itself to answer this invitation." }));

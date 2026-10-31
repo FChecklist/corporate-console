@@ -10,5 +10,5 @@ export const partsOf = (hash) => String(hash || "").replace(/^#\/?/, "").split("
 /** which menu item a route lights up (the Player's screen view belongs to My games) */
 export const menuFor = (route) => {
   const first = partsOf("#/" + route)[0] || "home";
-  return MENU_IDS.includes(first) ? first : first === "view" ? "mygames" : "home";
+  return MENU_IDS.includes(first) ? first : first === "view" || first === "control" ? "mygames" : "home";
 };

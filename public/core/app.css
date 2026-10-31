@@ -219,3 +219,13 @@ body.has-tabbar .updatebar { bottom: 92px; }
 
 .approve { margin: 8px 0 0; padding-left: 20px; font-size: 14px; color: var(--ink2); }
 .approve li { margin: 2px 0; }
+.reviewlist { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.reviewrow { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--card); }
+.reviewrow b { grid-column: 1; } .reviewrow span { grid-column: 1; color: var(--ink2); font-size: 15px; } .reviewrow .btn { grid-column: 2; grid-row: 1 / span 2; }
+.pausedpill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 14px; background: #F8DCEB; color: #6E1745; }
+.pausedpill::before { content: "6 "; margin-right: 4px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pausedpill { background: #4F1A38; color: #FFC4E1; } }
+:root[data-theme="dark"] .pausedpill { background: #4F1A38; color: #FFC4E1; }
+.reviewlist { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.reviewrow { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--card); }
+.reviewrow b, .reviewrow span { grid-column: 1; } .reviewrow span { color: var(--ink2); font-size: 15px; } .reviewrow .btn { grid-column: 2; grid-row: 1 / span 2; }

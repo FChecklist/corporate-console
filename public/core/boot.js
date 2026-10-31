@@ -39,7 +39,9 @@ async function screenFor(route, outlet, copy) {
   if (!app.signedIn) return (await import("../screens/signin.js")).renderSignIn(outlet, ctx);
   const parts = partsOf("#/" + route), first = parts[0];
   if (first === "mygames") return (await import("../screens/mygames.js")).renderMyGames(outlet, ctx);
+  if (first === "create" && parts[1] === "from") return (await import("../screens/createfrom.js")).renderCreateFrom(outlet, ctx);
   if (first === "create") return (await import("../screens/create.js")).renderCreate(outlet, ctx);
+  if (first === "control") return (await import("../screens/control.js")).renderControl(outlet, ctx);
   if (first === "billing") return (await import("../screens/billing.js")).renderBilling(outlet, ctx);
   if (first === "account") return (await import("../screens/account.js")).renderAccount(outlet, ctx);
   if (first === "view") return (await import("../screens/playerview.js")).renderPlayerView(outlet, ctx, parts[1], parts[2]);
