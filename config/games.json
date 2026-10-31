@@ -46,14 +46,7 @@
     "manual"
    ],
    "organizerFinalSayPrizes": true,
-   "goldenButton": "claim",
-   "roles": [
-    "organizer",
-    "host",
-    "cohost",
-    "participant",
-    "family"
-   ]
+   "goldenButton": "claim"
   },
   {
    "id": "bingo",
@@ -95,14 +88,7 @@
     "manual"
    ],
    "organizerFinalSayPrizes": true,
-   "goldenButton": "claim",
-   "roles": [
-    "organizer",
-    "host",
-    "cohost",
-    "participant",
-    "family"
-   ]
+   "goldenButton": "claim"
   },
   {
    "id": "tictactoe",
@@ -140,14 +126,7 @@
     "manual"
    ],
    "organizerFinalSayPrizes": false,
-   "goldenButton": "announce",
-   "roles": [
-    "organizer",
-    "host",
-    "cohost",
-    "participant",
-    "family"
-   ]
+   "goldenButton": "announce"
   },
   {
    "id": "snakesladders",
@@ -186,13 +165,6 @@
    ],
    "organizerFinalSayPrizes": false,
    "goldenButton": "announce",
-   "roles": [
-    "organizer",
-    "host",
-    "cohost",
-    "participant",
-    "family"
-   ],
    "manifestId": "snakes"
   },
   {
@@ -232,13 +204,6 @@
    ],
    "organizerFinalSayPrizes": false,
    "goldenButton": "announce",
-   "roles": [
-    "organizer",
-    "host",
-    "cohost",
-    "participant",
-    "family"
-   ],
    "manifestId": "luck"
   },
   {
@@ -277,14 +242,7 @@
     "manual"
    ],
    "organizerFinalSayPrizes": false,
-   "goldenButton": "announce",
-   "roles": [
-    "organizer",
-    "host",
-    "cohost",
-    "participant",
-    "family"
-   ]
+   "goldenButton": "announce"
   }
  ],
  "consoleOrigin": {

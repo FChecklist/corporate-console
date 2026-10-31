@@ -1,6 +1,13 @@
 {
  "version": "0.1.0",
  "commit": "9c6419d5fda26ae1e3790c29e78b4d1c66032774",
+ "roles": [
+  "organizer",
+  "host",
+  "cohost",
+  "participant",
+  "family"
+ ],
  "manifests": {
   "tambola": {
    "id": "tambola",
