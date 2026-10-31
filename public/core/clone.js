@@ -11,7 +11,7 @@ export const COPY_PARTS = Object.freeze([
   { key: "look", step: "Brand & Breaks", label: "Look" },
 ]);
 
-const NEVER = /(emails?|empids?|employee\w*|mobiles?|phones?|participants?|people|persons?|names?|winners?|results?|claims?|moves|seats|log|list|time|Ms)$/i; // a key ENDING like this is personal or time-bound (hostEmails, startMs, peopleList ...)
+const NEVER = /(emails?|emp(?:ids?|loyee\w*)|mobiles?|phones?|participants?|people|persons?|names?|winners?|results?|claims?|moves|seats|log|list|time|Ms)$/i; // a key ENDING like this is personal or time-bound (hostEmails, startMs, peopleList ...)
 
 const isPlain = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 /** deep copy that drops anything personal or time-bound by its key name, so a game that adds a new field can never leak one through by accident */

@@ -7,10 +7,10 @@ export const HOUR_MS = 3600_000, DAY_MS = 86400_000;
 export const COPY_LINE = "No personal details needed. All participant information is deleted within 24 hours of the game.";
 
 export const RETENTION = Object.freeze({
-  /** all participant data (names, e-mails, employee IDs, mobiles, seats, tickets, moves, claims): gone within 24 hours of game over. Tambola's code does it at 20 hours, every game matches that. */
+  /** all participant data (names, e-mails, IDs, mobiles, seats, tickets, moves, claims): gone within 24 hours of game over. Tambola's code does it at 20 hours, every game matches that. */
   participantDataHours: 24,
   participantDataCodeHours: 20,
-  /** game details (settings, prizes, time, result summary without names) and the WINNERS audit record (ticket or seat ID, employee ID / e-mail / mobile / name, invite chain, prize, tie) */
+  /** game details (settings, prizes, time, result summary without names) and the WINNERS audit record (ticket or seat ID, ID / e-mail / mobile / name, invite chain, prize, tie) */
   gameDetailsDays: 365,
   winnersRecordDays: 365,
   /** organizer and host e-mails: kept for invoices and payment matters */

@@ -9,8 +9,7 @@ export const onRequest = async (ctx: { request: Request; env: Env; waitUntil?: (
   const res = await handleAuth(ctx.request, ctx.env, now);
   const path = new URL(ctx.request.url).pathname.replace(/\/+$/, "");
   if (ctx.waitUntil && ((ctx.request.method === "GET" && path === "/auth/me") || (ctx.request.method === "POST" && path === "/auth/request"))) {
-    ctx.waitUntil(lazyPurge(ctx.env, now).then(() => undefined, () => undefined)); // a clean-up that fails must never be seen by the person
-    ctx.waitUntil(lazyReportRetry(ctx.env, now).then(() => undefined, () => undefined)); // held reports that are due are sent again (once an hour at most)
+    ctx.waitUntil(Promise.all([lazyPurge(ctx.env, now), lazyReportRetry(ctx.env, now)]).then(() => undefined, () => undefined)); // the clean-up and the due report resends (once an hour at most); a failure must never be seen by the person
   }
   return res;
 };
