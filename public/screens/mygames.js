@@ -5,6 +5,7 @@ import { withColor, roleChip, button, whenText, emptyNote, toast, confirmPanel, 
 import { STATUSES, rowStatus, bannerFor, roleLine, rowActions, approvalNote } from "../core/status.js";
 import { gamesFailedLine } from "../core/errors.js";
 import { mergeGames } from "../core/merge.js";
+import { has } from "../core/features.js";
 
 export const FILTERS = [["all", "All"], ["coming", "Coming up"], ["finished", "Finished"]];
 const OVER = new Set(["finished", "cancelled", "not_started"]);
@@ -43,7 +44,9 @@ export async function renderMyGames(outlet, ctx) {
   }
   function card(g) {
     const btns = [], st = rowStatus(g);
+    const desc = (ctx.games || []).find((x) => x.id === g.game);
     for (const a of rowActions(g, caps[g.game], st)) {
+      if (a.id === "copy" && desc && !has(desc, "clone")) continue; // a game that does not declare copying shows no copy button
       if (a.id === "accept") btns.push(button("Accept", { main: true, sm: true, label: `Accept the invitation to ${g.name}`, onclick: () => answer(g, "accept") }));
       else if (a.id === "decline") btns.push(button("Decline", { sm: true, label: `Decline the invitation to ${g.name}`, onclick: () => answer(g, "decline") }));
       else if (a.id === "open-in-game") btns.push(el("span", { class: "hintline", text: "Open the game itself to answer this invitation." }));
