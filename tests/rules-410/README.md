@@ -9,3 +9,4 @@ Run: `bun test --isolate tests/rules-410`. A failing test means the product brea
 | R10, R13 | retention-wording.test.ts |
 | R11 | report-pdf.test.ts |
 | R12 | report-send.test.ts |
+| S1, S2, S3, S5 (roles matrix: Organizer, Host, Co-host, participant, family pass x Start, Pause, Resume, Copy x 6 games) | roles-matrix.test.ts |
