@@ -1,17 +1,39 @@
 {
- "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'status' says what the Create screen shows: live = a Start button; opening = 'Opening soon' (the game is still in test mode, the console does not talk to it yet); planned = 'Coming soon' (not built). Only 'live' games are asked anything (ready is true only for them). Boss ruling 29 Oct 2026: Bingo and Tambola first; Tic Tac Toe, Snakes and Ladders and Luck by Chance when each has passed its live check; free demo size 10 everywhere.",
+ "_about": "The six games the console talks to. build.mjs turns this into public/core/games.config.js and into the CSP in public/_headers, so the two can never disagree. 'live' origins are the final addresses; 'preview' origins are the pages.dev addresses used before the custom domains are attached. 'status' says what the Create screen shows: live = a Start button; opening = 'Opening soon' (the game is still in test mode, the console does not talk to it yet); planned = 'Coming soon' (not built). Only 'live' games are asked anything (ready is true only for them). Boss ruling 29 Oct 2026: Bingo and Tambola first; Tic Tac Toe, Snakes and Ladders and Luck by Chance when each has passed its live check; free demo size 10 everywhere. labels[] are internal (never shown to customers): Claim, Elimination, Lucky Draw. caps = the largest game each game allows (auto play, and manual play where it exists). startModes = the ways a game can start. features = the console pieces a game supports; the console shows a piece only for a game that declares it (report = end-of-game PDF, clone = start a new game from an earlier one, idKind = Which ID?).",
  "games": [
   {
    "id": "tambola",
    "name": "Corporate Tambola",
-   "approvals": ["cohost-link", "family-link", "open-link"],
+   "approvals": [
+    "cohost-link",
+    "family-link",
+    "open-link"
+   ],
    "accent": "#7A1C33",
    "freeCap": 10,
    "ready": true,
    "live": "https://housie.corporatetambola.com",
    "preview": "https://corporate-tambola.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "live"
+   "status": "live",
+   "labels": [
+    "Claim"
+   ],
+   "caps": {
+    "auto": 100000,
+    "manual": 1000
+   },
+   "startModes": [
+    "auto-at-published-time",
+    "manual-by-organizer-or-host",
+    "auto-with-countdown",
+    "rehearsal-first"
+   ],
+   "features": [
+    "report",
+    "clone",
+    "idKind"
+   ]
   },
   {
    "id": "bingo",
@@ -22,7 +44,25 @@
    "live": "https://bingo.corporatetambola.com",
    "preview": "https://corporate-bingo.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "live"
+   "status": "live",
+   "labels": [
+    "Claim"
+   ],
+   "caps": {
+    "auto": 100000,
+    "manual": 1000
+   },
+   "startModes": [
+    "auto-at-published-time",
+    "manual-by-organizer-or-host",
+    "auto-with-countdown",
+    "rehearsal-first"
+   ],
+   "features": [
+    "report",
+    "clone",
+    "idKind"
+   ]
   },
   {
    "id": "tictactoe",
@@ -33,7 +73,21 @@
    "live": "https://tictactoe.corporatetambola.com",
    "preview": "https://corporate-tic-tac-toe.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "opening"
+   "status": "opening",
+   "labels": [
+    "Elimination"
+   ],
+   "caps": {
+    "auto": 2000
+   },
+   "startModes": [
+    "auto-at-published-time",
+    "manual-by-organizer-or-host"
+   ],
+   "features": [
+    "report",
+    "clone"
+   ]
   },
   {
    "id": "snakesladders",
@@ -44,7 +98,21 @@
    "live": "https://snakes.corporatetambola.com",
    "preview": "https://corporate-snakes-and-ladders.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "opening"
+   "status": "opening",
+   "labels": [
+    "Elimination"
+   ],
+   "caps": {
+    "auto": 2000
+   },
+   "startModes": [
+    "auto-at-published-time",
+    "manual-by-organizer-or-host"
+   ],
+   "features": [
+    "report",
+    "clone"
+   ]
   },
   {
    "id": "luckbychance",
@@ -55,7 +123,21 @@
    "live": "https://luck.corporatetambola.com",
    "preview": "https://corporate-luck-by-chance.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "opening"
+   "status": "opening",
+   "labels": [
+    "Elimination"
+   ],
+   "caps": {
+    "auto": 2000
+   },
+   "startModes": [
+    "auto-at-published-time",
+    "manual-by-organizer-or-host"
+   ],
+   "features": [
+    "report",
+    "clone"
+   ]
   },
   {
    "id": "luckydraw",
@@ -66,7 +148,21 @@
    "live": "https://lucky.corporatetambola.com",
    "preview": "https://corporate-lucky-draw.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "planned"
+   "status": "planned",
+   "labels": [
+    "Lucky Draw"
+   ],
+   "caps": {
+    "auto": 100000
+   },
+   "startModes": [
+    "auto-at-published-time",
+    "manual-by-organizer-or-host"
+   ],
+   "features": [
+    "report",
+    "clone"
+   ]
   }
  ],
  "consoleOrigin": {

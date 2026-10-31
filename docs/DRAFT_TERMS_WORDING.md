@@ -1,0 +1,11 @@
+# DRAFT wording for the Terms page: for the owner to approve. Nothing here is on any page. The Terms are NOT edited by the console coder.
+Plain English, "the system", close group. Facts as the code does them (owner decisions 31 Oct 2026, spec 410 section 6).
+
+1. **Participant information.** The system deletes all participant information within 24 hours after the game ends: names, e-mail IDs, employee IDs, mobile numbers, seats, tickets, moves and claims. The system keeps no saved list of people. The organizer uploads or pastes the list again for each game.
+2. **What is kept for 365 days, then deleted.** The game details (settings, prizes, time and a result summary without names) and the winners record: the ticket or seat ID, employee ID or e-mail ID, mobile number and name of each winner, who brought them in, the prize and whether it was a tie. This record is the audit record of the game.
+3. **Organizers and Hosts.** The e-mail IDs of Organizers and Hosts are kept for invoices and payment matters. The system does not delete tax records (invoices and the payment ledger).
+4. **The end-of-game report.** Within 3 hours after the game ends, the system e-mails a PDF report to all Organizers and Hosts at once. Co-hosts do not receive it. The report has the winners in full, statistics, how the game was played and the game log. It has no list of participants. The system does not keep the PDF.
+5. **If the report e-mail does not arrive (exception to point 1's 24 hours).** The system keeps that PDF, encrypted and apart from the game data, and sends it again to that one e-mail ID after 24, 36 and 72 hours. It deletes the PDF as soon as it is delivered, or after the last try, and in any case about 96 hours after the first failure. For a few hours after a good send the system also holds an encrypted copy, only so that a late bounce notice can still be answered; that copy is deleted after 6 hours.
+6. **Notice to the owner.** If a report e-mail fails, the owner receives a notice with no names: the game, the reason and the attempt number.
+
+Note for the owner: points 4 to 6 are why the on-screen line stays "No personal details needed. All participant information is deleted within 24 hours of the game." and the exceptions live in the Terms only.
