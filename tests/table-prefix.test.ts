@@ -1,6 +1,6 @@
 // FALSIFIED BY: prefix-not-applied, prefix-unchecked, prefix-purge-unprefixed
 import { test, expect } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { makeD1 } from "./support/d1-sqlite";
 import { handleAuth, type Env } from "../functions/_lib/auth-core";
 import { purgeExpired } from "../functions/_lib/purge";
@@ -8,7 +8,8 @@ import { prefixSql, checkPrefix, TABLES } from "../functions/_lib/tables";
 
 const ORIGIN = "https://console.test";
 const NOW = Date.UTC(2026, 9, 28, 6, 0, 0);
-const MIGRATION = readFileSync(new URL("../migrations/0001_console.sql", import.meta.url), "utf8");
+const MIGRATIONS = new URL("../migrations/", import.meta.url);
+const MIGRATION = readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).sort().map((f) => readFileSync(new URL(f, MIGRATIONS), "utf8")).join("\n");
 
 async function world(prefix: string | undefined) {
   const { db, raw } = makeD1([]);
@@ -38,6 +39,9 @@ test("prefixSql renames every table and index of the migration and nothing else;
   expect(prefixSql(MIGRATION, "")).toBe(MIGRATION);
   const p = prefixSql(MIGRATION, "con_");
   for (const t of TABLES) expect(p).toContain(`CREATE TABLE IF NOT EXISTS con_${t} `);
+  const made = [...p.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map((m) => m[1]);
+  expect(made.every((n) => n.startsWith("con_"))).toBe(true);
+  expect(made.map((n) => n.slice(4)).sort()).toEqual([...TABLES].sort());
   expect(p).toContain("CREATE UNIQUE INDEX IF NOT EXISTS con_login_code_link ON con_login_code(link_hash)");
   expect(p).toContain("CREATE INDEX IF NOT EXISTS con_session_email ON con_session(email_hash)");
   expect(p.replace(/con_/g, "")).toBe(MIGRATION);
