@@ -17,6 +17,6 @@ for (const m of Object.values(MANIFESTS)) { const bad = checkManifest(m); if (ba
 const { ROLES } = await import(pathToFileURL(join(root, "packages/core/src/roles.ts")).href); // common engine facts: the same five roles in every game
 const out = resolve(import.meta.dir, "..", "vendor", "game-core");
 mkdirSync(out, { recursive: true });
-writeFileSync(join(out, "manifests.json"), JSON.stringify({ version, commit, roles: ROLES, manifests: MANIFESTS }, null, 1) + "\n");
+writeFileSync(join(out, "manifests.json"), JSON.stringify({ version, commit, roles: ROLES, manifests: Object.fromEntries(Object.entries(MANIFESTS).map(([k, m]) => [k, { ...m, roles: ROLES }])) }, null, 1) + "\n");
 writeFileSync(join(out, "CORE_VERSION"), `${version}\n${commit}\n`);
 console.log(`vendored the manifests of game-core ${version} (${commit.slice(0, 7)})`);

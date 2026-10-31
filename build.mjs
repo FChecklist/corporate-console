@@ -27,6 +27,7 @@ export function conformance(cfg, core) {
   for (const g of cfg.games) {
     const m = core.manifests[g.manifestId || g.id];
     if (!m) { bad.push(`${g.id}: the core has no manifest "${g.manifestId || g.id}"`); continue; }
+    if (core.roles && !same(core.roles, g.roles)) bad.push(`${g.id}: roles are ${JSON.stringify(g.roles)} here but ${JSON.stringify(core.roles)} in core ${core.version}`);
     const want = fromManifest(m);
     for (const k of Object.keys(want)) if (!same(want[k], g[k])) bad.push(`${g.id}: ${k} is ${JSON.stringify(g[k])} here but ${JSON.stringify(want[k])} in core ${core.version}`);
   }

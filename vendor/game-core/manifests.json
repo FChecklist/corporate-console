@@ -46,7 +46,14 @@
    "lateJoin": {
     "kind": "until-end"
    },
-   "organizerFinalSay": true
+   "organizerFinalSay": true,
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
+   ]
   },
   "bingo": {
    "id": "bingo",
@@ -85,7 +92,14 @@
    "lateJoin": {
     "kind": "until-end"
    },
-   "organizerFinalSay": true
+   "organizerFinalSay": true,
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
+   ]
   },
   "tictactoe": {
    "id": "tictactoe",
@@ -120,7 +134,14 @@
    "lateJoin": {
     "kind": "none-after-round-1"
    },
-   "organizerFinalSay": false
+   "organizerFinalSay": false,
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
+   ]
   },
   "snakes": {
    "id": "snakes",
@@ -155,7 +176,14 @@
    "lateJoin": {
     "kind": "none-after-round-1"
    },
-   "organizerFinalSay": false
+   "organizerFinalSay": false,
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
+   ]
   },
   "luck": {
    "id": "luck",
@@ -190,7 +218,14 @@
    "lateJoin": {
     "kind": "none-after-round-1"
    },
-   "organizerFinalSay": false
+   "organizerFinalSay": false,
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
+   ]
   },
   "luckydraw": {
    "id": "luckydraw",
@@ -225,7 +260,14 @@
    "lateJoin": {
     "kind": "until-draw"
    },
-   "organizerFinalSay": false
+   "organizerFinalSay": false,
+   "roles": [
+    "organizer",
+    "host",
+    "cohost",
+    "participant",
+    "family"
+   ]
   }
  }
 }
