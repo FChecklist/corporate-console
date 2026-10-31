@@ -4,8 +4,10 @@
 //  POST /report/bounce   the mail service tells the console a recipient bounced (carries BOUNCE_TOKEN).
 // A report that could not be delivered is HELD, encrypted and apart from game data, in report_hold, and sent again to that one recipient after
 // 24, 36 and 72 hours (counted from the first failure). It is deleted on delivery, or after the last try, and in any case about 96 hours after the first failure.
+// POST /report/tick  (x-tick-token) does due resends and the daily clean-up; a scheduled GitHub Actions workflow calls it every 15 minutes. The lazy driving stays as a backup.
 // Each failure sends the owner a notice with NO names: the game, the reason and the attempt number.
-import { buildReportPdf, reportProblems, SEND_WINDOW_MS, istStamp, type GameReport } from "../../packages/report/src/report";
+import { buildReportPdf, reportProblems, SEND_WINDOW_MS, SEND_LAST_MS, istStamp, type GameReport } from "../../packages/report/src/report";
+import { purgeExpired } from "./purge";
 import { normEmail } from "../../packages/bridge/src/email";
 import { b64uEncode } from "../../packages/bridge/src/assertion";
 import { sendMailEx, sealText, unsealText, isTestAddress, type Env } from "./auth-core";
@@ -15,7 +17,8 @@ export const RETRY_AFTER_MS = [24 * 3600_000, 36 * 3600_000, 72 * 3600_000] as c
 export const HOLD_MAX_MS = 96 * 3600_000;
 export const WATCH_MS = 6 * 3600_000; // after a good send the PDF is kept encrypted this long, only so a bounce notice from the mail service can still be answered
 export const MAX_BODY = 4 * 1024 * 1024;
-const BOUNCE_DEFAULT = "bounce@corporatetambola.com";
+const REPORT_FROM = "Corporate Games <hello@corporatetambola.com>"; // the same sender the Tambola mails already use (Resend, same domain)
+const BOUNCE_DEFAULT = "hello@corporatetambola.com";
 const enc = new TextEncoder();
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 const fail = (status: number, error: string, message: string) => json(status, { ok: false, error, message });
@@ -74,6 +77,12 @@ export async function handleReport(req: Request, env: Env, now: number): Promise
     await holdFor(env, { gameId: w.game_id, gameName: w.game_name }, normEmail(b.to), await unsealText(env, w.pdf_sealed), String(b.reason || "bounced").slice(0, 120), now, true);
     return json(200, { ok: true, held: true });
   }
+  if (path === "/report/tick") { // the scheduled caller (GitHub Actions, every 15 minutes): due resends and the clean-up, whether or not anybody opens the console
+    if (!env.TICK_SECRET || !sameText(req.headers.get("x-tick-token") || "", env.TICK_SECRET)) return fail(401, "auth", "Not allowed.");
+    const reports = await retryHeldReports(env, now);
+    let purge: unknown = null; try { purge = await purgeExpired(env, now, fetch, { maxEmails: 20 }); } catch { /* the clean-up is tried again at the next tick */ }
+    return json(200, { ok: true, reports, purged: purge ? { ...(purge as object) } : null });
+  }
   if (path !== "/report/submit") return fail(404, "not_found", "No such page.");
 
   const text = await req.text();
@@ -85,12 +94,14 @@ export async function handleReport(req: Request, env: Env, now: number): Promise
   const bad = reportProblems(r);
   if (bad.length) return fail(400, "invalid", bad.join(" "));
   if (now < r.gameOverMs - 5 * 60_000) return fail(409, "early", "The game is not over yet.");
-  if (now - r.gameOverMs > SEND_WINDOW_MS) return fail(409, "late", "The 3 hours after the game are over. The report cannot be sent any more.");
+  const late = now - r.gameOverMs > SEND_WINDOW_MS; // past the 3-hour target: it still goes out (a refused report is a lost report), and is logged as late
+  if (now - r.gameOverMs > SEND_LAST_MS) return fail(409, "too_late", "The game data has been erased, so the report can no longer be made.");
+  if (late) console.log(`report late: game ${r.gameId}, ${Math.round((now - r.gameOverMs) / 60_000)} minutes after game over`); // no names, no addresses
 
   const pdf = buildReportPdf(r, now), pdfB64 = b64(pdf), to = recipientsOf(r);
   const filename = `game-report-${r.gameId}.pdf`, mail = reportMail(r);
   try {
-    const mailId = await sendMailEx(env, { to, subject: mail.subject, text: mail.text, attachments: [{ filename, contentB64: pdfB64 }], replyTo: bounceAddr(env) });
+    const mailId = await sendMailEx(env, { to, subject: mail.subject, text: mail.text, attachments: [{ filename, contentB64: pdfB64 }], replyTo: bounceAddr(env), from: REPORT_FROM });
     if (mailId) { // kept encrypted for WATCH_MS only, so a bounce notice can still be answered; deleted by the clean-up below
       await ensureHoldTable(env);
       await tables(env).prepare("INSERT OR REPLACE INTO report_hold(id,game_id,game_name,recipient_sealed,pdf_sealed,first_fail_ms,attempts,next_ms,last_reason) VALUES(?,?,?,?,?,?,?,?,?)")
@@ -99,9 +110,9 @@ export async function handleReport(req: Request, env: Env, now: number): Promise
   } catch (e: any) {
     // the mail service refused the whole send: every recipient is held, encrypted, for the retry path
     for (const a of to.filter((x) => !isTestAddress(x))) await holdFor(env, { gameId: r.gameId, gameName: r.game.name }, a, pdfB64, String(e?.message || "send failed"), now);
-    return json(202, { ok: true, sent: 0, held: to.filter((x) => !isTestAddress(x)).length, recipients: to.length });
+    return json(202, { ok: true, sent: 0, held: to.filter((x) => !isTestAddress(x)).length, recipients: to.length, late });
   }
-  return json(200, { ok: true, sent: to.length, held: 0, recipients: to.length, pages: undefined, bytes: pdf.length }); // nothing of the PDF is kept
+  return json(200, { ok: true, sent: to.length, held: 0, recipients: to.length, late, bytes: pdf.length }); // nothing of the PDF is kept
 }
 
 /** Resends what is due. Called from the console's own pages (at most once an hour, see lazyReportRetry) because the cron Worker cannot be deployed. */
@@ -116,7 +127,7 @@ export async function retryHeldReports(env: Env, now: number, limit = 10) {
     const to = await unsealText(env, h.recipient_sealed), pdfB64 = await unsealText(env, h.pdf_sealed), filename = `game-report-${h.game_id}.pdf`;
     const mail = { subject: `Your game report: ${h.game_name}, Game ID ${h.game_id}`, text: `Your game report is attached again, because the first e-mail did not reach you.\n\nGame: ${h.game_name}\nGame ID: ${h.game_id}\n\nThe system does not keep this PDF. Please save it now.` };
     try {
-      await sendMailEx(env, { to: [to], subject: mail.subject, text: mail.text, attachments: [{ filename, contentB64: pdfB64 }], replyTo: bounceAddr(env) });
+      await sendMailEx(env, { to: [to], subject: mail.subject, text: mail.text, attachments: [{ filename, contentB64: pdfB64 }], replyTo: bounceAddr(env), from: REPORT_FROM });
       await tables(env).prepare("DELETE FROM report_hold WHERE id=?").bind(h.id).run(); // delivered: gone at once
       out.delivered++;
     } catch (e: any) {

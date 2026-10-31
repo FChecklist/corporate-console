@@ -24,7 +24,8 @@ export type GameReport = {
   log: Array<{ atMs: number; text: string }>;
 };
 
-export const SEND_WINDOW_MS = 3 * 3600_000; // the report must go out within 3 hours of game over
+export const SEND_WINDOW_MS = 3 * 3600_000; // the TARGET: the report should go out within 3 hours of game over
+export const SEND_LAST_MS = 20 * 3600_000; // a late send still goes out until participant data is erased (the code erases at 20 hours); it is logged as late
 export const LIMITS = { winners: 2000, log: 200_000, settings: 60, changes: 500, text: 300, people: 50 } as const;
 
 const TOP = new Set(["v", "game", "gameId", "title", "brand", "organizers", "hosts", "startMode", "startMs", "endMs", "gameOverMs", "winners", "stats", "played", "log"]);

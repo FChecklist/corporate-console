@@ -20,7 +20,8 @@ export interface Env {
   REPORT_SECRETS?: string; // JSON {"tambola":"secret",...}: each game signs the report it posts with its own secret (HMAC-SHA256 of the body)
   BOUNCE_TOKEN?: string; // the mail service's bounce notice must carry this token
   OWNER_NOTICE_EMAIL?: string; // where the no-names notice goes when a report e-mail fails
-  BOUNCE_ADDRESS?: string; // return-path / notice address, default bounce@corporatetambola.com
+  TICK_SECRET?: string; // the shared secret of /report/tick (set in the Pages settings by the owner, never in the repo)
+  BOUNCE_ADDRESS?: string; // return-path / notice address, default hello@corporatetambola.com
 }
 
 export const CODE_TTL_MS = 30 * 60_000; // a code and its link work this long (owner decision 30 Oct); 5 wrong tries lock the code, and the rate limits stay
@@ -102,13 +103,13 @@ export const recordedMail: Array<{ to: string; subject: string; text: string }> 
 export const isTestAddress = (to: string) => /\.invalid$/i.test(String(to).trim());
 /** One mail to several people at once, with optional attachments (the end-of-game report). Test addresses (.invalid) are only recorded, never given to the mail service. */
 export type Attachment = { filename: string; contentB64: string };
-export async function sendMailEx(env: Env, o: { to: string[]; subject: string; text: string; attachments?: Attachment[]; replyTo?: string }): Promise<string | undefined> {
+export async function sendMailEx(env: Env, o: { to: string[]; subject: string; text: string; attachments?: Attachment[]; replyTo?: string; from?: string }): Promise<string | undefined> {
   const real = o.to.filter((a) => !isTestAddress(a));
   for (const a of o.to.filter(isTestAddress)) { recordedMail.push({ to: a, subject: o.subject, text: o.text }); if (recordedMail.length > 50) recordedMail.shift(); }
   if (!real.length) return;
   if (env.MAILER) { for (const a of real) await env.MAILER(a, o.subject, o.text); return; }
   if (!env.RESEND_API_KEY) throw new Error("no mail key");
-  const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" }, body: JSON.stringify({ from: env.MAIL_FROM || "Corporate Games <console@corporatetambola.com>", to: real, subject: o.subject, text: o.text, ...(o.replyTo ? { reply_to: o.replyTo } : {}), ...(o.attachments?.length ? { attachments: o.attachments.map((a) => ({ filename: a.filename, content: a.contentB64 })) } : {}) }) });
+  const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" }, body: JSON.stringify({ from: o.from || env.MAIL_FROM || "Corporate Games <console@corporatetambola.com>", to: real, subject: o.subject, text: o.text, ...(o.replyTo ? { reply_to: o.replyTo } : {}), ...(o.attachments?.length ? { attachments: o.attachments.map((a) => ({ filename: a.filename, content: a.contentB64 })) } : {}) }) });
   if (!r.ok) throw new Error("mail " + r.status);
   try { return String(((await r.json()) as any)?.id || "") || undefined; } catch { return undefined; } // the mail service's id of this mail, so a later bounce notice can be matched
 }

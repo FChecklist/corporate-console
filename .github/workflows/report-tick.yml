@@ -1,0 +1,21 @@
+# Every 15 minutes: asks the console to send held end-of-game reports that are due and to do its clean-up.
+# Games are mostly played on Friday and Saturday nights and nobody may open the console, so the console cannot rely on visitors to drive this.
+# Secrets (set by the owner in the repository settings, never in the repo): CONSOLE_TICK_URL (the console address) and CONSOLE_TICK_SECRET (the same value as TICK_SECRET in the console's Pages settings).
+name: report-tick
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+permissions: {}
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call the console
+        env:
+          URL: ${{ secrets.CONSOLE_TICK_URL }}
+          TOKEN: ${{ secrets.CONSOLE_TICK_SECRET }}
+        run: |
+          test -n "$URL" && test -n "$TOKEN" || { echo "The two secrets are not set yet."; exit 1; }
+          curl --fail --silent --show-error --max-time 60 -X POST -H "x-tick-token: $TOKEN" "$URL/report/tick"
