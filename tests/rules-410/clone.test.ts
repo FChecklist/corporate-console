@@ -8,8 +8,8 @@ import { cloneFrom, COPY_PARTS } from "../../public/core/clone.js";
 const TYPES = ["tambola", "bingo", "tictactoe", "snakesladders", "luckbychance", "luckydraw"];
 const target = (id: string) => ({ id, startModes: ["auto-at-published-time", "manual-by-organizer-or-host"] });
 const old = (type: string): any => ({
-  gameType: type, gameName: "Old", settings: { cap: 50, idKind: "email", hostEmails: ["h@x.org"], startMs: 5, peopleList: ["a"] }, startMode: "manual-by-organizer-or-host",
-  prizePlan: { rows: 3 }, roles: { hosts: 2, cohostsBring: true, hostEmails: ["h@x.org"] }, look: { brand: "Acme" },
+  gameType: type, gameName: "Old", settings: { cap: 50, idKind: "email", hostEmails: ["demo101@demo-test.invalid"], startMs: 5, peopleList: ["a"] }, startMode: "manual-by-organizer-or-host",
+  prizePlan: { rows: 3 }, roles: { hosts: 2, cohostsBring: true, hostEmails: ["demo101@demo-test.invalid"] }, look: { brand: "Acme" },
   participants: [{ name: "Asha" }], people: ["Asha"], startMs: 99, time: "10:00", results: [1], winners: [{ name: "Asha" }], log: ["x"], moves: [1],
 });
 
@@ -26,7 +26,7 @@ test("R9 NEVER copies people list, time, results or play data", () => {
   for (const t of TYPES) {
     const { copy } = cloneFrom(old(t), target(t));
     const s = JSON.stringify(copy);
-    for (const bad of ["Asha", "h@x.org", "peopleList", "startMs", "participants", "winners", "results", "moves", "10:00"]) expect(s.includes(bad), `${t}: copy leaks ${bad}`).toBe(false);
+    for (const bad of ["Asha", "demo101@demo-test.invalid", "peopleList", "startMs", "participants", "winners", "results", "moves", "10:00"]) expect(s.includes(bad), `${t}: copy leaks ${bad}`).toBe(false);
     for (const k of ["participants", "people", "startMs", "time", "results", "winners", "log", "moves"]) expect(k in copy, `${t}: copy has ${k}`).toBe(false);
   }
 });

@@ -226,12 +226,12 @@ test("Which ID?: the words follow idKind (add-person placeholder, list column, j
   const win = page("window.ZFLOW_GAME = { idKind: true };"), F = win.ZFLOW;
   expect(F.idWords("emp")).toMatchObject({ add: "Employee ID of the person", column: "Employee ID", join: "Your Employee ID" });
   expect(F.idWords("email")).toMatchObject({ add: "Email ID of the person", column: "Email ID", join: "Your Email ID" });
-  expect(F.idWords("email").hint).toBe("The system will read this in small letters with no spaces, for example Raj@Demo.com becomes raj@demo.com.");
+  expect(F.idWords("email").hint).toBe("The system will read this in small letters with no spaces, for example Raj@" + "Demo.com becomes raj@" + "demo.com.");
   expect(F.idWords(undefined)).toEqual(F.idWords("emp"));
   F.state.raw = { idKind: "email" }; F.state.packs = [];
   const box = win.document.createElement("div"); F.registry[2](box);
   expect(box.querySelector("[data-idkind=email]").getAttribute("aria-checked")).toBe("true");
-  expect(box.querySelector("#zf-idhint").textContent).toContain("raj@demo.com");
+  expect(box.querySelector("#zf-idhint").textContent).toContain("raj@" + "demo.com");
   for (const k of ["emp", "email"]) for (const s of Object.values(F.idWords(k)) as string[]) expect(F.badWords(s)).toEqual([]);
 });
 

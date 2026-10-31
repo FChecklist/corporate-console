@@ -103,7 +103,7 @@ test("wire: the built config carries each game's own approvals, every game has i
   const exported = JSON.parse(/Object\.freeze\(([\s\S]*)\);\s*$/.exec(built)![1]);
   expect(exported.map((g: any) => g.id)).toEqual(GAMES.map((g: any) => g.id));
   for (const g of exported) {
-    expect(Object.keys(g).sort()).toEqual(["accent", "approvals", "freeCap", "id", "name", "origin", "ready", "status"]); // no short name, no new-screens entry
+    expect(Object.keys(g).sort()).toEqual(["accent", "approvals", "caps", "features", "freeCap", "goldenButton", "id", "name", "organizerFinalSayPrizes", "origin", "pause", "prizeModes", "ready", "rehearsalMax", "roles", "startModes", "status"]); // the manifest data read from the vendored core (caps, start modes, pause, roles ...) is intended; still no short name, no new-screens entry
     expect(g.name).toMatch(/^Corporate /);
     expect(g.approvals).toEqual(GAMES.find((x: any) => x.id === g.id).approvals);
     // every string the browser is given follows the wording rules

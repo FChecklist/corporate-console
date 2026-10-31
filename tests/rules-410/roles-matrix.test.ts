@@ -83,7 +83,7 @@ for (const id of IDS) {
     const rows = ROLES.map((r) => row(id, r, { status: "finished" }));
     const got = earlierGames(rows, games).map((g: any) => g.role);
     expect(got, `${id}: Copy offered to ${got.join(",")}`).toEqual(["organizer"]);
-    const old: any = { gameType: id, gameName: "Old", settings: { cap: 5, hostEmails: ["h@x.org"] }, startMode: "manual", prizePlan: { rows: 1 }, roles: { hosts: 1 }, look: { brand: "A" }, participants: [{ name: "Asha" }], startMs: 7, results: [1], winners: [1] };
+    const old: any = { gameType: id, gameName: "Old", settings: { cap: 5, hostEmails: ["demo101@demo-test.invalid"] }, startMode: "manual", prizePlan: { rows: 1 }, roles: { hosts: 1 }, look: { brand: "A" }, participants: [{ name: "Asha" }], startMs: 7, results: [1], winners: [1] };
     const { copy, sources } = cloneFrom(old, { id, startModes: desc(id).startModes });
     expect(JSON.stringify(copy)).not.toMatch(/Asha|h@x\.org|startMs|winners|results|participants/);
     expect(Object.values(sources).every((s: any) => s === "Copied from Old")).toBe(true);

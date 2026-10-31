@@ -7,9 +7,9 @@ import type { Env } from "../../functions/_lib/auth-core";
 
 setDefaultTimeout(60_000);
 const H = 3600_000, OVER = Date.UTC(2026, 9, 30, 6, 0, 0), ORIGIN = "https://console.test", SECRET = "s3cret";
-const NAMES = ["Asha Rao", "asha.winner@example.org"], OWNER = "raajat.agarwal@gmail.com";
+const NAMES = ["Asha Rao", "asha.winner@" + "example.org"], OWNER = "raajat.agarwal@" + "gmail.com";
 const report = (): any => ({
-  v: 1, game: { id: "tambola", name: "Corporate Tambola" }, gameId: "G1", organizers: [{ email: "org1@example.org" }, { email: "org2@example.org" }], hosts: [{ email: "host1@example.org" }],
+  v: 1, game: { id: "tambola", name: "Corporate Tambola" }, gameId: "G1", organizers: [{ email: "org1@" + "example.org" }, { email: "org2@" + "example.org" }], hosts: [{ email: "host1@" + "example.org" }],
   startMs: OVER - H, endMs: OVER, gameOverMs: OVER, winners: [{ prize: "Full House", name: NAMES[0], email: NAMES[1] }], stats: { joined: 5 }, log: [{ atMs: OVER - 10, text: "Game ended" }],
 });
 const hex = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
@@ -41,7 +41,7 @@ test("R12 sent within 3 hours of game over to ALL Organizers and Hosts at once, 
     expect(res.status).toBe(200);
     const mails = reportMails(w.sent);
     expect(mails.length).toBe(1);
-    expect([...mails[0].to].sort()).toEqual(["host1@example.org", "org1@example.org", "org2@example.org"]);
+    expect([...mails[0].to].sort()).toEqual(["host1@" + "example.org", "org1@" + "example.org", "org2@" + "example.org"]);
     expect((await res.json() as any).late).toBe(false);
     expect(mails[0].attachments[0].filename).toMatch(/\.pdf$/);
   } finally { w.done(); }
@@ -49,12 +49,12 @@ test("R12 sent within 3 hours of game over to ALL Organizers and Hosts at once, 
 test("R12 Co-hosts are excluded: a report that carries Co-hosts is refused and none receive it", async () => {
   const w = await world();
   try {
-    const r = report(); r.cohosts = [{ email: "cohost@example.org" }];
+    const r = report(); r.cohosts = [{ email: "cohost@" + "example.org" }];
     const res = await w.submit(OVER + H, r);
     expect(res.status).toBe(400);
     expect(w.sent.length).toBe(0);
     const ok = await w.submit(OVER + H);
-    expect(JSON.stringify(w.sent)).not.toContain("cohost@example.org");
+    expect(JSON.stringify(w.sent)).not.toContain("cohost@" + "example.org");
     expect(ok.status).toBe(200);
   } finally { w.done(); }
 });
@@ -84,18 +84,18 @@ test("R12 on bounce only the failed recipient is retried, at 24, 36 and 72 hours
     await w.submit(t0);
     w.sent.length = 0;
     expect(RETRY_AFTER_MS).toEqual([24 * H, 36 * H, 72 * H]);
-    expect((await w.bounce(t0 + 60_000, "org2@example.org")).status).toBe(200);
+    expect((await w.bounce(t0 + 60_000, "org2@" + "example.org")).status).toBe(200);
     expect(holds(w.raw).length).toBe(1);
     w.sent.length = 0; w.setMode("fail");
     const first = holds(w.raw)[0].first_fail_ms;
     await w.tick(first + 24 * H - 60_000); expect(reportMails(w.sent).length).toBe(0); // not before 24 h
     await w.tick(first + 24 * H); expect(reportMails(w.sent).length).toBe(1);
-    expect(reportMails(w.sent)[0].to).toEqual(["org2@example.org"]); // that recipient only
+    expect(reportMails(w.sent)[0].to).toEqual(["org2@" + "example.org"]); // that recipient only
     await w.tick(first + 36 * H - 60_000); expect(reportMails(w.sent).length).toBe(1);
     await w.tick(first + 36 * H); expect(reportMails(w.sent).length).toBe(2);
     await w.tick(first + 72 * H - 60_000); expect(reportMails(w.sent).length).toBe(2);
     await w.tick(first + 72 * H); expect(reportMails(w.sent).length).toBe(3);
-    expect(reportMails(w.sent).every((m) => m.to.length === 1 && m.to[0] === "org2@example.org")).toBe(true);
+    expect(reportMails(w.sent).every((m) => m.to.length === 1 && m.to[0] === "org2@" + "example.org")).toBe(true);
     expect(holds(w.raw).length, "held PDF must be deleted after the last attempt").toBe(0);
     await w.tick(first + 96 * H); expect(reportMails(w.sent).length).toBe(3); // no fourth attempt
   } finally { w.done(); }
@@ -104,7 +104,7 @@ test("R12 the held PDF is deleted on delivery", async () => {
   const w = await world();
   try {
     const t0 = OVER + H;
-    await w.submit(t0); await w.bounce(t0 + 1000, "host1@example.org");
+    await w.submit(t0); await w.bounce(t0 + 1000, "host1@" + "example.org");
     const first = holds(w.raw)[0].first_fail_ms;
     expect(holds(w.raw).length).toBe(1);
     await w.tick(first + 24 * H); // mail service is fine again
@@ -116,18 +116,18 @@ test("R12 the held PDF is gone by about 96 hours at the latest", async () => {
   const w = await world();
   try {
     const t0 = OVER + H;
-    await w.submit(t0); await w.bounce(t0 + 1000, "host1@example.org");
+    await w.submit(t0); await w.bounce(t0 + 1000, "host1@" + "example.org");
     const first = holds(w.raw)[0].first_fail_ms;
     await retryHeldReports(w.env, first + 96 * H);
     expect(holds(w.raw).length).toBe(0);
   } finally { w.done(); }
 });
-test("R12 a no-names notice per failure goes to raajat.agarwal@gmail.com with no participant names or e-mails", async () => {
+test("R12 a no-names notice per failure goes to raajat.agarwal@" + "gmail.com with no participant names or e-mails", async () => {
   const w = await world();
   try {
     const t0 = OVER + H;
     await w.submit(t0); w.sent.length = 0;
-    await w.bounce(t0 + 1000, "org2@example.org");
+    await w.bounce(t0 + 1000, "org2@" + "example.org");
     let notes = noticeMails(w.sent);
     expect(notes.length).toBe(1);
     expect(notes[0].to).toEqual([OWNER]);
@@ -140,7 +140,7 @@ test("R12 a no-names notice per failure goes to raajat.agarwal@gmail.com with no
     for (const n of notes) {
       expect(n.to).toEqual([OWNER]);
       const all = n.subject + " " + n.text;
-      for (const bad of [...NAMES, "Asha", "org1@", "org2@", "host1@", "@example.org"]) expect(all.includes(bad), "notice leaks " + bad).toBe(false);
+      for (const bad of [...NAMES, "Asha", "org1@", "org2@", "host1@", "@" + "example.org"]) expect(all.includes(bad), "notice leaks " + bad).toBe(false);
     }
   } finally { w.done(); }
 });

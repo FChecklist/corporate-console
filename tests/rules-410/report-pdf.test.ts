@@ -4,9 +4,9 @@ import { buildReportPdf, reportProblems, istTime, type GameReport } from "../../
 
 const T0 = Date.UTC(2026, 9, 30, 6, 0, 0);
 const mk = (over: Partial<GameReport> = {}, id = "tambola"): GameReport => ({
-  v: 1, game: { id, name: "Corporate " + id }, gameId: "G1", organizers: [{ email: "o@example.org" }], hosts: [{ email: "h@example.org" }],
+  v: 1, game: { id, name: "Corporate " + id }, gameId: "G1", organizers: [{ email: "demo102@demo-test.invalid" }], hosts: [{ email: "demo103@demo-test.invalid" }],
   startMs: T0, endMs: T0 + 3600_000, gameOverMs: T0 + 3600_000,
-  winners: [{ prize: "Full House", name: "Asha Rao", empId: "E1", email: "asha@example.org", mobile: "9000000001", chain: "Host Ravi", tie: true }],
+  winners: [{ prize: "Full House", name: "Asha Rao", empId: "E1", email: "demo1@demo-test.invalid", mobile: "9000000001", chain: "Host Ravi", tie: true }],
   stats: { invited: 100000, joined: 100000, rounds: 3 }, played: { settings: [["Cap", "100000"]] },
   log: [{ atMs: T0 + 1000, text: "Game started" }, { atMs: T0 + 2000, text: "Number 7 called" }], ...over });
 const text = (pdf: Uint8Array) => new TextDecoder("latin1").decode(pdf);
@@ -30,7 +30,7 @@ test("R11 sections are in the fixed order: game info, winners, statistics, how p
 test("R11 winners in full: name, employee ID, e-mail, mobile, who invited them, prize, tie yes/no", () => {
   const s = strings(buildReportPdf(mk()));
   for (const h of ["Prize", "Winner", "Employee ID", "E-mail", "Mobile", "Who brought them in", "Tie"]) expect(s, h).toContain(h);
-  for (const v of ["Full House", "Asha Rao", "E1", "asha@example.org", "9000000001", "Host Ravi", "Yes"]) expect(s.some((x) => x.includes(v)), v).toBe(true);
+  for (const v of ["Full House", "Asha Rao", "E1", "demo1@demo-test.invalid", "9000000001", "Host Ravi", "Yes"]) expect(s.some((x) => x.includes(v)), v).toBe(true);
   expect(strings(buildReportPdf(mk({ winners: [{ prize: "P", tie: false }] }))).includes("No")).toBe(true);
 });
 test("R11 elaborate statistics are drawn", () => {
