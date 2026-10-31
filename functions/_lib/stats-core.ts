@@ -59,7 +59,7 @@ async function counts(env: Env, from: string, to: string) {
 }
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-export async function handleStats(req: Request, env: Env, now = Date.now()): Promise<Response> {
+export async function handleStats(req: Request, env: Env, now = Date.now(), doFetch: typeof fetch = fetch): Promise<Response> {
   const url = new URL(req.url), path = url.pathname.replace(/\/+$/, "");
   if (path === "/stats/e") {
     const h = cors(env, req);
@@ -85,6 +85,15 @@ export async function handleStats(req: Request, env: Env, now = Date.now()): Pro
     for (const r of rows) { const g = (games[r.game] ||= {}); g[r.event] = (g[r.event] || 0) + r.visits; }
     return json(200, { ok: true, from, to, steps: FUNNEL_EVENTS, games, rows });
   }
+  if (path === "/stats/games" || path === "/stats/games.csv") {
+    if (req.method !== "GET") return json(405, { ok: false });
+    if (!ownerOk(env, req)) return json(401, { ok: false, error: "key" });
+    const to = DAY.test(url.searchParams.get("to") || "") ? url.searchParams.get("to")! : istDay(now);
+    const from = DAY.test(url.searchParams.get("from") || "") ? url.searchParams.get("from")! : istDay(new Date(to + "T00:00:00Z").getTime() - 29 * DAY_MS);
+    const report = await gamesFunnel(env, from, to, doFetch);
+    if (path === "/stats/games.csv") return new Response(funnelCsv(report), { status: 200, headers: { "content-type": "text/csv; charset=utf-8", "cache-control": "no-store", "content-disposition": 'attachment; filename="funnel-games.csv"' } });
+    return json(200, { ok: true, ...report });
+  }
   return json(404, { ok: false });
 }
 
@@ -94,4 +103,65 @@ export async function lazyStatsPurge(env: Env, now: number) {
   if (now - lastPurge < DAY_MS) return;
   lastPurge = now;
   try { await ensureStatsTable(env); await tables(env).prepare("DELETE FROM funnel_hit WHERE day<?").bind(istDay(now - KEEP_DAYS * DAY_MS)).run(); } catch { /* try again tomorrow */ }
+}
+
+/** the thirteen steps the owner sees, in order (corporate-game-core funnel.ts names) */
+export const STEPS = FUNNEL_EVENTS;
+/** a game that names the payment steps the short way (Tambola: pay_started) is read with the core names */
+const ALIAS: Record<string, string> = { pay_page_reached: "payment_page_reached", pay_page_opened: "payment_page_opened", pay_link_copied: "payment_link_copied", pay_started: "payment_started", pay_succeeded: "payment_succeeded", pay_failed: "payment_failed" };
+const stepName = (s: unknown) => { const n = ALIAS[String(s)] || String(s); return (STEPS as readonly string[]).includes(n) ? n : null; };
+const countsOf = (rows: unknown): Record<string, number> | null => {
+  if (!Array.isArray(rows)) return null;
+  const o: Record<string, number> = {};
+  for (const r of rows) { const n = stepName((r as any)?.step); const c = (r as any)?.count; if (n && Number.isFinite(c) && c >= 0) o[n] = Math.floor(c); }
+  return o;
+};
+export type GameFunnel = { game: string; state: "connected" | "console" | "not-connected"; total: Record<string, number>; days: { day: string; counts: Record<string, number> }[] };
+
+/** a game's own owner funnel answer ({total:[{step,count}], days:[{period, rows}]}) in the console's shape, or null when it is not that shape */
+export function readGameFunnel(j: any): { total: Record<string, number>; days: { day: string; counts: Record<string, number> }[] } | null {
+  const total = countsOf(j?.total);
+  if (!total || !Array.isArray(j?.days)) return null;
+  const days = j.days.map((d: any) => ({ day: String(d?.period || ""), counts: countsOf(d?.rows) })).filter((d: any) => DAY.test(d.day) && d.counts);
+  return { total, days };
+}
+
+/** for each game: its own owner funnel route when it has one and a key is set, else the steps the console received, else not connected yet (never an error) */
+export async function gamesFunnel(env: Env, from: string, to: string, doFetch: typeof fetch) {
+  let origins: Record<string, string> = {}, keys: Record<string, string> = {};
+  try { origins = JSON.parse(env.GAME_ORIGINS || "{}"); } catch { /* none */ }
+  try { keys = JSON.parse(env.FUNNEL_KEYS || "{}"); } catch { /* none */ }
+  const mine = await counts(env, from, to);
+  const games: GameFunnel[] = [];
+  for (const id of Object.keys(origins)) {
+    let got: ReturnType<typeof readGameFunnel> = null;
+    if (typeof keys[id] === "string" && keys[id]) {
+      try {
+        const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 8000);
+        try {
+          const r = await doFetch(`${origins[id]}/api/owner/funnel?from=${from}&to=${to}`, { headers: { "x-organizer": keys[id] }, signal: ctl.signal });
+          if (r.ok) got = readGameFunnel(await r.json());
+        } finally { clearTimeout(t); }
+      } catch { /* not connected yet */ }
+    }
+    if (got) { games.push({ game: id, state: "connected", ...got }); continue; }
+    const rows = mine.filter((r) => r.game === id);
+    if (rows.length) {
+      const total: Record<string, number> = {}, byDay = new Map<string, Record<string, number>>();
+      for (const r of rows) { total[r.event] = (total[r.event] || 0) + r.visits; const d = byDay.get(r.day) || {}; d[r.event] = r.visits; byDay.set(r.day, d); }
+      games.push({ game: id, state: "console", total, days: [...byDay.entries()].map(([day, c]) => ({ day, counts: c })) });
+    } else games.push({ game: id, state: "not-connected", total: {}, days: [] });
+  }
+  return { from, to, steps: [...STEPS], games };
+}
+
+/** day by day and in total, one line per game, day and step; no personal details exist in these numbers */
+export function funnelCsv(r: { games: GameFunnel[] }): string {
+  const L = ["game,state,period,step,count"];
+  for (const g of r.games) {
+    if (g.state === "not-connected") { L.push(`${g.game},not connected yet,,,`); continue; }
+    for (const s of STEPS) L.push(`${g.game},${g.state},all,${s},${g.total[s] ?? 0}`);
+    for (const d of g.days) for (const s of STEPS) L.push(`${g.game},${g.state},${d.day},${s},${d.counts[s] ?? 0}`);
+  }
+  return L.join("\n") + "\n";
 }

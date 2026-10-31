@@ -10,7 +10,7 @@ database_id = "d5f65919-d99f-4813-8420-aa976b08e36f"
 
 [vars]
 CONSOLE_ORIGIN = "https://corporate-console.pages.dev"
-GAME_ORIGINS = '{"tambola":"https://housie.corporatetambola.com","bingo":"https://bingo.corporatetambola.com","tictactoe":"https://tictactoe.corporatetambola.com","snakesladders":"https://snakes.corporatetambola.com","luckbychance":"https://luck.corporatetambola.com","luckydraw":"https://lucky.corporatetambola.com"}'
+GAME_ORIGINS = '{"tambola":"https://housie.corporatetambola.com","bingo":"https://bingo.corporatetambola.com","tictactoe":"https://tictactoe.corporatetambola.com","snakesladders":"https://snakes.corporatetambola.com","luckbychance":"https://luck.corporatetambola.com","luckydraw":"https://luckydraw.corporatetambola.com"}'
 # THE ONE LINE: "" = the console has its own database. If the account has no free database left, point "DB" above at an existing database,
 # set a prefix such as "con_" here AND in apps/cron/wrangler.toml, and apply the output of `bun tools/prefix-migration.mjs con_`.
 TABLE_PREFIX = ""

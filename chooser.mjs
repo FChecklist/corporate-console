@@ -47,6 +47,7 @@ export function chooserHtml(cfg, env) {
 <link rel="stylesheet" href="/core/tokens.css">
 <link rel="stylesheet" href="/core/chooser.css">
 <link rel="stylesheet" href="/games/games.css">
+<script type="module" src="/core/page-version.js"></script>
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
 </head>
 <body>

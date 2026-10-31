@@ -9,7 +9,7 @@ export const CLOSE_WORDS = "Close my account removes your e-mail from the consol
 /** one plain table: what is kept, and for how long (only the periods the owner has decided; each game states its exact player-data timing on its own pages) */
 export const KEPT = [
   ["Your sign-in e-mail (console)", "Until 365 days after you last signed in or took part in a game, then deleted."],
-  ["Players' personal data in a game", "Erased after the game. Each game states the exact time on its own pages."],
+  ["Players' personal data in a game", "Auto-deleted after the game. Each game states the exact time on its own pages."],
   ["Winners and the game log (seat numbers only)", "365 days."],
   ["Invoices and legal records", "For the time the law requires. They are not deleted when you close the account."],
 ];

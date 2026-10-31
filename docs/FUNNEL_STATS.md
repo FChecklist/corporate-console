@@ -5,3 +5,6 @@ Every game site and the home page report steps with `makeReporter` of corporate-
 - **Read (owner only):** `GET /stats/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` (JSON, visits per step per game) and `GET /stats/csv` (day,game,event,visits). Header `x-owner-key: <STATS_OWNER_KEY>`. Days are IST days; the default range is the last 30 days. Wrong or missing key: 401.
 - **Keep:** 400 days, then rows are deleted.
 - **Chooser:** `/games/` is the public games page (live games, one Create a game button each into the console create screen with that game marked, and an Open button to the game's own site). The home page links to it. `/robots.txt` and `/sitemap.xml` are built from `config/games.json`.
+
+## The owner page: `/owner-funnel/`
+Owner key only (`STATS_OWNER_KEY`, typed into the page, never stored). Shows, per game, the 13 steps in total and day by day, and a CSV download (`/stats/games` JSON, `/stats/games.csv`). For each game the console reads the game's own `GET <game>/api/owner/funnel?from&to` (header `x-organizer: <key from FUNNEL_KEYS>`) when the game has the route (Tambola 35efebd), reading `total` and `days` and the short payment names (`pay_started` is read as `payment_started`). Without a key or route it shows the steps the sites posted to `/stats/e`, and if there are none, "Not connected yet".

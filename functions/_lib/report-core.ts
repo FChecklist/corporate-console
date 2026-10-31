@@ -118,7 +118,7 @@ export async function handleReport(req: Request, env: Env, now: number): Promise
   if (bad.length) return fail(400, "invalid", bad.join(" "));
   if (now < r.gameOverMs - 5 * 60_000) return fail(409, "early", "The game is not over yet.");
   const late = now - r.gameOverMs > SEND_WINDOW_MS; // past the 3-hour target: it still goes out (a refused report is a lost report), and is logged as late
-  if (now - r.gameOverMs > SEND_LAST_MS) return fail(409, "too_late", "The game data has been erased, so the report can no longer be made.");
+  if (now - r.gameOverMs > SEND_LAST_MS) return fail(409, "too_late", "The game data has been auto-deleted, so the report can no longer be made.");
   if (late) console.log(`report late: game ${r.gameId}, ${Math.round((now - r.gameOverMs) / 60_000)} minutes after game over`); // no names, no addresses
 
   const pdf = buildReportPdf(r, now), pdfB64 = b64(pdf), to = recipientsOf(r);

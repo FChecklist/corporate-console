@@ -10,7 +10,7 @@ const answer = (map: Record<string, any>) => async (url: string) => {
   return { ok: m.status ? m.status < 400 : true, status: m.status || 200, json: async () => m.body } as any;
 };
 const live = (playing: number, soon: number, extra: any = {}) => ({ body: { ok: true, game: "x", playing, startingWithin60: soon, ...extra } });
-const ALL = { "https://housie.corporatetambola.com": live(0, 0), "https://bingo.corporatetambola.com": live(0, 0), "https://tictactoe.corporatetambola.com": live(0, 0, { tournamentsRunning: 0 }), "https://snakes.corporatetambola.com": live(0, 0), "https://luck.corporatetambola.com": live(0, 0), "https://lucky.corporatetambola.com": live(0, 0) };
+const ALL = { "https://housie.corporatetambola.com": live(0, 0), "https://bingo.corporatetambola.com": live(0, 0), "https://tictactoe.corporatetambola.com": live(0, 0, { tournamentsRunning: 0 }), "https://snakes.corporatetambola.com": live(0, 0), "https://luck.corporatetambola.com": live(0, 0), "https://luckydraw.corporatetambola.com": live(0, 0) };
 
 test("guard: all six quiet = exit 0", async () => {
   const r = await guard({ fetchFn: answer(ALL) });

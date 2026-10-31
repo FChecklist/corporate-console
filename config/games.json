@@ -136,11 +136,11 @@
    "name": "Corporate Snakes and Ladders",
    "accent": "#A9741F",
    "freeCap": 10,
-   "ready": false,
+   "ready": true,
    "live": "https://snakes.corporatetambola.com",
    "preview": "https://corporate-snakes-and-ladders.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "opening",
+   "status": "live",
    "labels": [
     "Elimination"
    ],
@@ -176,11 +176,11 @@
    "name": "Corporate Luck by Chance",
    "accent": "#6B3FA0",
    "freeCap": 10,
-   "ready": false,
+   "ready": true,
    "live": "https://luck.corporatetambola.com",
    "preview": "https://corporate-luck-by-chance.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "opening",
+   "status": "live",
    "labels": [
     "Elimination"
    ],
@@ -216,11 +216,11 @@
    "name": "Corporate Lucky Draw",
    "accent": "#C2570C",
    "freeCap": 10,
-   "ready": false,
-   "live": "https://lucky.corporatetambola.com",
+   "ready": true,
+   "live": "https://luckydraw.corporatetambola.com",
    "preview": "https://corporate-lucky-draw.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "planned",
+   "status": "live",
    "labels": [
     "Lucky Draw"
    ],

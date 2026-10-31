@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync, existsSync } fr
 import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { versionRefs } from "./tools/cache-bust.mjs";
 import { chooserHtml, gamesCss, robotsTxt, sitemapXml } from "./chooser.mjs";
 
 const ROOT = new URL("./", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -119,6 +120,7 @@ export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.
   if (problems.length) throw new Error("the generated _headers breaks a rule: " + problems.join("; "));
   writeFileSync(join(out, "_headers"), headers);
   writeFileSync(join(out, "version.json"), JSON.stringify({ version, releasedAt, releasedAtIST: releasedAt ? istText(releasedAt) : "", commit, env, consoleVersion: version, builtAt: new Date().toISOString() }));
+  if (/^[0-9a-f]{7,40}$/.test(commit)) versionRefs(out, commit); // every script and stylesheet address in the shipped pages carries ?v=<commit> (cache safety, 31 Oct 2026)
   return { out, headers };
 }
 

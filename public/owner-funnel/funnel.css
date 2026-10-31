@@ -1,0 +1,11 @@
+.fun .ctl { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin: 0 0 12px; }
+.fun label { display: grid; gap: 4px; color: var(--ink2); }
+.fun input { min-height: var(--tap); padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); }
+.fun button.btn { cursor: pointer; background: transparent; font: inherit; font-weight: 600; }
+.fun button.btn.main { background: var(--btn); color: #fff; }
+.fun section { background: var(--card); border: 1px solid var(--line); border-top: 6px solid var(--accent, var(--blue)); border-radius: var(--radius); padding: 14px; margin: 0 0 14px; overflow-x: auto; }
+.fun h2 { margin: 0 0 6px; font-size: 1.1rem; }
+.fun table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+.fun th, .fun td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.fun th:first-child, .fun td:first-child { text-align: left; }
+.fun .note { color: var(--muted); margin: 0 0 8px; }
