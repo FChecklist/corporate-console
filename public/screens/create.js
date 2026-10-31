@@ -15,7 +15,7 @@ const WORDS = {
   luckydraw: "A draw for gifts among your people.",
 };
 
-export async function renderCreate(outlet, ctx) {
+export async function renderCreate(outlet, ctx, opts = {}) {
   const { api, names, colors } = ctx;
   clear(outlet);
   const prices = {};
@@ -43,6 +43,8 @@ export async function renderCreate(outlet, ctx) {
     prices[g.id] = price;
     tiles.append(withColor(el("article", { class: "tile", dataset: { game: g.id } }, el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), el("ul", { class: "facts", dataset: { facts: g.id } }, factLines(g).map((l) => el("li", { text: l }))), price, el("div", { class: "btns" }, b, free)), colors[g.id] || "#0B3D91"));
   }
+  const picked = opts.pick && tiles.querySelector(`[data-game="${String(opts.pick).replace(/[^a-z0-9_-]/gi, "")}"]`); // a link from the games chooser: that game is marked and its Start button is ready
+  if (picked) { picked.classList.add("picked"); const s = picked.querySelector("button"); if (s && s.focus) s.focus(); }
   const caps = await api.capabilities().catch(() => []);
   for (const c of caps) if (c.ok && prices[c.game]) prices[c.game].textContent = priceLine(c.caps);
 }

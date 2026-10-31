@@ -21,6 +21,8 @@ export interface Env {
   BOUNCE_TOKEN?: string; // the mail service's bounce notice must carry this token
   OWNER_NOTICE_EMAIL?: string; // where the no-names notice goes when a report e-mail fails
   TICK_SECRET?: string; // the shared secret of /report/tick (set in the Pages settings by the owner, never in the repo)
+  STATS_OWNER_KEY?: string; // the owner key that reads /stats/summary and /stats/csv (Pages settings, never in the repo)
+  HOME_ORIGIN?: string; // the home page that may report funnel steps, default https://home.corporatetambola.com
   BOUNCE_ADDRESS?: string; // return-path / notice address, default hello@corporatetambola.com
 }
 

@@ -1,0 +1,7 @@
+# Funnel statistics (all sites into the console)
+Every game site and the home page report steps with `makeReporter` of corporate-game-core `funnel.ts` (events: viewed, size_chosen, signup_started, game_created, game_published, payment_page_reached, payment_page_opened, payment_link_copied, payment_started, payment_succeeded, payment_failed, game_started, game_completed). Global Privacy Control is respected by the reporter itself.
+
+- **Send:** `POST https://<console>/stats/e` with the JSON the reporter makes (`{event, at, visit, game, size?, mode?}`). The console accepts it from the six game origins, the console and the home page only (CORS), answers 202, and keeps one row per visit, day, game and step. A repeat is ignored. Nothing personal is stored: no address, no IP, no cookie.
+- **Read (owner only):** `GET /stats/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` (JSON, visits per step per game) and `GET /stats/csv` (day,game,event,visits). Header `x-owner-key: <STATS_OWNER_KEY>`. Days are IST days; the default range is the last 30 days. Wrong or missing key: 401.
+- **Keep:** 400 days, then rows are deleted.
+- **Chooser:** `/games/` is the public games page (live games, one Create a game button each into the console create screen with that game marked, and an Open button to the game's own site). The home page links to it. `/robots.txt` and `/sitemap.xml` are built from `config/games.json`.

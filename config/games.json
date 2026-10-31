@@ -97,11 +97,11 @@
    "name": "Corporate Tic Tac Toe",
    "accent": "#1B6B4A",
    "freeCap": 10,
-   "ready": false,
+   "ready": true,
    "live": "https://tictactoe.corporatetambola.com",
    "preview": "https://corporate-tic-tac-toe.pages.dev",
    "test": "http://127.0.0.1:9",
-   "status": "opening",
+   "status": "live",
    "labels": [
     "Elimination"
    ],

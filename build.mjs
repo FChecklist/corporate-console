@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync, existsSync } fr
 import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { chooserHtml, gamesCss, robotsTxt, sitemapXml } from "./chooser.mjs";
 
 const ROOT = new URL("./", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
@@ -70,6 +71,7 @@ export function headersFile(cfg, env) {
     "/gamesbar.css", "  Cache-Control: no-cache", "",
     "/core/*", "  Cache-Control: no-cache", "",
     "/screens/*", "  Cache-Control: no-cache", "",
+    "/games/*", "  Cache-Control: no-cache", "",
     "/version.json", "  Cache-Control: no-store", "",
     "/sw-config.json", "  Cache-Control: no-store", "",
   ].join("\n");
@@ -107,6 +109,11 @@ export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.
   const off = conformance(cfg, core);
   if (off.length) throw new Error("config/games.json and the vendored game-core manifests disagree: " + off.join("; "));
   writeFileSync(join(out, "core/games.config.js"), gamesConfigJs(cfg, env, core));
+  mkdirSync(join(out, "games"), { recursive: true });
+  writeFileSync(join(out, "games/index.html"), chooserHtml(withCore(cfg, core), env));
+  writeFileSync(join(out, "games/games.css"), gamesCss(cfg));
+  writeFileSync(join(out, "robots.txt"), robotsTxt(cfg, env));
+  writeFileSync(join(out, "sitemap.xml"), sitemapXml(cfg, env));
   const headers = headersFile(cfg, env);
   const problems = lintHeaders(headers);
   if (problems.length) throw new Error("the generated _headers breaks a rule: " + problems.join("; "));

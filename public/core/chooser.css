@@ -1,0 +1,15 @@
+/* The public games chooser (/games/). Same colours and 44 px taps as the console; one accent per game comes from games.css. */
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+.chooser { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+.chooser h1 { font-family: var(--serif); color: var(--navy); font-size: 1.8rem; margin: 0 0 8px; }
+@media (prefers-color-scheme: dark) { .chooser h1 { color: var(--ink); } }
+.lead { color: var(--ink2); margin: 0 0 20px; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.gcard { background: var(--card); border: 1px solid var(--line); border-top: 6px solid var(--accent, var(--blue)); border-radius: var(--radius); padding: 16px; }
+.gcard h2 { margin: 0 0 8px; font-size: 1.1rem; }
+.gcard ul { margin: 0 0 12px; padding-left: 18px; color: var(--ink2); }
+.gcard.soon { opacity: .75; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.btn { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 16px; border-radius: 10px; border: 1px solid var(--btn); color: var(--btn); text-decoration: none; font-weight: 600; }
+.btn.main { background: var(--btn); color: #fff; }
+.line { color: var(--muted); margin: 20px 0 0; }
