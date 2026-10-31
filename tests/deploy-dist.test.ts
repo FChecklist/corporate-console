@@ -1,7 +1,8 @@
 // FALSIFIED BY: build-commit-dev, dist-commit-ignored, dist-deploy-age-ignored, dist-deploy-head-ignored, stamp-changes-version, dist-stale-passes, dist-version-ignored, secrets-pepper-short, secrets-key-unusable, runbook-step2-command-missing
 // The deploy-day guards (2026-10-30): dist/ must be fresh and carry the version (check-dist), the two secrets that can be made are made well (make-secrets), and step 2 of the runbook is a copy-paste list.
-import { test, expect } from "bun:test";
+import { test, expect, setDefaultTimeout } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, existsSync, readFileSync } from "node:fs";
+setDefaultTimeout(30_000); // the guards run the real build and git; a loaded or slow machine needs more than the 5 s default
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
