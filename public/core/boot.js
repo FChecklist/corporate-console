@@ -32,6 +32,8 @@ let current = null, last = "", mountedOnce = false;
 const names = Object.fromEntries(GAMES.map((g) => [g.id, g.name])), colors = Object.fromEntries(GAMES.map((g) => [g.id, g.accent]));
 export const app = { api: null, signedIn: false, email: null };
 
+// a link such as /create?game=bingo (from the home page) opens the create screen with that game marked
+{ const q = new URLSearchParams(location.search).get("game"); if (q && /^[a-z0-9_-]{1,30}$/i.test(q) && !location.hash) history.replaceState(null, "", "/#/create/" + q.toLowerCase()); }
 const routeOf = () => location.hash.replace(/^#\/?/, "") || "home";
 
 async function screenFor(route, outlet, copy) {

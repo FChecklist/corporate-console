@@ -182,7 +182,7 @@ test("Create: a Start button only on games that are live; 'Opening soon' (test m
     expect(soon.querySelector(".soonword")!.textContent).toBe("Coming soon");
     expect(soon.querySelector("a")).toBe(null);
     expect(soon.querySelector("button")).toBe(null);
-    for (const t of tiles.slice(0, 5)) expect([...t.querySelectorAll("button")].map((b: any) => b.textContent)).toEqual(["Start", "Try a free game"]);
+    for (const t of tiles.slice(0, 5)) { const names = [...t.querySelectorAll("button")].map((b: any) => b.textContent); expect(names.at(-1)).toBe("Start"); expect(names.length === 2 ? /^Up to d+ people - free demo$/.test(names[0]) : true).toBe(true); expect(t.querySelectorAll("button").length).toBeLessThanOrEqual(2); }
     // games still in test mode: "Opening soon", nothing to press
     const o2 = fresh();
     const games2 = w.games.map((g: any) => (["tictactoe", "snakesladders", "luckbychance"].includes(g.id) ? { ...g, ready: false, status: "opening" } : g));
@@ -359,5 +359,20 @@ test("Billing: an invoice link that is not an invoice path of the game's own add
     const o = fresh();
     await renderBilling(o, ctxOf(w));
     expect([...o.querySelectorAll("#bill-paid a")].some((a: any) => /evil/.test(a.getAttribute("href")))).toBe(false);
+  } finally { w.stop(); }
+});
+
+test("Create: the free Demo (up to 10 people) comes first on a game that declares a rehearsal, labelled Demo, and hands over with free:true", async () => {
+  const w = await world({ slowMs: 0 }); spies();
+  try {
+    await w.signIn(); await w.api.connect();
+    const o = fresh();
+    await renderCreate(o, ctxOf(w, { games: w.games.map((g: any) => ({ ...g, rehearsalMax: 10 })) }));
+    const t = [...o.querySelectorAll(".tile")].find((x: any) => x.querySelector("[data-demo]")) as any;
+    expect(t).toBeTruthy();
+    const d = t.querySelector("[data-demo]");
+    expect(d.textContent).toMatch(/^Demo Up to \d+ people - free demo$/);
+    expect(t.querySelector("button")!.textContent).toMatch(/free demo$/); // the first button on the tile
+    expect(t.querySelector(".btns")!.textContent).toBe("Start");
   } finally { w.stop(); }
 });

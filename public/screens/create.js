@@ -4,7 +4,7 @@ import { el, clear } from "../core/dom.js";
 import { withColor, button, toast } from "./ui.js";
 import { priceLine } from "../core/prices.js";
 import { openError } from "../core/errors.js";
-import { factLines } from "../core/features.js";
+import { factLines, has } from "../core/features.js";
 
 const WORDS = {
   tambola: "Numbers are called, players mark their tickets.",
@@ -39,9 +39,11 @@ export async function renderCreate(outlet, ctx, opts = {}) {
     const price = el("p", { class: "hintline", dataset: { price: g.id } });
     const b = button("Start", { main: true, sm: true, label: `Start a new ${title} game` });
     b.addEventListener("click", () => start(g.id, b));
-    const free = button("Try a free game", { sm: true, label: `Try a free ${title} game for up to 10 people`, onclick: () => start(g.id, free, { free: true }) });
+    // the size step starts with the free Demo (up to 10 people, no paid pack); the game itself counts the 3 a day and refuses the rest. Shown only where the game declares a rehearsal.
+    const demo = has(g, "rehearsal") ? button(`Up to ${g.rehearsalMax} people - free demo`, { sm: true, label: `Free demo of ${title} for up to ${g.rehearsalMax} people`, onclick: () => start(g.id, demo, { free: true }) }) : null;
+    const sizes = demo ? [el("p", { class: "hintline", dataset: { demo: g.id } }, el("span", { class: "chip", text: "Demo" }), " ", demo)] : [];
     prices[g.id] = price;
-    tiles.append(withColor(el("article", { class: "tile", dataset: { game: g.id } }, el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), el("ul", { class: "facts", dataset: { facts: g.id } }, factLines(g).map((l) => el("li", { text: l }))), price, el("div", { class: "btns" }, b, free)), colors[g.id] || "#0B3D91"));
+    tiles.append(withColor(el("article", { class: "tile", dataset: { game: g.id } }, el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), el("ul", { class: "facts", dataset: { facts: g.id } }, factLines(g).map((l) => el("li", { text: l }))), ...sizes, price, el("div", { class: "btns" }, b)), colors[g.id] || "#0B3D91"));
   }
   const picked = opts.pick && tiles.querySelector(`[data-game="${String(opts.pick).replace(/[^a-z0-9_-]/gi, "")}"]`); // a link from the games chooser: that game is marked and its Start button is ready
   if (picked) { picked.classList.add("picked"); const s = picked.querySelector("button"); if (s && s.focus) s.focus(); }
