@@ -117,7 +117,7 @@ export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.
   writeFileSync(join(out, "games/games.css"), gamesCss(cfg));
   writeFileSync(join(out, "robots.txt"), robotsTxt(cfg, env));
   writeFileSync(join(out, "sitemap.xml"), sitemapXml(cfg, env));
-  hideFromSearch(out); // owner order 1 Nov 2026: noindex meta on every page, robots.txt Disallow all, no sitemap; links and routes keep working
+  hideFromSearch(out); // 1 Nov 2026: noindex meta on every page, robots.txt Disallow all, no sitemap; links and routes keep working
   const headers = headersFile(cfg, env);
   const problems = lintHeaders(headers);
   if (problems.length) throw new Error("the generated _headers breaks a rule: " + problems.join("; "));
