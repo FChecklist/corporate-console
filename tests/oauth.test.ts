@@ -14,12 +14,12 @@ async function token(claims: any, key = kp.privateKey, kid = "k1") {
   const h = b64u(enc.encode(JSON.stringify({ alg: "RS256", kid }))), c = b64u(enc.encode(JSON.stringify(claims)));
   return `${h}.${c}.${b64u(new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, enc.encode(h + "." + c))))}`;
 }
-const g = (o: any = {}) => ({ iss: "https://accounts.google.com", aud: "gid", exp: NOW / 1000 + 600, nonce: "N", email: "a@acme.com", email_verified: true, ...o });
-const ms = (o: any = {}) => ({ iss: `https://login.microsoftonline.com/${TID}/v2.0`, tid: TID, aud: "mid", exp: NOW / 1000 + 600, nonce: "N", email: "a@acme.com", xms_edov: true, ...o });
+const g = (o: any = {}) => ({ iss: "https://accounts.google.com", aud: "gid", exp: NOW / 1000 + 600, nonce: "N", email: "demo1@demo-test.invalid", email_verified: true, ...o });
+const ms = (o: any = {}) => ({ iss: `https://login.microsoftonline.com/${TID}/v2.0`, tid: TID, aud: "mid", exp: NOW / 1000 + 600, nonce: "N", email: "demo1@demo-test.invalid", xms_edov: true, ...o });
 const chk = (p: any, t: string, clientId: string, nonce = "N") => verifyIdToken(p, t, { clientId, nonce, now: NOW, jwks });
 
-test("Google: a good token gives the e-mail", async () => { expect(await chk("google", await token(g()), "gid")).toEqual({ ok: true, email: "a@acme.com" }); });
-test("Microsoft: a good token with a confirmed e-mail domain gives the e-mail", async () => { expect(await chk("microsoft", await token(ms()), "mid")).toEqual({ ok: true, email: "a@acme.com" }); });
+test("Google: a good token gives the e-mail", async () => { expect(await chk("google", await token(g()), "gid")).toEqual({ ok: true, email: "demo1@demo-test.invalid" }); });
+test("Microsoft: a good token with a confirmed e-mail domain gives the e-mail", async () => { expect(await chk("microsoft", await token(ms()), "mid")).toEqual({ ok: true, email: "demo1@demo-test.invalid" }); });
 test("Microsoft personal accounts (Outlook, Hotmail) are accepted", async () => {
   const t = "9188040d-6c67-4c5b-b112-36a304b66dad";
   expect((await chk("microsoft", await token(ms({ tid: t, iss: `https://login.microsoftonline.com/${t}/v2.0`, xms_edov: undefined })), "mid")).ok).toBe(true);
@@ -37,7 +37,7 @@ test("a wrong issuer is refused", async () => {
 test("a token signed with another key, an unknown key id, or altered after signing is refused", async () => {
   expect(await chk("google", await token(g(), other.privateKey), "gid")).toEqual({ ok: false, reason: "signature" });
   expect(await chk("google", await token(g(), kp.privateKey, "nope"), "gid")).toEqual({ ok: false, reason: "key" });
-  const t = (await token(g())).split("."); t[1] = b64u(enc.encode(JSON.stringify(g({ email: "boss@acme.com" }))));
+  const t = (await token(g())).split("."); t[1] = b64u(enc.encode(JSON.stringify(g({ email: "demo3@demo-test.invalid" }))));
   expect(await chk("google", t.join("."), "gid")).toEqual({ ok: false, reason: "signature" });
 });
 test("a token with no e-mail, or an unsigned token (alg none), is refused", async () => {
@@ -84,7 +84,7 @@ async function runCallback(idClaims: any, mutate: (u: URL, cookie: string) => [s
 }
 test("callback: a verified e-mail signs in at once (no code step) and sends the PKCE verifier and secret, keeping nothing", async () => {
   const { r, emails, tokenCalls } = await runCallback({});
-  expect(emails).toEqual(["a@acme.com"]);
+  expect(emails).toEqual(["demo1@demo-test.invalid"]);
   expect(r.headers.get("location")).toBe("https://console.example/#/home");
   expect(r.headers.get("set-cookie")).toContain("cbsess=abc");
   expect(String(tokenCalls[0])).toContain("code_verifier=");
@@ -107,10 +107,10 @@ test("callback: a wrong state, a missing note or a declined sign-in does not sig
 
 test("scopes are only openid and email, Microsoft uses the multi-tenant endpoint, and a typed e-mail goes along as login_hint", async () => {
   const e = env({ MICROSOFT_CLIENT_ID: "mid", MICROSOFT_CLIENT_SECRET: "msec" });
-  const u = new URL((await handleOAuth(get("https://console.example/auth/oauth/start?p=microsoft&c=1&h=a%40acme.com"), e, NOW, async () => "")).headers.get("location")!);
+  const u = new URL((await handleOAuth(get("https://console.example/auth/oauth/start?p=microsoft&c=1&h=demo1%40demo-test.invalid"), e, NOW, async () => "")).headers.get("location")!);
   expect(u.pathname).toBe("/common/oauth2/v2.0/authorize");
   expect(u.searchParams.get("scope")).toBe("openid email");
-  expect(u.searchParams.get("login_hint")).toBe("a@acme.com");
+  expect(u.searchParams.get("login_hint")).toBe("demo1@demo-test.invalid");
 });
 test("every error a provider can return lands softly back on the sign-in with no provider text", async () => {
   for (const err of ["access_denied", "consent_required", "interaction_required", "admin_approval_required", "invalid_request", "server_error"]) {

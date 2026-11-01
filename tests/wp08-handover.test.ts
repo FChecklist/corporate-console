@@ -65,12 +65,12 @@ test("MC-11 Billing: Pay opens the game's payment step (target pay), not step on
   expect(seen[0].target).toBe("pay");
 });
 
-test("MC-29 Create: every open game also has 'Try a free game' (a new game with the free 10-person size chosen)", async () => {
+test("MC-29 Create: a game that has a rehearsal also offers the free Demo first (a new game with the free 10-person size chosen)", async () => {
   const seen: any[] = [];
   const api: any = { ready: [{ id: "bingo" }], capabilities: async () => [], startNew: async (g: string, o: any) => { seen.push([g, o]); return { ok: true, url: "https://bingo.test/signin.html?t=" + "0".repeat(48) + "&go=console&e=_new_&free=1" }; } };
   const o = fresh();
-  await renderCreate(o, { api, games: [{ id: "bingo", name: "Bingo", ready: true, status: "live" }, { id: "luckydraw", name: "Lucky Draw", ready: false, status: "planned" }], names: { bingo: "Bingo", luckydraw: "Lucky Draw" }, colors: {}, go: () => {} });
-  click(byText(o, "button", "Try a free game"));
+  await renderCreate(o, { api, games: [{ id: "bingo", name: "Bingo", ready: true, status: "live", rehearsalMax: 10 }, { id: "luckydraw", name: "Lucky Draw", ready: false, status: "planned" }], names: { bingo: "Bingo", luckydraw: "Lucky Draw" }, colors: {}, go: () => {} });
+  click(byText(o, "button", "Up to 10 people - free demo"));
   await until(() => seen.length === 1);
   expect(seen[0]).toEqual(["bingo", { free: true }]);
   expect(o.querySelector('[data-game="luckydraw"] button')).toBe(null); // and nothing on a game that is not open

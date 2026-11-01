@@ -39,9 +39,9 @@ test("Global Privacy Control, Do Not Track and x-test-run are answered but never
 test("nothing personal is kept: query dropped, referrer host only, e-mail-like and long numbers refused", () => {
   const r = cleanVisit({ ...page({ path: "/join?name=Ravi&mobile=9822233344#x", ref: "https://x.example/a/b?c=d" }) }, "", "IN", NOW)!;
   expect(r.path).toBe("/join"); expect(r.ref).toBe("x.example");
-  expect(cleanVisit(page({ path: "/u/raj@acme.com" }), "", "IN", NOW)!.path).toBe(null);
+  expect(cleanVisit(page({ path: "/u/demo2@demo-test.invalid" }), "", "IN", NOW)!.path).toBe(null);
   expect(cleanVisit(page({ path: "/p/9822233344" }), "", "IN", NOW)!.path).toBe(null);
-  expect(cleanVisit(page({ target: "raj@acme.com", kind: "click" }), "", "IN", NOW)!.target).toBe(null);
+  expect(cleanVisit(page({ target: "demo2@demo-test.invalid", kind: "click" }), "", "IN", NOW)!.target).toBe(null);
   expect(cleanVisit(page({ kind: "bogus" }), "", "IN", NOW)).toBe(null);
   expect(cleanVisit(page({ visit: "no" }), "", "IN", NOW)).toBe(null);
 });
