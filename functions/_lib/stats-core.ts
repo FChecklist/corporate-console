@@ -3,6 +3,7 @@
 // Only the owner key reads the numbers (summary as JSON, or CSV). Rows older than 400 days are deleted.
 import type { Env } from "./auth-core";
 import { tables } from "./tables";
+import { recordVisit, visitSummary, visitCsv, purgeVisits } from "./visits-core";
 
 /** the steps a site may report (corporate-game-core funnel.ts, FUNNEL_EVENTS) */
 export const FUNNEL_EVENTS = ["viewed", "size_chosen", "signup_started", "game_created", "game_published", "payment_page_reached", "payment_page_opened", "payment_link_copied", "payment_started", "payment_succeeded", "payment_failed", "game_started", "game_completed"] as const;
@@ -61,6 +62,21 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function handleStats(req: Request, env: Env, now = Date.now(), doFetch: typeof fetch = fetch): Promise<Response> {
   const url = new URL(req.url), path = url.pathname.replace(/\/+$/, "");
+  if (path === "/stats/v") {
+    const h = cors(env, req);
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: h });
+    if (req.method !== "POST") return json(405, { ok: false }, h);
+    const origin = req.headers.get("origin");
+    if (origin && !allowedOrigins(env).includes(origin)) return json(403, { ok: false }, h);
+    return recordVisit(req, env, now, h);
+  }
+  if (path === "/stats/visits" || path === "/stats/visits.csv") {
+    if (!ownerOk(env, req)) return json(401, { ok: false, error: "key" });
+    const from = url.searchParams.get("from") || istDay(now - 29 * DAY_MS), to = url.searchParams.get("to") || istDay(now);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return json(400, { ok: false, error: "date" });
+    const v = await visitSummary(env, from, to, now);
+    return path.endsWith(".csv") ? new Response(visitCsv(v), { headers: { "content-type": "text/csv; charset=utf-8", "cache-control": "no-store", "content-disposition": 'attachment; filename="visits.csv"' } }) : json(200, v);
+  }
   if (path === "/stats/e") {
     const h = cors(env, req);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: h });
@@ -103,7 +119,7 @@ let lastPurge = 0;
 export async function lazyStatsPurge(env: Env, now: number) {
   if (now - lastPurge < DAY_MS) return;
   lastPurge = now;
-  try { await ensureStatsTable(env); await tables(env).prepare("DELETE FROM funnel_hit WHERE day<?").bind(istDay(now - KEEP_DAYS * DAY_MS)).run(); } catch { /* try again tomorrow */ }
+  try { await ensureStatsTable(env); await tables(env).prepare("DELETE FROM funnel_hit WHERE day<?").bind(istDay(now - KEEP_DAYS * DAY_MS)).run(); await purgeVisits(env, now); } catch { /* try again tomorrow */ }
 }
 
 /** the thirteen steps the owner sees, in order (corporate-game-core funnel.ts names) */

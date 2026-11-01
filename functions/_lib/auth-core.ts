@@ -28,6 +28,7 @@ export interface Env {
   GOOGLE_CLIENT_ID?: string; GOOGLE_CLIENT_SECRET?: string; // "Continue with Google" appears only when both are set (Pages settings, never in the repo)
   MICROSOFT_CLIENT_ID?: string; MICROSOFT_CLIENT_SECRET?: string; // the same for "Continue with Microsoft"
   OAUTH_FETCH?: typeof fetch; // tests
+  VISITS_ON?: string; // "1" switches the visitor statistics on (off until the owner has audited them)
   BOUNCE_ADDRESS?: string; // return-path / notice address, default hello@corporatetambola.com
 }
 

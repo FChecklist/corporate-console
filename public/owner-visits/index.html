@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visitors</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/core/tokens.css">
+<link rel="stylesheet" href="/core/chooser.css">
+<link rel="stylesheet" href="/owner-visits/visits.css">
+<script type="module" src="/owner-visits/visits.js"></script>
+</head>
+<body>
+<main class="chooser fun">
+<h1>Visitors, all sites</h1>
+<p class="lead">Who is on the sites now, where they come from, which pages they read and for how long. Counts only: no names, no e-mails, no IDs. Owner key needed.</p>
+<form id="f" class="ctl">
+<label>Owner key <input id="key" type="password" autocomplete="off" required></label>
+<label>From <input id="from" type="date"></label>
+<label>To <input id="to" type="date"></label>
+<button class="btn main" type="submit">Show</button>
+<button class="btn" type="button" id="csv">Download CSV</button>
+</form>
+<p id="msg" class="line" role="status"></p>
+<div id="out"></div>
+</main>
+</body>
+</html>
