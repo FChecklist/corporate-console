@@ -105,3 +105,21 @@ test("callback: a wrong state, a missing note or a declined sign-in does not sig
   expect((await runCallback({}, (u, c) => { u.searchParams.delete("code"); u.searchParams.set("error", "access_denied"); return [u.toString(), c]; })).emails).toEqual([]);
   expect((await runCallback({}, (u, c) => [u.toString(), c.slice(0, -3) + "xyz"])).emails).toEqual([]); // the note was altered
 });
+
+test("scopes are only openid and email, Microsoft uses the multi-tenant endpoint, and a typed e-mail goes along as login_hint", async () => {
+  const e = env({ MICROSOFT_CLIENT_ID: "mid", MICROSOFT_CLIENT_SECRET: "msec" });
+  const u = new URL((await handleOAuth(get("https://console.example/auth/oauth/start?p=microsoft&c=1&h=a%40acme.com"), e, NOW, async () => "")).headers.get("location")!);
+  expect(u.pathname).toBe("/common/oauth2/v2.0/authorize");
+  expect(u.searchParams.get("scope")).toBe("openid email");
+  expect(u.searchParams.get("login_hint")).toBe("a@acme.com");
+});
+test("every error a provider can return lands softly back on the sign-in with no provider text", async () => {
+  for (const err of ["access_denied", "consent_required", "interaction_required", "admin_approval_required", "invalid_request", "server_error"]) {
+    const { r, emails } = await runCallback({}, (u, c) => { u.searchParams.delete("code"); u.searchParams.set("error", err); u.searchParams.set("error_description", "AADSTS90094 An administrator must grant permission"); return [u.toString(), c]; });
+    const loc = r.headers.get("location")!;
+    expect(emails).toEqual([]);
+    expect(loc.startsWith("https://console.example/?oauth=")).toBe(true);
+    expect(loc.toLowerCase()).not.toContain("administrator");
+    expect(loc).not.toContain("AADSTS");
+  }
+});

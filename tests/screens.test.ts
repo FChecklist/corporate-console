@@ -376,3 +376,9 @@ test("Create: the free Demo (up to 10 people) comes first on a game that declare
     expect(t.querySelector(".btns")!.textContent).toBe("Start");
   } finally { w.stop(); }
 });
+
+test("sign-in: a failed provider sign-in shows the soft line, with the e-mail field ready and the typed address back", async () => {
+  const { OAUTH_WORDS } = await import("../public/screens/signin.js");
+  for (const k of ["declined", "unverified", "retry", "wait", "off"]) expect(OAUTH_WORDS[k]).toBe("No problem - please use your e-mail below.");
+  for (const v of Object.values(OAUTH_WORDS) as string[]) expect(v.toLowerCase()).not.toContain("administrator");
+});

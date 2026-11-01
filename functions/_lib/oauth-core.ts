@@ -97,6 +97,8 @@ export async function handleOAuth(req: Request, env: OAuthEnv, now: number, fini
     const state = rand(24), nonce = rand(24), verifier = rand(48);
     const q = new URLSearchParams({ client_id: String(env[PROVIDERS[p].idKey]), redirect_uri: CALLBACK(env, p), response_type: "code", scope: PROVIDERS[p].scope, state, nonce, code_challenge: await sha256b64u(verifier), code_challenge_method: "S256", prompt: "select_account" });
     if (p === "microsoft") q.set("response_mode", "query");
+    const hint = url.searchParams.get("h") || "";
+    if (/^[^@\s]{1,64}@[^@\s]{1,255}\.[^@\s]{2,}$/.test(hint)) q.set("login_hint", hint); // saves retyping at the provider
     return redirect(PROVIDERS[p].auth + "?" + q, stateCookie(await sealState(env, { p, state, nonce, verifier, exp: now + STATE_TTL_MS }), STATE_TTL_MS / 1000));
   }
   const m = /^\/auth\/oauth\/callback\/(google|microsoft)$/.exec(path);
