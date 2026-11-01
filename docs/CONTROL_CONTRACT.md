@@ -47,3 +47,6 @@ Body: `{ "target": "new", "prefill": { settings, startMode, prizePlan, roles, lo
 Later handoffs for the same draft: `{ "eid", "target": "step-<n>" }` opens the game's step n (1 Game, 2 People, 3 Time, 4 Prizes, 5 Brand and Breaks, 6 Check and publish) and `{ "eid", "target": "publish" }` opens the last step (as today).
 
 The console's review screen shows each step as "Copied from <game>" with Change (opens that step in the new draft) and Publish (opens the last step). Steps the new game type does not have are skipped.
+
+## Demo handoff (owner rule, 1 Nov 2026)
+The console's "Up to 10 people - free demo" opens the game's first step with `free: true`. The game must treat it as the same flow as a real game: same steps and look; the payment step shows "Rs 0 - no payment needed" and passes by itself (no card, no payment row); the Rehearsal option is shown but disabled with the note "Available with a full game"; a "Demo" label; 3 a day per organizer and per IP; funnel events say demo; participant data is auto-deleted within 24 hours as for every game.
