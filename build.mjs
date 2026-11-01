@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { versionRefs } from "./tools/cache-bust.mjs";
+import { hideFromSearch, PRIVATE_ROBOTS_HEADER } from "./tools/private-site.mjs";
 import { chooserHtml, gamesCss, robotsTxt, sitemapXml } from "./chooser.mjs";
 
 const ROOT = new URL("./", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -65,7 +66,7 @@ export function headersFile(cfg, env) {
   ].join("; ");
   const common = ["  X-Content-Type-Options: nosniff", "  Referrer-Policy: no-referrer", "  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()", "  X-Frame-Options: DENY", `  Content-Security-Policy: ${csp}`];
   return [
-    "/*", ...common, "",
+    "/*", ...common, PRIVATE_ROBOTS_HEADER.trim().replace(/^/, "  "), "", // private site: never listed by a search engine (tools/private-site.mjs)
     "/auth/*", "  Cache-Control: no-store", "",
     "/sw.js", "  Cache-Control: no-cache", "",
     "/gamesbar.js", "  Cache-Control: no-cache", "",
@@ -115,6 +116,7 @@ export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.
   writeFileSync(join(out, "games/games.css"), gamesCss(cfg));
   writeFileSync(join(out, "robots.txt"), robotsTxt(cfg, env));
   writeFileSync(join(out, "sitemap.xml"), sitemapXml(cfg, env));
+  hideFromSearch(out); // owner order 1 Nov 2026: noindex meta on every page, robots.txt Disallow all, no sitemap; links and routes keep working
   const headers = headersFile(cfg, env);
   const problems = lintHeaders(headers);
   if (problems.length) throw new Error("the generated _headers breaks a rule: " + problems.join("; "));
