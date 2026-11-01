@@ -1,5 +1,6 @@
 // Owner rule 1 Nov 2026: no city, state or street address anywhere in what ships. Only "India".
-import { test, expect } from "bun:test";
+import { test, expect, setDefaultTimeout } from "bun:test";
+setDefaultTimeout(30_000); // it reads every shipped file
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";

@@ -3,6 +3,7 @@
 import type { D1 } from "../../packages/bridge/src/d1";
 import { tables } from "./tables";
 import { normEmail } from "../../packages/bridge/src/email";
+import { handleOAuth, providersOn } from "./oauth-core";
 import { signAssertion, b64uEncode, type Payload, type Act } from "../../packages/bridge/src/assertion";
 
 export interface Env {
@@ -24,6 +25,9 @@ export interface Env {
   STATS_OWNER_KEY?: string; // the owner key that reads /stats/summary and /stats/csv (Pages settings, never in the repo)
   FUNNEL_KEYS?: string; // JSON {"tambola":"<that game owner key>"}: lets the console read each game owner funnel route (Pages settings, never in the repo)
   HOME_ORIGIN?: string; // the home page that may report funnel steps, default https://home.corporatetambola.com
+  GOOGLE_CLIENT_ID?: string; GOOGLE_CLIENT_SECRET?: string; // "Continue with Google" appears only when both are set (Pages settings, never in the repo)
+  MICROSOFT_CLIENT_ID?: string; MICROSOFT_CLIENT_SECRET?: string; // the same for "Continue with Microsoft"
+  OAUTH_FETCH?: typeof fetch; // tests
   BOUNCE_ADDRESS?: string; // return-path / notice address, default hello@corporatetambola.com
 }
 
@@ -143,6 +147,16 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     if (o && o !== env.CONSOLE_ORIGIN) return fail(403, "csrf", "Please use the console page to do this.");
   }
   const ip = req.headers.get("cf-connecting-ip") || "0.0.0.0";
+
+  if (path === "/auth/providers" && req.method === "GET") return json(200, { ok: true, ...providersOn(env) });
+  if (path.startsWith("/auth/oauth/")) { // Google / Microsoft: a verified e-mail gives the same session as the e-mail code, and no code is asked
+    if (path.includes("/callback/") && !(await bump(env, "oauth:" + (await sha256hex("ip|" + ip)), IP_PER_HOUR, now)).ok) return new Response(null, { status: 302, headers: { location: env.CONSOLE_ORIGIN + "/?oauth=wait#/home" } });
+    return handleOAuth(req, env, now, async (email) => {
+      const e = normEmail(email);
+      const r = await startSession(env, await emailHashOf(e), await sealText(env, e), now, now);
+      return r.headers.get("set-cookie") || "";
+    });
+  }
 
   if (post && path === "/auth/request") {
     const b = await readJson(req);

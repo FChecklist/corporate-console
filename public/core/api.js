@@ -29,6 +29,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     request: (email, consent) => own("/auth/request", { email, consent }),
     verify: (email, code) => own("/auth/verify", { email, code }),
     me: () => own("/auth/me", undefined, "GET"),
+    providers: () => own("/auth/providers", undefined, "GET"),
   };
 
   /** one signed note per request, from the console; the plain e-mail only when asked for (an account is made / an invitation is matched) */

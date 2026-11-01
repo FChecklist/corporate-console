@@ -8,6 +8,16 @@ const normEmail = (e) => String(e == null ? "" : e).normalize("NFKC").replace(/\
 export const RESEND_AFTER_MS = 30_000;
 const clock = (ms) => new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(" AM", " am").replace(" PM", " pm");
 
+export const OAUTH_WORDS = {
+  tick: "Please tick the box first, then choose how to continue.",
+  declined: "No problem. You can try again, or use your e-mail.",
+  unverified: "That account has no confirmed e-mail address. Please use another account or your e-mail.",
+  retry: "That did not finish. Please try once more, or use your e-mail.",
+  wait: "Please wait a little and try again, or use your e-mail.",
+  off: "That way of signing in is not open yet. Please use your e-mail.",
+};
+const PROVIDER_NAMES = { google: "Google", microsoft: "Microsoft" };
+
 export function renderSignIn(outlet, ctx) {
   const { api, onSignedIn } = ctx;
   const waitMs = ctx.resendAfterMs ?? RESEND_AFTER_MS;
@@ -23,6 +33,20 @@ export function renderSignIn(outlet, ctx) {
     el("label", { class: "opt" }, consent, el("span", { class: "t" }, el("b", { text: "I agree to the Terms of Use and the Privacy Policy." }), el("span", { text: "The system sends one code to this address. No password." }))),
     el("p", { class: "hintline" }, el("a", { href: terms, target: "_blank", rel: "noopener" }, "Read the Terms and the Privacy Policy")),
     sendBtn);
+  // Google and Microsoft sit in the same box as the e-mail option; they appear only when the console has them switched on. The code step is skipped for them.
+  const providers = el("div", { class: "btns hide", id: "si-providers" }, el("p", { class: "hintline", text: "Or continue with" }));
+  const goTo = ctx.assign || ((u) => location.assign(u));
+  for (const id of ["google", "microsoft"]) {
+    const b = button(`Continue with ${PROVIDER_NAMES[id]}`, { onclick: () => { if (!consent.checked) return say(OAUTH_WORDS.tick, true); goTo(`/auth/oauth/start?p=${id}&c=1`); } });
+    b.dataset.provider = id; b.classList.add("hide"); providers.append(b);
+  }
+  form.append(providers);
+  Promise.resolve(api.auth.providers ? api.auth.providers() : null).then((r) => {
+    const on = r && r.ok && r.json ? r.json : {};
+    for (const b of providers.querySelectorAll("[data-provider]")) if (on[b.dataset.provider] === true) { b.classList.remove("hide"); providers.classList.remove("hide"); }
+  }).catch(() => undefined);
+  const back = new URLSearchParams(ctx.search ?? (typeof location !== "undefined" ? location.search : "")).get("oauth");
+  if (back && OAUTH_WORDS[back]) say(OAUTH_WORDS[back], true);
   const codeBox = el("input", { id: "si-code", inputmode: "numeric", autocomplete: "one-time-code", maxlength: "6", pattern: "[0-9]{6}", "aria-label": "The 6-digit code" });
   const signBtn = button("Sign me in", { main: true });
   signBtn.type = "submit";
