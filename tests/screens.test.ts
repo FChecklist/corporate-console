@@ -1,4 +1,4 @@
-// FALSIFIED BY: screens-home-has-input, screens-mislabel-status, screens-delete-hidden, screens-signin-no-consent, screens-home-fourth-door, screens-create-no-soon-tile, screens-create-account-everywhere, screens-billing-hides-slow, screens-close-before-answers, screens-preview-always, screens-handoff-foreign-address, billing-payee-changed, screens-invoice-any-address
+// FALSIFIED BY: screens-home-has-input, screens-mislabel-status, screens-delete-hidden, screens-home-fourth-door, screens-create-no-soon-tile, screens-create-account-everywhere, screens-billing-hides-slow, screens-close-before-answers, screens-preview-always, screens-handoff-foreign-address, billing-payee-changed, screens-invoice-any-address
 // All six screens (sign in, Home, My games, Create, Billing, Account) plus the Player's screen view run in a DOM against the real sign-in service and five fake games.
 import { test, expect, setDefaultTimeout } from "bun:test";
 import { Window } from "happy-dom";
@@ -25,20 +25,20 @@ const until = async (f: () => boolean, ms = 60000) => { const t0 = Date.now(); w
 const click = (n: Element | null | undefined) => (n as any).click();
 const byText = (root: ParentNode, sel: string, text: string) => [...root.querySelectorAll(sel)].find((n: any) => n.textContent.trim() === text) as any;
 
-test("signed out: only the sign-in form; the consent box is required; the code form appears after the mail is sent; a right code signs in", async () => {
+test("signed out: only the sign-in form; there is no tick box, one small line below the buttons links the one document; the code form appears after the mail is sent; a right code signs in", async () => {
   const w = await world({ slowMs: 0 }); spies();
   try {
     const o = fresh(); let signed = 0;
     renderSignIn(o, ctxOf(w, { onSignedIn: async () => { signed++; } }));
     expect(o.querySelector("nav,.top,.tabbar")).toBe(null);
-    const email = o.querySelector("#si-email") as any, consent = o.querySelector("#si-consent") as any;
+    const email = o.querySelector("#si-email") as any;
+    expect(o.querySelector("input[type=checkbox]")).toBe(null);
+    expect([...o.querySelectorAll("#si-notice a")].map((a: any) => a.getAttribute("href").split("#")[1])).toEqual(["terms", "privacy", "game-rules"]);
+    expect(o.querySelector("#si-notice")!.textContent).toBe("By continuing, you agree to the Terms and Conditions, Privacy and Data and Game rules.");
     const submit = (f: Element) => f.dispatchEvent(new win.Event("submit", { cancelable: true, bubbles: true }));
     const forms = o.querySelectorAll("form"); const form = forms[0]!, codeForm = forms[1]!;
     email.value = "demo5@demo-test.invalid";
     submit(form);
-    expect(o.querySelector(".signmsg")!.textContent).toContain("tick the box");
-    expect(w.mails.length).toBe(0);
-    consent.checked = true; submit(form);
     await until(() => !codeForm.classList.contains("hide"));
     expect(w.mails.length).toBe(1);
     expect(o.querySelector("#si-sent")!.textContent).toContain("demo5@demo-test.invalid");
@@ -339,7 +339,7 @@ test("sign-in: a wrong code is told on the code step itself (the message is outs
     renderSignIn(o, ctxOf(w, { onSignedIn: async () => {} }));
     const submit = (f: Element) => f.dispatchEvent(new win.Event("submit", { cancelable: true, bubbles: true }));
     const forms = o.querySelectorAll("form"); const form = forms[0]!, codeForm = forms[1]!;
-    (o.querySelector("#si-email") as any).value = "demo5@demo-test.invalid"; (o.querySelector("#si-consent") as any).checked = true; submit(form);
+    (o.querySelector("#si-email") as any).value = "demo5@demo-test.invalid"; submit(form);
     await until(() => !codeForm.classList.contains("hide"));
     (o.querySelector("#si-code") as any).value = "000000"; submit(codeForm);
     await until(() => /not right|run out/.test(o.querySelector(".signmsg")!.textContent || ""));

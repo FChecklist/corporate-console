@@ -1,4 +1,4 @@
-// Signed out: the sign-in screen is all there is. E-mail + consent box -> a code by e-mail (or its one-tap link) -> signed in. No password.
+// Signed out: the sign-in screen is all there is. E-mail -> a code by e-mail (or its one-tap link) -> signed in. No password.
 // Kind to slow mail: the Send button is locked while it works, "Send a new code" opens after 30 seconds, the newest e-mail is the one to use, and there is always a way back.
 import { el, clear } from "../core/dom.js";
 import { button } from "./ui.js";
@@ -9,7 +9,7 @@ export const RESEND_AFTER_MS = 30_000;
 const clock = (ms) => new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(" AM", " am").replace(" PM", " pm");
 
 const SOFT = "No problem - please use your e-mail below.";
-export const OAUTH_WORDS = { tick: "Please tick the box first, then choose how to continue.", declined: SOFT, unverified: SOFT, retry: SOFT, wait: SOFT, off: SOFT }; // a provider's own error text is never shown
+export const OAUTH_WORDS = { declined: SOFT, unverified: SOFT, retry: SOFT, wait: SOFT, off: SOFT }; // a provider's own error text is never shown
 const PROVIDER_NAMES = { google: "Google", microsoft: "Microsoft" };
 
 export function renderSignIn(outlet, ctx) {
@@ -18,23 +18,25 @@ export function renderSignIn(outlet, ctx) {
   const msg = el("p", { class: "signmsg", role: "status", "aria-live": "polite" });
   const say = (text, bad) => { msg.textContent = text; msg.classList.toggle("bad", !!bad); };
   const email = el("input", { id: "si-email", type: "email", autocomplete: "email", inputmode: "email", required: true, placeholder: "you@yourcompany.com", "aria-label": "Your work e-mail" });
-  const consent = el("input", { id: "si-consent", type: "checkbox" });
-  const terms = ctx.termsUrl || "#";
+    const terms = ctx.termsUrl || "#";
   const sendBtn = button("Send me a code", { main: true });
   sendBtn.type = "submit";
   const form = el("form", { class: "zform", novalidate: true },
     el("div", { class: "field" }, el("label", { for: "si-email", text: "Your work e-mail" }), email),
-    el("label", { class: "opt" }, consent, el("span", { class: "t" }, el("b", { text: "I agree to the Terms of Use and the Privacy Policy." }), el("span", { text: "The system sends one code to this address. No password." }))),
-    el("p", { class: "hintline" }, el("a", { href: terms, target: "_blank", rel: "noopener" }, "Read the Terms and the Privacy Policy")),
+    el("p", { class: "hintline", text: "The system sends one code to this address. No password." }),
     sendBtn);
   // Google and Microsoft sit in the same box as the e-mail option; they appear only when the console has them switched on. The code step is skipped for them.
   const providers = el("div", { class: "btns hide", id: "si-providers" }, el("p", { class: "hintline", text: "Or continue with" }));
   const goTo = ctx.assign || ((u) => location.assign(u));
   for (const id of ["google", "microsoft"]) {
-    const b = button(`Continue with ${PROVIDER_NAMES[id]}`, { onclick: () => { if (!consent.checked) return say(OAUTH_WORDS.tick, true); try { sessionStorage.setItem("si-hint", email.value.trim()); } catch { /* optional */ } const h = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()) ? "&h=" + encodeURIComponent(email.value.trim()) : ""; goTo(`/auth/oauth/start?p=${id}&c=1${h}`); } });
+    const b = button(`Continue with ${PROVIDER_NAMES[id]}`, { onclick: () => { try { sessionStorage.setItem("si-hint", email.value.trim()); } catch { /* optional */ } const h = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()) ? "&h=" + encodeURIComponent(email.value.trim()) : ""; goTo(`/auth/oauth/start?p=${id}${h}`); } });
     b.dataset.provider = id; b.classList.add("hide"); providers.append(b);
   }
   form.append(providers);
+  // one small line BELOW the buttons; the three names open the one document at their sections (no tick box, owner rule 1 Nov)
+  const doc = ctx.legalUrl || "https://home.corporatetambola.com/terms";
+  const link = (t, a) => el("a", { href: `${doc}#${a}`, target: "_blank", rel: "noopener", text: t });
+  form.append(el("p", { class: "hintline legalline", id: "si-notice" }, "By continuing, you agree to the ", link("Terms and Conditions", "terms"), ", ", link("Privacy and Data", "privacy"), " and ", link("Game rules", "game-rules"), "."));
   Promise.resolve(api.auth.providers ? api.auth.providers() : null).then((r) => {
     const on = r && r.ok && r.json ? r.json : {};
     for (const b of providers.querySelectorAll("[data-provider]")) if (on[b.dataset.provider] === true) { b.classList.remove("hide"); providers.classList.remove("hide"); }
@@ -71,7 +73,6 @@ export function renderSignIn(outlet, ctx) {
   }
 
   async function send(again) {
-    if (!consent.checked) return say("Please tick the box to continue.", true);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim())) return say("Please type a valid e-mail address.", true);
     sendBtn.disabled = true; resendBtn.disabled = true; say("Sending…"); // locked while it works: a second tap would make the first code useless
     const r = await api.auth.request(email.value.trim(), true);

@@ -29,7 +29,6 @@ async function signIn(page) {
   await page.goto(info.origin + "/", { waitUntil: "load" });
   await page.waitForSelector("#si-email");
   await page.fill("#si-email", info.email);
-  await page.check("#si-consent");
   await page.click("form:not(.hide) button[type=submit], form:not(.hide) button:last-of-type");
   await page.waitForSelector("#si-code:visible");
   const code = await (await fetch(info.origin + "/__code")).text();

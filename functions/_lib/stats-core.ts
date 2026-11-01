@@ -30,7 +30,7 @@ function allowedOrigins(env: Env): string[] {
 }
 const cors = (env: Env, req: Request): Record<string, string> => {
   const o = req.headers.get("origin") || "";
-  return allowedOrigins(env).includes(o) ? { "access-control-allow-origin": o, "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type", vary: "origin" } : { vary: "origin" };
+  return allowedOrigins(env).includes(o) ? { "access-control-allow-origin": o, "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type, x-test-run", vary: "origin" } : { vary: "origin" };
 };
 
 function sameKey(a: string, b: string) {
@@ -70,6 +70,7 @@ export async function handleStats(req: Request, env: Env, now = Date.now(), doFe
     let b: any; try { b = JSON.parse((await req.text()).slice(0, 2000)); } catch { return json(400, { ok: false }, h); }
     const row = cleanEvent(b, now);
     if (!row) return json(400, { ok: false }, h);
+    if (req.headers.get("x-test-run")) return json(202, { ok: true }, h); // traffic flagged as a test run is answered but never counted
     await ensureStatsTable(env);
     await tables(env).prepare("INSERT OR IGNORE INTO funnel_hit(day,game,event,visit,size,mode) VALUES(?,?,?,?,?,?)").bind(row.day, row.game, row.event, row.visit, row.size, row.mode).run();
     return json(202, { ok: true }, h);

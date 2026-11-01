@@ -93,7 +93,6 @@ export async function handleOAuth(req: Request, env: OAuthEnv, now: number, fini
   if (path === "/auth/oauth/start") {
     const p = url.searchParams.get("p") as Provider;
     if (!PROVIDERS[p] || !providerOn(env, p)) return back(env, "off");
-    if (url.searchParams.get("c") !== "1") return back(env, "tick"); // the terms box is ticked first, as for the e-mail code
     const state = rand(24), nonce = rand(24), verifier = rand(48);
     const q = new URLSearchParams({ client_id: String(env[PROVIDERS[p].idKey]), redirect_uri: CALLBACK(env, p), response_type: "code", scope: PROVIDERS[p].scope, state, nonce, code_challenge: await sha256b64u(verifier), code_challenge_method: "S256", prompt: "select_account" });
     if (p === "microsoft") q.set("response_mode", "query");

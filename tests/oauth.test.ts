@@ -55,9 +55,8 @@ test("buttons exist only when both secret names of a provider are set", () => {
   expect(providersOn(env())).toEqual({ google: true, microsoft: false });
   expect(providersOn(env({ GOOGLE_CLIENT_SECRET: "" }))).toEqual({ google: false, microsoft: false });
 });
-test("start: needs the ticked terms box and a switched-on provider, then goes to the provider with PKCE, state and nonce", async () => {
+test("start: needs a switched-on provider (no tick box), then goes to the provider with PKCE, state and nonce", async () => {
   const fin = async () => "";
-  expect((await handleOAuth(get("https://console.example/auth/oauth/start?p=google"), env(), NOW, fin)).headers.get("location")).toContain("oauth=tick");
   expect((await handleOAuth(get("https://console.example/auth/oauth/start?p=microsoft&c=1"), env(), NOW, fin)).headers.get("location")).toContain("oauth=off");
   const r = await handleOAuth(get("https://console.example/auth/oauth/start?p=google&c=1"), env(), NOW, fin);
   const u = new URL(r.headers.get("location")!);

@@ -50,11 +50,11 @@ test("sign-in by code: ask, get one mail with a 6-digit code and a link, verify,
   expect(me.json).toEqual({ ok: true, signedIn: true, email: "demo4@demo-test.invalid" });
 });
 
-test("consent is required; a bad e-mail is refused before anything is sent", async () => {
+test("no tick box is needed; a bad e-mail is refused before anything is sent", async () => {
   const s = await setup();
-  expect((await s.call("POST", "/auth/request", { email: "demo11@demo-test.invalid" })).json.error).toBe("consent");
-  expect((await s.call("POST", "/auth/request", { email: "nonsense", consent: true })).json.error).toBe("invalid");
-  expect(s.mails.length).toBe(0);
+  expect((await s.call("POST", "/auth/request", { email: "demo11@demo-test.invalid" })).status).toBe(200);
+  expect((await s.call("POST", "/auth/request", { email: "nonsense" })).json.error).toBe("invalid");
+  expect(s.mails.length).toBe(1); // only the good address got a mail
 });
 
 test("the cookie has exactly these flags: HttpOnly, Secure, SameSite=Lax, Path=/, 5 years", async () => {

@@ -28,7 +28,7 @@ test("MC-02/03/04 sign-in: Send is locked while it works, 'Send a new code' open
   const o = fresh();
   renderSignIn(o, { api, onSignedIn: async () => { signed++; }, resendAfterMs: 60_000 });
   const [form, codeForm] = [...o.querySelectorAll("form")] as any[];
-  (o.querySelector("#si-email") as any).value = "demo5@demo-test.invalid"; (o.querySelector("#si-consent") as any).checked = true;
+  (o.querySelector("#si-email") as any).value = "demo5@demo-test.invalid";
   submit(form); submit(form); submit(form); // three quick taps
   expect(asked).toBe(1);
   expect(byText(form, "button", "Send me a code").disabled).toBe(true);

@@ -161,7 +161,7 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
   if (post && path === "/auth/request") {
     const b = await readJson(req);
     if (!b || typeof b.email !== "string" || !EMAIL_RE.test(normEmail(b.email))) return fail(400, "invalid", "Please type a valid e-mail address.");
-    if (b.consent !== true) return fail(400, "consent", "Please tick the box to continue.");
+    // no tick box (owner rule 1 Nov): asking for a code is the act; the time is kept as the proof
     const email = normEmail(b.email), eh = await emailHashOf(email);
     const byIp = await bump(env, "ip:" + (await sha256hex("ip|" + ip)), IP_PER_HOUR, now);
     if (!byIp.ok) return tooMany(byIp.waitMin);
