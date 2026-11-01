@@ -11,8 +11,8 @@ import { mergeGames } from "../core/merge.js";
 
 /** the step number inside a game's own flow (1 Game, 2 People, 3 Time, 4 Prizes, 5 Brand and Breaks, 6 Check and publish) for each step name clone.js uses */
 export const STEP_NUMBER = { "Who is this game for": 2, "Date and time": 3, "Tickets and prizes": 4, "Brand & Breaks": 5 };
-export const NO_PEOPLE_LINE = "People are not copied. Upload or paste your people again for this game.";
-export const NO_TIME_LINE = "The date and time are not copied. Choose them in the new game.";
+export const NO_PEOPLE_LINE = "For privacy, people are not carried over. Please add your people again for this game.";
+export const NO_TIME_LINE = "Please choose the date and time again in the new game.";
 
 /** earlier games that can be copied: the person's own (Organizer), from a game that declares copying, with their data not erased */
 export function earlierGames(rows, games) {

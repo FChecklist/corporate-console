@@ -53,10 +53,10 @@ test("MC-12/14/15 Billing: a finance link for a game to pay, 'paid by' and the i
 });
 
 test("MC-10/23/24 Account: says what closing leaves behind and warns about paid games to come and credit, offers the payments first, shows one table of what is kept and the legal links", async () => {
-  expect(CLOSE_WORDS).toContain("does not cancel or delete the games you made");
+  expect(CLOSE_WORDS).toContain("games you made stay as they are");
   expect(KEPT.map((r: string[]) => r[0])).toEqual(["Your sign-in e-mail (console)", "Players' personal data in a game", "Winners and the game log (seat numbers only)", "Invoices and legal records"]);
   const w = warningsFor([gameRow("A0000001"), gameRow("A0000002"), gameRow("DRAFT001", { status: "draft", payment: { state: "none" } })], { credits: [{ game: "bingo", balanceMinor: 100000, currency: "INR" }] }, { bingo: "Bingo" });
-  expect(w).toEqual(["You have 2 paid games still to come. Closing the account does not cancel them.", "You have credit: Rs 1,000 in Bingo. It stays with the game's own account; this screen cannot use it afterwards."]);
+  expect(w).toEqual(["You have 2 paid games still to come. They will still go ahead after the account is closed.", "You have credit: Rs 1,000 in Bingo. It stays safe in the game's own account, where it can be used."]);
   const api: any = { listGames: async () => ({ rows: [gameRow("A0000001")], failed: [], off: [] }), billing: async () => ({ rows: [paidRow()], credits: [], failed: [], off: [] }), signOut: async () => ({ ok: true }), closeAccount: async () => ({ ok: true }) };
   const o = fresh();
   await renderAccount(o, { api, names: { bingo: "Bingo" }, email: "demo6@demo-test.invalid", games: [{ origin: "https://housie.test" }] });

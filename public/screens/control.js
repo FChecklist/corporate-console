@@ -36,7 +36,7 @@ export async function renderControl(outlet, ctx) {
   async function press(g, op, btn) {
     btn.disabled = true;
     let r; try { r = await api.control(g.game, g.eid, op); } catch { r = { ok: false, error: "unreachable" }; } finally { btn.disabled = false; }
-    if (!r.ok) return toast(ERROR_WORDS[r.error] || "That did not work. Please try again.");
+    if (!r.ok) return toast(ERROR_WORDS[r.error] || "Sorry, that did not go through. Please try again.");
     if (op === "pause") g.paused = true; else if (op === "resume") g.paused = false; else { g.status = "playing"; g.paused = false; }
     draw();
     toast(op === "pause" ? "Paused. Players see Paused." : op === "resume" ? "Resumed." : "Started.");

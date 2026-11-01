@@ -66,7 +66,7 @@ export function renderSignIn(outlet, ctx) {
     signBtn.disabled = true;
     const r = await api.auth.verify(email.value.trim(), codeBox.value.trim());
     signBtn.disabled = false;
-    if (!r.ok) return say(r.json?.message || "That code is not right. Please try again.", true);
+    if (!r.ok) return say(r.json?.message || "Please check the code and try once more.", true);
     stopTimer(); say("Signing you in…");
     await onSignedIn();
   });

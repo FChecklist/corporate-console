@@ -105,7 +105,7 @@ test("My games: the seven status words are exactly the console's, each card has 
     const statusOf = (eid: string) => tam.find((c) => c.dataset.eid === eid).querySelector(".chip").textContent;
     expect(statusOf("DRAFT01")).toBe("Draft"); expect(statusOf("WAIT001")).toMatch(/^Published, payment pending|Payment pending, start time passed$/); expect(statusOf("READY01")).toMatch(/^Published and paid|Published, free game$/); expect(statusOf("PLAY001")).toBe("Live now");
     expect(statusOf("DONE001")).toBe("Completed"); expect(statusOf("CANC001")).toBe("Cancelled"); expect(statusOf("NOST001")).toBe("Payment pending, start time passed");
-    expect(Object.values(STATUS_TEXT)).toEqual(["Draft", "Waiting for payment", "Ready", "Playing now", "Finished", "Cancelled", "Did not start"]); // the console's own words are kept for the filters
+    expect(Object.values(STATUS_TEXT)).toEqual(["Draft", "Waiting for payment", "Ready", "Playing now", "Finished", "Cancelled", "Not started"]); // the console's own words are kept for the filters
     for (const c of cards) expect(c.querySelector(".role")!.textContent).toMatch(/^(Organizer|Host|Co-host)$/);
     for (const c of cards) { // the Game ID, the role line, and (unless it is an invitation) ONE pill with its plain banner
       expect(c.querySelector(".gid")!.textContent).toBe("Game ID " + c.dataset.eid);

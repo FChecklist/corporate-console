@@ -2,7 +2,7 @@
 import { el } from "../core/dom.js";
 import { OPEN_FAILED, openError } from "../core/errors.js";
 
-export const STATUS_TEXT = { draft: "Draft", waiting_payment: "Waiting for payment", ready: "Ready", playing: "Playing now", finished: "Finished", cancelled: "Cancelled", not_started: "Did not start" };
+export const STATUS_TEXT = { draft: "Draft", waiting_payment: "Waiting for payment", ready: "Ready", playing: "Playing now", finished: "Finished", cancelled: "Cancelled", not_started: "Not started" };
 export const STATUS_CLASS = { draft: "draft", waiting_payment: "pay", ready: "ready", playing: "live", finished: "done", cancelled: "cancel", not_started: "nostart" };
 export const ROLE_TEXT = { organizer: "Organizer", host: "Host", cohost: "Co-host", participant: "Participant" };
 

@@ -35,7 +35,7 @@ export function bannerFor(status, g, when) {
   const helper = HELPER_WORDS[g.role] === true;
   switch (status) {
     case "draft": return helper ? "This game is a draft. Nobody can join yet." : "Saved as a draft. Nobody can join yet. Finish the steps and press Publish.";
-    case "pending": return helper ? "Published, payment is pending. The organizer pays. The game will not start until the payment is done." : "Published, payment is pending. Don’t worry. The game will not start until the payment is done, and you can cancel it at any time.";
+    case "pending": return helper ? "Published, payment is pending. The organizer pays, and the game begins once the payment is done." : "Published, payment is pending. Don’t worry. The game will not start until the payment is done, and you can cancel it at any time.";
     case "paid": return helper ? "The game is on. It will begin at " + when + "." : "Congratulations, your game is on! It will begin at " + when + ". Don’t worry if you want to postpone or change anything: you can do it up to 5 minutes before the game begins.";
     case "free": return helper ? "The game is on. It is a free game. It will begin at " + when + "." : "Congratulations, your game is on! It is a free game. It will begin at " + when + ". Don’t worry if you want to postpone or change anything: you can do it up to 5 minutes before the game begins.";
     case "overdue": return helper ? "Payment is pending and the start time has passed, so the game has not started. The organizer decides what to do." : "Payment is pending and the start time has passed, so the game has not started. Pay now, change the date, or cancel it.";

@@ -48,7 +48,7 @@ const ownerAddr = (env: Env) => env.OWNER_NOTICE_EMAIL || "raajat.agarwal@gmail.
 const bounceAddr = (env: Env) => env.BOUNCE_ADDRESS || BOUNCE_DEFAULT;
 const reportMail = (r: GameReport) => ({
   subject: `Your game report: ${r.game.name}, Game ID ${r.gameId}`,
-  text: `Your game is over. The report is attached as a PDF.\n\nGame: ${r.game.name}\nGame ID: ${r.gameId}\nEnded: ${istStamp(r.endMs)}\n\nThe report has the winners, the statistics, how the game was played and the game log. It has no list of participants.\nThe system does not keep this PDF. Please save it now.\nAll participant information is deleted within 24 hours of the game.\n\nIf you did not expect this e-mail, you can ignore it.`,
+  text: `Your game is over. The report is attached as a PDF.\n\nGame: ${r.game.name}\nGame ID: ${r.gameId}\nEnded: ${istStamp(r.endMs)}\n\nThe report has the winners, the statistics, how the game was played and the game log. Participants are not listed, to protect their privacy.\nPlease save this PDF now for your records, as the system keeps no copy.\nAll participant information is deleted within 24 hours of the game.\n\nIf this e-mail was not meant for you, please feel free to ignore it.`,
 });
 const failNotice = (env: Env, r: { game_name: string; game_id: string }, reason: string, attempt: number) => sendMailEx(env, {
   to: [ownerAddr(env)], subject: `Report e-mail failed: ${r.game_name}, Game ID ${r.game_id}`,
@@ -116,7 +116,7 @@ export async function handleReport(req: Request, env: Env, now: number): Promise
   if (!secret || !sameText(req.headers.get("x-report-sig") || "", await hmacHex(secret, text))) return fail(401, "auth", "The game is not allowed to send a report.");
   const bad = reportProblems(r);
   if (bad.length) return fail(400, "invalid", bad.join(" "));
-  if (now < r.gameOverMs - 5 * 60_000) return fail(409, "early", "The game is not over yet.");
+  if (now < r.gameOverMs - 5 * 60_000) return fail(409, "early", "The game is still on. The report follows when it ends.");
   const late = now - r.gameOverMs > SEND_WINDOW_MS; // past the 3-hour target: it still goes out (a refused report is a lost report), and is logged as late
   if (now - r.gameOverMs > SEND_LAST_MS) return fail(409, "too_late", "The game data has been auto-deleted, so the report can no longer be made.");
   if (late) console.log(`report late: game ${r.gameId}, ${Math.round((now - r.gameOverMs) / 60_000)} minutes after game over`); // no names, no addresses
@@ -149,7 +149,7 @@ export async function retryHeldReports(env: Env, now: number, limit = 10) {
   const due = (await tables(env).prepare("SELECT id,game_id,game_name,recipient_sealed,pdf_sealed,first_fail_ms,attempts FROM report_hold WHERE next_ms<=? AND id NOT LIKE 'w:%' ORDER BY next_ms LIMIT ?").bind(now, limit).all<any>()).results || [];
   for (const h of due) {
     const to = await unsealText(env, h.recipient_sealed), pdfB64 = await unsealText(env, h.pdf_sealed), filename = `game-report-${h.game_id}.pdf`;
-    const mail = { subject: `Your game report: ${h.game_name}, Game ID ${h.game_id}`, text: `Your game report is attached again, because the first e-mail did not reach you.\n\nGame: ${h.game_name}\nGame ID: ${h.game_id}\n\nThe system does not keep this PDF. Please save it now.` };
+    const mail = { subject: `Your game report: ${h.game_name}, Game ID ${h.game_id}`, text: `Your game report is attached again, because the first e-mail may not have reached you.\n\nGame: ${h.game_name}\nGame ID: ${h.game_id}\n\nPlease save this PDF now for your records, as the system keeps no copy.` };
     try {
       await sendMailEx(env, { to: [to], subject: mail.subject, text: mail.text, attachments: [{ filename, contentB64: pdfB64 }], replyTo: bounceAddr(env), from: REPORT_FROM });
       await tables(env).prepare("DELETE FROM report_hold WHERE id=?").bind(h.id).run(); // delivered: gone at once

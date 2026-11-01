@@ -23,7 +23,7 @@ test("R10 game details and winners audit record kept 365 days then auto-deleted"
   expect(readFileSync(join(root, "functions/_lib/purge.ts"), "utf8")).toMatch(/365/); // an automatic purge exists
 });
 test("R10 organizer and host e-mails are kept for invoices", () => { expect(RETENTION.organizerHostEmails).toBe("for invoices"); });
-test("R10 tax records are not deleted by us", () => { expect(RETENTION.taxRecords).toBe("never deleted by us"); });
+test("R10 tax records are kept as the law requires", () => { expect(RETENTION.taxRecords).toBe("kept for as long as the law requires"); });
 test("R10 no saved people list", () => { expect(RETENTION.savedPeopleList).toBe(false); });
 
 test("R13 the on-screen retention line is exactly the owner's words", () => {

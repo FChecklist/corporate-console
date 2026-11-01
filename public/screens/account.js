@@ -4,14 +4,14 @@ import { el, clear } from "../core/dom.js";
 import { button, confirmPanel, toast } from "./ui.js";
 import { billingCsv, downloadCsv, money } from "./billing.js";
 
-export const CLOSE_WORDS = "Close my account removes your e-mail from the console and from the Host and Co-host lists of every game. It does not cancel or delete the games you made, and it does not touch invoices: those stay for the time the law requires.";
+export const CLOSE_WORDS = "Close my account removes your e-mail from the console and from the Host and Co-host lists of every game. The games you made stay as they are, and invoices are kept for the time the law requires.";
 
 /** one plain table: what is kept, and for how long (only the periods the owner has decided; each game states its exact player-data timing on its own pages) */
 export const KEPT = [
   ["Your sign-in e-mail (console)", "Until 365 days after you last signed in or took part in a game, then deleted."],
   ["Players' personal data in a game", "Auto-deleted after the game. Each game states the exact time on its own pages."],
   ["Winners and the game log (seat numbers only)", "365 days."],
-  ["Invoices and legal records", "For the time the law requires. They are not deleted when you close the account."],
+  ["Invoices and legal records", "For the time the law requires. They stay in place when you close the account."],
 ];
 /** the legal pages the console links to (they live on the Corporate Tambola site until the console has its own) */
 export const LEGAL = [["Terms of Use", "/terms.html"], ["Privacy Policy", "/privacy.html"], ["Data Processing Agreement", "/dpa.html"]];
@@ -20,9 +20,9 @@ export const LEGAL = [["Terms of Use", "/terms.html"], ["Privacy Policy", "/priv
 export function warningsFor(games, billing, names = {}) {
   const out = [];
   const paidSoon = games.filter((g) => g.role === "organizer" && g.payment && ["paid", "credit"].includes(g.payment.state) && ["ready", "playing"].includes(g.status));
-  if (paidSoon.length) out.push(`You have ${paidSoon.length} paid game${paidSoon.length === 1 ? "" : "s"} still to come. Closing the account does not cancel ${paidSoon.length === 1 ? "it" : "them"}.`);
+  if (paidSoon.length) out.push(`You have ${paidSoon.length} paid game${paidSoon.length === 1 ? "" : "s"} still to come. ${paidSoon.length === 1 ? "It" : "They"} will still go ahead after the account is closed.`);
   const credit = (billing.credits || []).map((c) => `${money(c.balanceMinor, c.currency)} in ${names[c.game] || c.game}`);
-  if (credit.length) out.push(`You have credit: ${credit.join(", ")}. It stays with the game's own account; this screen cannot use it afterwards.`);
+  if (credit.length) out.push(`You have credit: ${credit.join(", ")}. It stays safe in the game's own account, where it can be used.`);
   return out;
 }
 
@@ -39,10 +39,10 @@ export async function renderAccount(outlet, ctx) {
   const warn = el("div", { id: "acct-warn" });
   let paidRows = [];
   const close = async () => {
-    if (!(await confirmPanel(box, "Close your account now? This cannot be undone.", "Yes, close it", "No"))) return;
+    if (!(await confirmPanel(box, "Close your account now? It will be closed for good.", "Yes, close it", "No"))) return;
     msg.textContent = "One moment."; msg.classList.remove("bad");
     const r = await api.closeAccount();
-    if (!r.ok && r.error === "console") { msg.classList.add("bad"); msg.textContent = "The system could not close the account just now. Nothing was changed. Please try again."; return; }
+    if (!r.ok && r.error === "console") { msg.classList.add("bad"); msg.textContent = "The system could not close the account just now. Everything is as it was. Please try again."; return; }
     if (r.ok) { ctx.onSignedOut && ctx.onSignedOut(); return; }
     msg.classList.add("bad");
     msg.textContent = r.failed && r.failed.length ? `${r.failed.map((id) => names[id] || id).join(", ")} did not answer. You are still signed in; please try again. (Games that did answer have already forgotten your e-mail.)` : "The system could not close the account just now. Please try again.";

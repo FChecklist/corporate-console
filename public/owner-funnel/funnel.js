@@ -34,7 +34,7 @@ $("f").addEventListener("submit", async (e) => {
   e.preventDefault(); $("msg").textContent = "One moment.";
   try {
     const res = await ask("/stats/games");
-    if (res.status === 401) { $("msg").textContent = "That key is not right."; $("out").replaceChildren(); return; }
+    if (res.status === 401) { $("msg").textContent = "Please check the key and try again."; $("out").replaceChildren(); return; }
     if (!res.ok) { $("msg").textContent = "The numbers could not be read just now. Try again."; return; }
     draw(await res.json()); $("msg").textContent = "";
   } catch { $("msg").textContent = "The numbers could not be read just now. Try again."; }
@@ -42,7 +42,7 @@ $("f").addEventListener("submit", async (e) => {
 $("csv").addEventListener("click", async () => {
   try {
     const res = await ask("/stats/games.csv");
-    if (!res.ok) { $("msg").textContent = res.status === 401 ? "That key is not right." : "The file could not be made just now."; return; }
+    if (!res.ok) { $("msg").textContent = res.status === 401 ? "Please check the key and try again." : "The file could not be made just now."; return; }
     const url = URL.createObjectURL(await res.blob()), a = el("a"); a.href = url; a.download = "funnel-games.csv"; a.click(); URL.revokeObjectURL(url);
   } catch { $("msg").textContent = "The file could not be made just now."; }
 });

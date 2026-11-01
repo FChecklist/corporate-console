@@ -23,7 +23,7 @@ export async function renderMyGames(outlet, ctx) {
   const EID = /^[A-Za-z0-9_-]{4,40}$/;
   async function removeDraft(g, card) {
     if (!EID.test(g.eid)) return;
-    if (!(await confirmPanel(card, "Delete this draft? This cannot be undone.", "Yes, delete", "No"))) return;
+    if (!(await confirmPanel(card, "Delete this draft? It will be gone for good.", "Yes, delete", "No"))) return;
     const h = await api.headersFor(g.game, g.eid, "draft-delete");
     if (!h) return toast("Please sign in again.");
     const r = await api.call(`${api.byId[g.game].origin}/api/z/${g.eid}/discard`, { method: "POST", headers: h, body: "{}" });
@@ -39,7 +39,7 @@ export async function renderMyGames(outlet, ctx) {
   }
   async function answer(g, op) {
     const r = await api.answerInvitation(g.game, g.eid, g.roleId, op);
-    if (!r.ok) return toast("That did not work. Please try again.");
+    if (!r.ok) return toast("Sorry, that did not go through. Please try again.");
     data = await api.listGames(); draw();
   }
   function card(g) {

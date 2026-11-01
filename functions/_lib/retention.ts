@@ -16,7 +16,7 @@ export const RETENTION = Object.freeze({
   /** organizer and host e-mails: kept for invoices and payment matters */
   organizerHostEmails: "for invoices",
   /** tax records (invoices, payment ledger) are never deleted by the system */
-  taxRecords: "never deleted by us",
+  taxRecords: "kept for as long as the law requires",
   /** a saved people list does not exist anywhere */
   savedPeopleList: false,
   /** the end-of-game PDF is not stored. Only a report whose e-mail bounced is held, encrypted, apart from game data: resend after 24 h, 36 h, 72 h, gone by about 96 h. */

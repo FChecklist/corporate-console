@@ -131,16 +131,16 @@ async function readJson(req: Request): Promise<any | null> {
 }
 
 const OK_REQUEST = { ok: true, message: `If that address can receive mail, a code is on its way. It works for ${CODE_MINUTES} minutes.`, codeMinutes: CODE_MINUTES };
-const BAD_CODE = { ok: false, error: "bad_code", message: "That code is not right or has run out. Ask for a new one." };
+const BAD_CODE = { ok: false, error: "bad_code", message: "Please check the code, or ask for a new one if it has run out." };
 
 export async function handleAuth(req: Request, env: Env, now: number): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname.replace(/\/+$/, "");
   const post = req.method === "POST";
   if (post) { // every POST must come from the console's own page: custom header (cannot be sent cross-site without a preflight) and the right Origin
-    if (req.headers.get("x-console") !== "1") return fail(403, "csrf", "This request did not come from the console page.");
+    if (req.headers.get("x-console") !== "1") return fail(403, "csrf", "Please use the console page to do this.");
     const o = req.headers.get("origin");
-    if (o && o !== env.CONSOLE_ORIGIN) return fail(403, "csrf", "This request did not come from the console page.");
+    if (o && o !== env.CONSOLE_ORIGIN) return fail(403, "csrf", "Please use the console page to do this.");
   }
   const ip = req.headers.get("cf-connecting-ip") || "0.0.0.0";
 
@@ -159,7 +159,7 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     await tables(env).prepare("INSERT INTO login_code(email_hash,email_sealed,code_hash,link_hash,expires_ms,attempts,sent_ms,consent_ms) VALUES(?,?,?,?,?,0,?,?) ON CONFLICT(email_hash) DO UPDATE SET email_sealed=excluded.email_sealed, code_hash=excluded.code_hash, link_hash=excluded.link_hash, expires_ms=excluded.expires_ms, attempts=0, sent_ms=excluded.sent_ms, consent_ms=excluded.consent_ms")
       .bind(eh, await sealText(env, email), await sha256hex(`code|${env.SESSION_PEPPER}|${eh}|${code}`), await sha256hex("link|" + link), now + CODE_TTL_MS, now, now).run();
     if (!demo) {
-      try { await sendMail(env, email, `Your sign-in code is ${code}`, `Your code is ${code}. It works for ${CODE_MINUTES} minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf you did not ask for this, you can ignore this e-mail.`); }
+      try { await sendMail(env, email, `Your sign-in code is ${code}`, `Your code is ${code}. It works for ${CODE_MINUTES} minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf this was not you, no action is needed and you can ignore this e-mail.`); }
       catch { return fail(502, "mail", "The system could not send the e-mail. Please try again in a minute."); }
     }
     return json(200, { ...OK_REQUEST, expiresMs: now + CODE_TTL_MS });
@@ -235,9 +235,9 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     if (!s) return fail(401, "signed_out", "Please sign in again.");
     if (!(await bump(env, "assert:" + s.sidHash, 600, now)).ok) return fail(429, "rate_limited", "Too many requests. Please wait a minute.");
     const b = await readJson(req);
-    if (!b || !Array.isArray(b.requests) || b.requests.length < 1 || b.requests.length > 12) return fail(400, "invalid", "The request is not complete.");
+    if (!b || !Array.isArray(b.requests) || b.requests.length < 1 || b.requests.length > 12) return fail(400, "invalid", "Please complete the request and try again.");
     let origins: Record<string, string>;
-    try { origins = JSON.parse(env.GAME_ORIGINS); } catch { return fail(500, "config", "The console is not set up yet."); }
+    try { origins = JSON.parse(env.GAME_ORIGINS); } catch { return fail(500, "config", "The console is still being set up."); }
     const key = await crypto.subtle.importKey("pkcs8", Uint8Array.from(atob(env.CONSOLE_SIGNING_KEY), (c) => c.charCodeAt(0)), { name: "Ed25519" }, false, ["sign"]);
     const ACTS: Act[] = ["session", "games", "billing", "invited", "role", "handoff", "stepup", "purge"];
     const out: Array<{ game: string; assertion: string | null; error?: string }> = [];
