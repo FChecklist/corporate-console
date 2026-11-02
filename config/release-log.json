@@ -1,0 +1,186 @@
+{
+ "source": "release handover, section 10 (release log)",
+ "mirroredAt": "2026-11-02T07:49:49.625Z",
+ "entries": [
+  {
+   "day": "2026-11-02",
+   "time": "10:51",
+   "site": "several",
+   "from": null,
+   "to": null,
+   "rollback": null,
+   "deployment": "05f7a0e0",
+   "text": "2 Nov 10:51 to 10:59 IST (times from the Cloudflare list) SAME-BUILD redeploys so that ONE owner password opens the Rs 1 test page (/paytest) and the owner pages (/api/owner/*) of all six games. The password is Tambola's ORGANIZER_SECRET (kept in the Tambola config folder, never written in this file). Code unchanged, only the secret was set and the same commit redeployed: Tic Tac Toe 4b37bf3 deployment 05f7a0e0; Snakes and Ladders f907a4f deployment 19cbaaae; Luck by Chance eab061f deployment b4985a78; Bingo fc5f01f deployment abeaae52; Lucky Draw 59797fb deployment 54fea88d. Each checked a..."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "10:25",
+   "site": "luckydraw",
+   "from": null,
+   "to": null,
+   "rollback": null,
+   "deployment": null,
+   "text": "2 Nov before 10:25 IST Lucky Draw prices and packs added to the CENTRAL payment ledger (D1 itservices-payments): plan_catalog rows for site corporate-luckydraw.pages.dev (payment_test 100 and pack_100 ... pack_10000) and product_catalog rows corporate_luckydraw (game_pack, payment_test). No site code changed."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "10:17",
+   "site": "home",
+   "from": "c005f50",
+   "to": "b8b9fc2",
+   "rollback": "fd7310d2",
+   "deployment": "11f72250-3e43-479a-922a-89aa6924e5c2",
+   "text": "10:17 IST (2 Nov) Home c005f50 -> b8b9fc2, deployment 11f72250-3e43-479a-922a-89aa6924e5c2, rollback fd7310d2. Top-bar tagline under \"Corporate Games\" on all 12 pages, owner-chosen wording: \"Closed-group games for teams anywhere and their families: bonding, fun, your message and your brand.\" (note: it does not contain \"office, remote and hybrid\"; the owner was told and offered a variant). Test limits changed with dated comments: word limit T09 1710 -> 1725 (real count 1724), top-bar height limit 80 -> 90 px. The brand link carries no aria-label (an aria-label fails the accessibility rule la..."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "09:11",
+   "site": "tictactoe",
+   "from": "7e4f912",
+   "to": "4b37bf3",
+   "rollback": "cf036f06-8500-4e3b-9a09-a6c08e892bf5",
+   "deployment": "f4c1a710-840d-4e7a-8f0a-77c5428627fb",
+   "text": "09:11 IST (2 Nov, time from the Cloudflare list) Tic Tac Toe 7e4f912 -> 4b37bf3, deployment f4c1a710-840d-4e7a-8f0a-77c5428627fb, rollback cf036f06-8500-4e3b-9a09-a6c08e892bf5. Design pass (two columns on laptops, 44 px taps, darker Refer & earn text, cache v11). Full partner run r95: 2357 pass, 0 fail. Live version.json = 4b37bf39d34e, noindex header present."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "09:10",
+   "site": "home",
+   "from": "e3d367d",
+   "to": "c005f50",
+   "rollback": "95ff2563",
+   "deployment": "fd7310d2-2c4f-4bb6-8c23-f0d83a096dbe",
+   "text": "09:10 IST (2 Nov, time from the Cloudflare list) Home e3d367d -> c005f50, deployment fd7310d2-2c4f-4bb6-8c23-f0d83a096dbe, rollback 95ff2563. Owner-approved wording: the ID answer in \"Questions from HR, IT and Legal\" (Employee, Associate, Member or Vendor ID; no name, e-mail, mobile number or Aadhaar for people on the list), the compliance bullets (\"No personal data is asked for.\" and \"No advertising trackers. Players are never e-mailed, as no e-mail is collected.\"). Word limit T09 raised 1700 -> 1710 (real count 1709). Tests on this exact tree: 15 cases, 1871 checks, 0 failed. Live fetch c..."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "09:04",
+   "site": "luckbychance",
+   "from": "bf86f4d",
+   "to": "eab061f",
+   "rollback": "c1d46912",
+   "deployment": "634b627b-4d58-401c-ab99-039511e7ad78",
+   "text": "09:04 IST (2 Nov, time from the Cloudflare list) Luck by Chance bf86f4d -> eab061f, deployment 634b627b-4d58-401c-ab99-039511e7ad78, rollback c1d46912. Design pass (two columns on laptops, header gradient contrast, 44 px logo). Full partner run r93: 1680 pass, 0 fail."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "08:58",
+   "site": "snakesladders",
+   "from": "63f6fc1",
+   "to": "f907a4f",
+   "rollback": "17eab148",
+   "deployment": "c80d3969-36cc-46b3-a4cd-8604aecd3817",
+   "text": "08:58 IST (2 Nov, time from the Cloudflare list) Snakes and Ladders 63f6fc1 -> f907a4f, deployment c80d3969-36cc-46b3-a4cd-8604aecd3817, rollback 17eab148. Design pass (laptop two columns from 861 px, header colour contrast, 44 px logo tap area). Full partner run r92: 1750 pass, 0 fail."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "01:57",
+   "site": "bingo",
+   "from": "fabd9a9",
+   "to": "fc5f01f",
+   "rollback": "27fc8e5a",
+   "deployment": "ae24f6a9",
+   "text": "01:57 IST Bingo fabd9a9 -> fc5f01f, deployment ae24f6a9, rollback 27fc8e5a. Look-only change (laptop two columns from 861 px, called-numbers digits, FREE square contrast, service worker cache v33). Full partner run r91: 2090 pass, 0 fail."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "01:45",
+   "site": "snakesladders",
+   "from": "7004e9e",
+   "to": "63f6fc1",
+   "rollback": "5f76a78b",
+   "deployment": "17eab148",
+   "text": "01:45 IST Snakes and Ladders 7004e9e -> 63f6fc1, deployment 17eab148, rollback 5f76a78b. Full partner run r90: 1750 pass, 0 fail. New board (10 snakes, 10 ladders, 5 penalty, 5 reward; short pieces); live z.js identical to the build. Owner said \"Yes, release it\" for the short-piece board."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "01:41",
+   "site": "home",
+   "from": "709f1d7",
+   "to": "e3d367d",
+   "rollback": "ccc38f8d",
+   "deployment": "95ff2563",
+   "text": "01:41 IST Home 709f1d7 -> e3d367d, deployment 95ff2563, rollback ccc38f8d. Tests on this exact tree: 15 cases, 1871 checks, 0 failed. One legal document (v4) live; corporatetambola.com and www redirect (301) to home.corporatetambola.com."
+  },
+  {
+   "day": "2026-11-02",
+   "time": "01:40",
+   "site": "bingo",
+   "from": "d5156bf",
+   "to": "fabd9a9",
+   "rollback": "c33752f8",
+   "deployment": "27fc8e5a",
+   "text": "01:40 IST Bingo d5156bf -> fabd9a9, deployment 27fc8e5a, rollback c33752f8. Full partner run r89: 2090 pass, 0 fail. Setting ID_ONLY=1 added as a secret (env names 24 -> 25, none lost); CLAIM_HOLD stays OFF. Live pages hidden from search (noindex) checked."
+  },
+  {
+   "day": "2026-11-01",
+   "time": "23:08",
+   "site": "tambola",
+   "from": "e3d93e3",
+   "to": "88fa696",
+   "rollback": "21dc251c-2182-40c9-927a-844c5c0f9f39",
+   "deployment": "5a0429d6-667d-4e4e-b550-8f75696e24ae",
+   "text": "23:08 IST Tambola (corporate-tambola, housie.corporatetambola.com) e3d93e3 -> 88fa696 (boss session). Rollback id 21dc251c-2182-40c9-927a-844c5c0f9f39. New deployment 5a0429d6-667d-4e4e-b550-8f75696e24ae. Version 1.9.0 (dirty build: the two deploy-time constants PRIZES_FROM_MS and EMP_CLEAN_FROM_MS set to the deploy instant 1793554453235, not committed). No migrations since e3d93e3. Full partner run on the exact commit 88fa696: 3866 pass / 11 fail, 5 unique: (a) 'no flags' hang, old (also failed in r32 on 47e4fda, before the hide/claim work; not run on e3d93e3), (b) CRD-10 and CRD-11 old cr..."
+  },
+  {
+   "day": "2026-11-01",
+   "time": "22:43",
+   "site": "console",
+   "from": "2b151ce",
+   "to": "6ef68cd",
+   "rollback": "ee97d23e-ccd8-4925-b22c-6b47d92bc498",
+   "deployment": "b2a22033-4f98-42ff-b801-0a054683722f",
+   "text": "22:43 IST Master console 2b151ce -> 6ef68cd (1ded8cd + release stamp). Rollback id ee97d23e-ccd8-4925-b22c-6b47d92bc498. New deployment b2a22033-4f98-42ff-b801-0a054683722f (success). Migration 0004_visit_event applied first to D1 corporate-games-master-console (additive, repeat-safe: 12 statements, 0 failed). Tests: partner laptop full run 349 pass / 9 fail where all 9 were 'Cannot find package happy-dom' (the partner install was stuck and restarted); the 8 happy-dom files were re-run on this laptop: 86 pass / 0 fail. DISCLOSED EXCEPTION: split run on two machines, not one clean full run. ..."
+  },
+  {
+   "day": "2026-11-01",
+   "time": "22:28",
+   "site": "snakesladders",
+   "from": "798b90d",
+   "to": "7004e9e",
+   "rollback": "69ed3c62-8cc6-4d14-8380-84064084f63f",
+   "deployment": "8d13f2f2-509d-46cd-848d-4938355c118d",
+   "text": "22:28 IST, Snakes and Ladders (corporate-snakes-and-ladders, snakes.corporatetambola.com): 798b90d -> 7004e9e (boss session). Rollback id 69ed3c62-8cc6-4d14-8380-84064084f63f. New deployment 8d13f2f2-509d-46cd-848d-4938355c118d. Checks: earlier head cc5ab3d failed 28 tests (stale tests after the 2,000 cap); 7004e9e full partner run = 1740 pass / 2 fail, both fails were load timeouts (two jobs ran on the partner at once: \"board rules > R7-R10 over 3,000 boards\" and \"invoice rendering > brand is the title ... 6.2 s\"); both test files re-run alone on the exact sha: 37 pass / 0 fail; live gate ..."
+  },
+  {
+   "day": "2026-11-01",
+   "time": "22:11",
+   "site": "bingo",
+   "from": "4e0e210",
+   "to": "d5156bf",
+   "rollback": "06514d4f-a6cc-4ef2-b3b0-ad55567fcd16",
+   "deployment": "c33752f8-f344-4b61-b57b-b61c73ca3d3e",
+   "text": "22:11 IST, Bingo (corporate-bingo, bingo.corporatetambola.com): 4e0e210 -> d5156bf (boss session). Rollback id 06514d4f-a6cc-4ef2-b3b0-ad55567fcd16. New deployment c33752f8-f344-4b61-b57b-b61c73ca3d3e. First attempt at 22:04 with 340d525 FAILED at the Functions bundle (esbuild: \"No matching export in vendor/game-core/packages/core/src/prize-planner.js for import default\" at planner.ts:3); nothing was deployed by that attempt. d5156bf = 340d525 + one file vendor/game-core/packages/core/src/package.json {\"type\":\"commonjs\"} (so esbuild takes the UMD prize-planner.js as CommonJS). Checks: FULL ..."
+  },
+  {
+   "day": "2026-11-01",
+   "time": "22:00",
+   "site": "luckydraw",
+   "from": "49a6b47",
+   "to": "59797fb",
+   "rollback": "d9b70fc3-9298-4c67-8cee-a340d9c99415",
+   "deployment": "90a7900c-77f1-4bc4-a252-397de5c0c377",
+   "text": "22:00 IST, Lucky Draw (corporate-luckydraw, luckydraw.corporatetambola.com): 49a6b47 -> 59797fb (boss session). Rollback id d9b70fc3-9298-4c67-8cee-a340d9c99415. New deployment 90a7900c-77f1-4bc4-a252-397de5c0c377. Checks: full partner run on the exact sha 1874 pass / 0 fail; live gate (only LT-* games); migration apps/edge/migrations/0022_ledger_c.sql (Lucky Draw's OWN D1 database, additive ALTER ADD COLUMN / CREATE TABLE IF NOT EXISTS plus a backfill of the new txn_id column) applied BEFORE the deploy with python %TEMP%\\ld\\mig.py (= C:\\ct\\games-ops\\mig_all.py, repeat-safe): 114 applied, 5..."
+  },
+  {
+   "day": "2026-11-01",
+   "time": "21:50",
+   "site": "luckbychance",
+   "from": "9d4d17c",
+   "to": "bf86f4d",
+   "rollback": "e4c3e95c-5f64-45fc-a1c0-d998a62d8f53",
+   "deployment": "ff5b36f6-ab42-4d79-a56c-ea1c9cd65510",
+   "text": "21:50 IST, Luck (corporate-luck-by-chance, luck.corporatetambola.com): 9d4d17c -> bf86f4d (done by the boss session itself). Rollback id e4c3e95c-5f64-45fc-a1c0-d998a62d8f53. New deployment ff5b36f6-ab42-4d79-a56c-ea1c9cd65510. Checks: full partner run on the exact sha 1680 pass / 0 fail; live gate (only LT-* games); no migration/wrangler/toml/sql in diff vs live; hide files present; built output robots Disallow /, no sitemap file, meta noindex; live version.json bf86f4da10e1 dirty false; smoke.py all 200; chk.py noindex meta on every page; X-Robots-Tag noindex, nofollow, noai, noimageai. O..."
+  },
+  {
+   "day": "2026-11-01",
+   "time": "21:42",
+   "site": "tictactoe",
+   "from": "fc177f6",
+   "to": "7e4f912",
+   "rollback": "63999bb6-2a4e-4696-9252-ec16759443a6",
+   "deployment": "99bb1e46-204b-4405-9b76-8b6bc6f976b9",
+   "text": "21:42 IST, Tic Tac Toe (corporate-tic-tac-toe, tictactoe.corporatetambola.com): fc177f6 -> 7e4f912 (done by the boss session itself because the release desk could not be messaged). Rollback id 63999bb6-2a4e-4696-9252-ec16759443a6. New deployment 99bb1e46-204b-4405-9b76-8b6bc6f976b9. Checks: full partner run on the exact sha 2357 pass / 0 fail; live gate (only LT-* games); no migration/wrangler/toml/sql in diff; hide files present; built robots.txt Disallow /, no sitemap, meta noindex, no 'owner order' in output; live version.json commit 7e4f91208373 dirty false; smoke.py all pages 200; chk...."
+  }
+ ]
+}

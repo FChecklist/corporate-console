@@ -3,7 +3,7 @@
 // (TABLE_PREFIX = "con_" gives con_console_email, con_login_code, con_session, con_rate). One setting, no other change.
 import type { D1 } from "../../packages/bridge/src/d1";
 
-export const TABLES = ["console_email", "login_code", "session", "rate", "report_hold", "report_watch", "funnel_hit", "visit_event"] as const;
+export const TABLES = ["console_email", "login_code", "session", "rate", "report_hold", "report_watch", "funnel_hit", "visit_event", "control_history"] as const;
 /** a prefix is lower-case letters, digits and underscores only, starting with a letter (it is put into SQL text, so nothing else is allowed) */
 export const PREFIX_RE = /^[a-z][a-z0-9_]{0,15}$/;
 
@@ -17,9 +17,9 @@ export function checkPrefix(prefix: string | undefined): string {
 const NAMES = TABLES.join("|");
 const TABLE_REF = new RegExp(`\\b(FROM|INTO|UPDATE|JOIN|TABLE(?:\\s+IF\\s+NOT\\s+EXISTS)?|ON)(\\s+)(${NAMES})\\b`, "gi");
 const QUALIFIED = new RegExp(`\\b(${NAMES})\\.(?=[a-z_])`, "gi");
-const INDEX_DEF = /\b(CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+))([a-z_]+)/gi;
+const INDEX_DEF = /\b(CREATE\s+(?:UNIQUE\s+)?(?:INDEX|TRIGGER)\s+(?:IF\s+NOT\s+EXISTS\s+))([a-z_]+)/gi;
 
-/** the same SQL with every console table (and index) name carrying the prefix; "" leaves the SQL untouched */
+/** the same SQL with every console table (and index and trigger) name carrying the prefix; "" leaves the SQL untouched */
 export function prefixSql(sql: string, prefix: string): string {
   const p = checkPrefix(prefix);
   if (!p) return sql;

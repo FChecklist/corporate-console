@@ -1,0 +1,40 @@
+/* Mission Control (owner only). Plain words, every text at least 13 px, colours from the console's tokens. A state is never shown by colour alone: the word Green, Amber or Red is always written next to the dot. */
+.mc { max-width: 1100px; margin: 0 auto; padding: 16px; font-size: 15px; line-height: 1.45; color: var(--ink); }
+.mc h1 { font-family: var(--serif); font-size: 1.9rem; margin: 0 0 4px; }
+.mc h2 { font-size: 1.15rem; margin: 0 0 8px; }
+.mc h3 { font-size: 1rem; margin: 12px 0 4px; overflow-wrap: anywhere; }
+.mc .lead { color: var(--ink2); margin: 0 0 14px; }
+.mc .note, .mc .small { font-size: 13px; color: var(--muted); }
+.mc .line { min-height: 1.4em; margin: 6px 0; }
+.mc-login { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin: 0 0 8px; }
+.mc-login label, .mc-tool label { display: grid; gap: 4px; color: var(--ink2); font-size: 14px; }
+.mc input, .mc select { min-height: var(--tap); padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; }
+.mc button.btn { min-height: var(--tap); padding: 0 14px; cursor: pointer; background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; font: inherit; font-weight: 600; }
+.mc button.btn.main { background: var(--btn); color: #fff; border-color: var(--btn); }
+.mc-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.mc-tabs button { min-height: var(--tap); padding: 0 14px; cursor: pointer; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; font: inherit; font-weight: 600; }
+.mc-tabs button[aria-selected="true"] { background: var(--btn); color: #fff; border-color: var(--btn); }
+.mc-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); margin: 6px 0 10px; }
+.mc-card { background: var(--card); border: 1px solid var(--line); border-top: 6px solid var(--accent, var(--blue)); border-radius: var(--radius); padding: 14px; margin: 0 0 14px; overflow-x: auto; }
+.mc-summary { font-size: 1.05rem; font-weight: 600; margin: 4px 0 12px; }
+.mc-lines { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mc-line { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; background: var(--card); border: 1px solid var(--line); border-left: 8px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.mc-line.green { border-left-color: var(--ok); } .mc-line.amber { border-left-color: var(--warn); } .mc-line.red { border-left-color: var(--bad); }
+.mc-light { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; min-width: 74px; }
+.mc-light::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--line); }
+.mc-light.green { color: var(--ok); } .mc-light.green::before { background: var(--ok); }
+.mc-light.amber { color: var(--warn); } .mc-light.amber::before { background: var(--warn); }
+.mc-light.red { color: var(--bad); } .mc-light.red::before { background: var(--bad); }
+.mc-line b { display: block; }
+.mc-line span.why { color: var(--ink2); }
+.mc table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.mc th, .mc td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mc td.n, .mc th.n { text-align: right; white-space: nowrap; }
+.mc details { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin: 0 0 10px; background: var(--card); }
+.mc summary { cursor: pointer; font-weight: 700; min-height: 32px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mc dl { display: grid; grid-template-columns: minmax(120px, 220px) 1fr; gap: 4px 12px; margin: 8px 0; }
+.mc dt { color: var(--muted); font-size: 14px; } .mc dd { margin: 0; overflow-wrap: anywhere; }
+.mc .gone { color: var(--muted); font-style: italic; }
+.mc-tool { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin: 8px 0 12px; }
+.mc code { font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .mc { padding: 12px; } .mc dl { grid-template-columns: 1fr; } .mc-line { grid-template-columns: 1fr; } }

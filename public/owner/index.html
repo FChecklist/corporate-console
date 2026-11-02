@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mission Control</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/core/tokens.css">
+<link rel="stylesheet" href="/core/chooser.css">
+<link rel="stylesheet" href="/owner/owner.css">
+<script type="module" src="/owner/owner.js"></script>
+</head>
+<body>
+<main class="mc" id="mc">
+<header class="mc-head">
+<h1>Mission Control</h1>
+<p class="lead">All the games, websites, payments and releases in one place. This page only reads: nothing on it changes anything.</p>
+</header>
+<form id="mc-form" class="mc-login" autocomplete="off">
+<label>Owner password <input id="mc-key" type="password" autocomplete="off" required></label>
+<button class="btn main" type="submit">Open</button>
+</form>
+<p id="mc-msg" class="line" role="status"></p>
+<div id="mc-app" hidden>
+<div class="mc-tabs" role="tablist" aria-label="Mission Control sections" id="mc-tabs"></div>
+<p class="mc-bar"><span id="mc-stamp"></span> <button class="btn" type="button" id="mc-refresh">Refresh</button> <button class="btn" type="button" id="mc-lock">Close and forget the password</button></p>
+<section id="mc-panel" role="tabpanel" tabindex="-1"></section>
+</div>
+</main>
+</body>
+</html>

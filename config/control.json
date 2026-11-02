@@ -1,0 +1,25 @@
+{
+ "_about": "What Mission Control looks at (read-only). Game ids match config/games.json. 'live' is the public address, 'preview' the pages.dev address, 'project' the Cloudflare Pages project. 'pages' are the main pages checked on each site; 'redirectOk' lists pages that may move to another address; 'noindex' says whether the site must hide from search engines (games: yes; the public home page: no, except the two pages named in 'noindexPaths'). slowMs = an answer slower than this is shown amber. A page that a game does not have is simply not listed.",
+ "slowMs": 3000,
+ "games": [
+  { "id": "tambola", "name": "Tambola", "live": "https://housie.corporatetambola.com", "preview": "https://corporate-tambola.pages.dev", "project": "corporate-tambola", "noindex": true,
+    "pages": ["/", "/signin", "/pricing", "/contact", "/terms", "/privacy", "/partner", "/pay", "/paytest", "/demo"] },
+  { "id": "bingo", "name": "Bingo", "live": "https://bingo.corporatetambola.com", "preview": "https://corporate-bingo.pages.dev", "project": "corporate-bingo", "noindex": true,
+    "pages": ["/", "/signin", "/pricing", "/contact", "/terms", "/privacy", "/partner", "/pay", "/paytest", "/demo", "/guide", "/how-it-works"], "redirectOk": ["/terms", "/privacy"] },
+  { "id": "tictactoe", "name": "Tic Tac Toe", "live": "https://tictactoe.corporatetambola.com", "preview": "https://corporate-tic-tac-toe.pages.dev", "project": "corporate-tic-tac-toe", "noindex": true,
+    "pages": ["/", "/signin", "/pricing", "/contact", "/terms", "/privacy", "/partner", "/pay", "/paytest", "/demo", "/guide", "/how-it-works"] },
+  { "id": "snakesladders", "name": "Snakes and Ladders", "live": "https://snakes.corporatetambola.com", "preview": "https://corporate-snakes-and-ladders.pages.dev", "project": "corporate-snakes-and-ladders", "noindex": true,
+    "pages": ["/", "/signin", "/pricing", "/contact", "/terms", "/privacy", "/partner", "/pay", "/paytest", "/demo"] },
+  { "id": "luckbychance", "name": "Luck by Chance", "live": "https://luck.corporatetambola.com", "preview": "https://corporate-luck-by-chance.pages.dev", "project": "corporate-luck-by-chance", "noindex": true,
+    "pages": ["/", "/signin", "/pricing", "/contact", "/terms", "/privacy", "/partner", "/pay", "/paytest", "/demo"] },
+  { "id": "luckydraw", "name": "Lucky Draw", "live": "https://luckydraw.corporatetambola.com", "preview": "https://corporate-luckydraw.pages.dev", "project": "corporate-luckydraw", "noindex": true,
+    "pages": ["/", "/signin", "/pricing", "/contact", "/terms", "/privacy", "/partner", "/pay", "/paytest", "/guide", "/how-it-works"] }
+ ],
+ "home": {
+  "id": "home", "name": "Home page", "live": "https://home.corporatetambola.com", "preview": "https://corporatetambola-home.pages.dev", "project": "corporatetambola-home", "noindex": false,
+  "noindexPaths": ["/404", "/offline"],
+  "pages": ["/", "/games", "/games-for-hr-teams", "/virtual-team-building-games", "/for-hr", "/how-it-works", "/pricing", "/contact", "/terms", "/privacy", "/404", "/offline"]
+ },
+ "console": { "id": "console", "name": "Master console", "live": "https://console.corporatetambola.com", "preview": "https://corporate-console.pages.dev", "project": "corporate-console" },
+ "payments": { "id": "payments", "name": "Payments site (IT Services by Rajat Agarwal)", "live": "https://itservices-rajat-agarwal.pages.dev", "project": "itservices-rajat-agarwal", "ping": "/api/pay/ping" }
+}
