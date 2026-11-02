@@ -42,7 +42,7 @@ try {
             await page.waitForSelector("#si-email");
             await page.waitForTimeout(400); // the providers answer arrives
             add(tag, w, "no sideways scroll", await noSidewaysScroll(page));
-            add(tag, w, "tap targets are at least 44 px", await tapTargets(page, "main button, main a, main input:not([type=hidden])"));
+            add(tag, w, "tap targets are at least 44 px (buttons and fields; the links inside the legal and help sentences are inline text links and are not measured)", await tapTargets(page, "main button, main a.btn, main input:not([type=hidden])"));
             add(tag, w, "no visible text is under 13 px", await page.evaluate(() => {
               const bad = [];
               const walker = document.createTreeWalker(document.querySelector("main") || document.body, NodeFilter.SHOW_TEXT);
