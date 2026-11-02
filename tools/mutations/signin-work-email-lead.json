@@ -1,0 +1,1 @@
+{"id": "signin-work-email-lead", "repo": ".", "file": "public/screens/signin.js", "find": "text: \"Use your e-mail. The system sends you a code.", "replace": "text: \"Use your work e-mail. The system sends you a code.", "test": "tests/signin-one-page.test.ts", "note": "the lead says work e-mail again"}

@@ -1,0 +1,1 @@
+{"id": "signin-google-after-form", "repo": ".", "file": "public/screens/signin.js", "find": "  form.append(providers,", "replace": "  form.append(el(\"div\", { class: \"field\" }, el(\"label\", { for: \"si-email\", text: \"Your e-mail\" }), email), providers,", "test": "tests/signin-one-page.test.ts", "note": "the e-mail field comes before the Google button"}

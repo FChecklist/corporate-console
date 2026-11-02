@@ -1,0 +1,1 @@
+{"id": "signin-hint-lost", "repo": ".", "file": "public/screens/signin.js", "find": "\"&h=\" + encodeURIComponent(email.value.trim())", "replace": "\"\"", "test": "tests/signin-one-page.test.ts", "note": "the typed e-mail is no longer passed to Google"}

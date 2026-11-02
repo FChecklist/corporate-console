@@ -1,0 +1,1 @@
+{"id": "signin-google-small", "repo": ".", "file": "public/core/app.css", "find": "width: 100%; min-height: 56px; padding: 0 20px; border-radius: 12px;", "replace": "width: auto; min-height: 36px; padding: 0 20px; border-radius: 12px;", "test": "tests/signin-one-page.test.ts", "note": "a small, narrow Google button"}

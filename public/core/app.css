@@ -129,6 +129,13 @@ body.has-tabbar .updatebar { bottom: 92px; }
 .field { display: grid; gap: 6px; }
 .field label { font-weight: 600; }
 .field input { min-height: 52px; padding: 0 14px; font: 18px var(--sans); border: 1.5px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); }
+/* "Continue with Google": the first and biggest action on the sign-in card (full width, 56 px high, bold 18 px, the standard G mark, strong border; dark text on white reads 16:1 in light and dark) */
+.provs { display: grid; gap: 14px; }
+.gbtn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 56px; padding: 0 20px; border-radius: 12px; border: 2px solid var(--ink); background: #fff; color: #1f1f1f; font: 700 18px/1.2 var(--sans); box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: background .15s; }
+.gbtn:hover { background: #eaeef5; }
+.gbtn .gmark { width: 24px; height: 24px; flex: none; }
+.orline { display: flex; align-items: center; gap: 12px; margin: 0; color: var(--muted); font-size: 14.5px; }
+.orline::before, .orline::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .opt { display: flex; gap: 12px; align-items: flex-start; }
 .opt input { width: 24px; height: 24px; margin: 3px 0 0; flex: none; }
 .opt .t { display: grid; gap: 2px; }
