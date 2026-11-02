@@ -57,8 +57,8 @@ The work is split into topics because a Cloudflare Pages Function on the free pl
 
 | Name | What for | Where it lives |
 |---|---|---|
-| `ORGANIZER_SECRET` | the owner password; sent to the games' own owner routes as `x-organizer` | `C:\ct\tambola\config\live-secrets.txt` (line `ORGANIZER_SECRET=`) and, once released, a Pages secret of `corporate-console` |
-| `AI_CONTROL_KEY` | the AI read key (48 random hex characters), only for `/api/control/*` | `C:\ct\tambola\config\mission-control-keys.txt` (made by `node tools/control-make-key.mjs`, never printed) and a Pages secret |
+| `ORGANIZER_SECRET` | the owner password; sent to the games' own owner routes as `x-organizer` | `C:\ct\tambola\config\live-secrets.txt` (line `ORGANIZER_SECRET=`) and a Pages secret of `corporate-console` (set 2 Nov 2026) |
+| `AI_CONTROL_KEY` | the AI read key (48 random hex characters), only for `/api/control/*` | `C:\ct\tambola\config\mission-control-keys.txt` (made by `node tools/control-make-key.mjs`, never printed) and a Pages secret (set 2 Nov 2026) |
 | `CF_API_TOKEN`, `CF_ACCOUNT_ID` | optional: lets the Releases tab list Cloudflare Pages deployments (GET only). Make a **read-only** token (Pages: Read) | Pages secrets |
 | `LEDGER_KEY` | optional: lets the Payments tab read the central ledger on `itservices-rajat-agarwal` (Bearer, GET only) | Pages secret |
 
@@ -103,17 +103,20 @@ Tests: `bun test --isolate tests/control-core.test.ts tests/control-page.test.ts
 
 Each action would need its own confirmation step, the owner password (or a separate AI action key), a dry run that says what would change, and a history line written before and after.
 
-## Release plan (nothing here has been done)
+## Release (done on 2 Nov 2026, 16:40 IST)
 
-One site at a time, the console only. Do not start without the boss's go-ahead.
+The console only, one site, in this order:
 
-1. Live gate first: `python C:\ct\test-sites\tools\live_games_now.py` — the last line must end `: 0`.
-2. Note the console's current deployment id as the **rollback id** (Pages deployment list).
-3. Apply migration `0005_control_history.sql` to D1 `corporate-games-master-console` (it only adds a table and two triggers; safe to repeat).
-4. Set the Pages secrets `ORGANIZER_SECRET` and `AI_CONTROL_KEY` (and, if wanted, a read-only `CF_API_TOKEN` + `CF_ACCOUNT_ID`, and `LEDGER_KEY`) with `putsecret.py`. Check that setting secrets on this `wrangler.toml`-managed project does not drop its existing variables (the handover warns about the "merge" behaviour) before and after.
-5. Full test run (`bun test --isolate`) must be clean. Stamp the release, build, `check-dist`, deploy.
-6. After deploy: `version.json` equals the deployed commit; `/owner/` is noindex; `/api/control/ping` without a password answers 404; with the password it answers `{who:"owner"}`.
-7. Add the history line with `node tools/control-history.mjs ... --remote`.
-8. Rollback: promote the rollback id from step 2.
+1. Live gate: `python C:\ct\test-sites\tools\live_games_now.py` ended `: 0` (checked twice, and again inside the deploy script).
+2. Rollback id recorded: `9210e824-bbcf-4678-9c64-01a4b04008a1` (the console's live deployment before this release, commit `584cc77`). To go back: promote that deployment in the Pages dashboard (or redeploy its commit).
+3. Work rebased onto `584cc77` first, because that live commit carries the console's own address and the Google sign-in id in `wrangler.toml`; deploying from the older base would have undone them.
+4. Full test run on the partner laptop: 505 pass, 0 fail, 48 files, on the head before the stamp.
+5. Migration `0005_control_history.sql` applied to D1 `corporate-games-master-console` (table, index, two triggers). An UPDATE and a DELETE on the table were then tried and both refused.
+6. Pages secrets `ORGANIZER_SECRET` and `AI_CONTROL_KEY` set. The project's variable names were listed before and after: 8 before, 10 after, none dropped, none changed, D1 binding intact.
+7. Stamp, commit `releases.json` last (`fd4dde5`), `build.mjs --env live`, `check-dist --deploy` ("dist/ is fresh and carries the version"), deploy. New deployment `fdc07fab-9467-46a5-a397-55622a65a8bd`.
+8. After the deploy: `version.json` commit `fd4dde53def0`, `/owner/` noindex (page and header), robots Disallow, no sitemap file, `/auth/me` unchanged, `/api/control/*` without a key answers 404, the owner password answers `{who:"owner"}`, the AI key answers `{who:"ai"}` and is refused as the owner password, nothing can be changed through the AI key. `owner.js` and `owner.css` on the live site are byte for byte what was tested.
+9. History line 1 written (`--remote`), read back through the AI door.
 
-Base commit for this change is the live console commit `6ef68cd`. The console commit `584cc77` (origin change) is not live; merge or rebase after it is released.
+What is still not connected (the page says so itself): the Cloudflare deployment list (needs a read-only `CF_API_TOKEN` and `CF_ACCOUNT_ID`) and the central ledger (needs `LEDGER_KEY`).
+
+Look at the live page the same way with `node tools/heavy-run.mjs --min-free-mb 700 -- node tools/browser-tests/control-live-check.mjs --out <folder outside the repository>`; it signs in with the owner password read at run time.
