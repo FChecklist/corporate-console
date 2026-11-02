@@ -12,27 +12,46 @@ const SOFT = "No problem - please use your e-mail below.";
 export const OAUTH_WORDS = { declined: SOFT, unverified: SOFT, retry: SOFT, wait: SOFT, off: SOFT }; // a provider's own error text is never shown
 const PROVIDER_NAMES = { google: "Google", microsoft: "Microsoft" };
 
+/** the standard four-colour Google "G" mark, drawn from its four official shapes (no image file, no inline style: the page's policy forbids both) */
+const G_SHAPES = [
+  ["#EA4335", "M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"],
+  ["#4285F4", "M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"],
+  ["#FBBC05", "M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"],
+  ["#34A853", "M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"],
+];
+export function googleMark() {
+  const ns = "http://www.w3.org/2000/svg", set = (n, o) => { for (const [k, v] of Object.entries(o)) n.setAttribute(k, v); return n; };
+  const svg = set(document.createElementNS(ns, "svg"), { viewBox: "0 0 48 48", width: "24", height: "24", class: "gmark", "aria-hidden": "true", focusable: "false" });
+  for (const [fill, d] of G_SHAPES) svg.append(set(document.createElementNS(ns, "path"), { fill, d }));
+  return svg;
+}
+
 export function renderSignIn(outlet, ctx) {
   const { api, onSignedIn } = ctx;
   const waitMs = ctx.resendAfterMs ?? RESEND_AFTER_MS;
   const msg = el("p", { class: "signmsg", role: "status", "aria-live": "polite" });
   const say = (text, bad) => { msg.textContent = text; msg.classList.toggle("bad", !!bad); };
-  const email = el("input", { id: "si-email", type: "email", autocomplete: "email", inputmode: "email", required: true, placeholder: "you@yourcompany.com", "aria-label": "Your work e-mail" });
+  const email = el("input", { id: "si-email", type: "email", autocomplete: "email", inputmode: "email", required: true, placeholder: "Type your e-mail", "aria-label": "Your e-mail" });
     const terms = ctx.termsUrl || "#";
   const sendBtn = button("Send me a code", { main: true });
   sendBtn.type = "submit";
-  const form = el("form", { class: "zform", novalidate: true },
-    el("div", { class: "field" }, el("label", { for: "si-email", text: "Your work e-mail" }), email),
-    el("p", { class: "hintline", text: "The system sends one code to this address. No password." }),
-    sendBtn);
-  // Google and Microsoft sit in the same box as the e-mail option; they appear only when the console has them switched on. The code step is skipped for them.
-  const providers = el("div", { class: "btns hide", id: "si-providers" }, el("p", { class: "hintline", text: "Or continue with" }));
+  const form = el("form", { class: "zform", novalidate: true });
+  // Google (and Microsoft, if the console ever switches it on) is the FIRST and biggest action on the card; they appear only when the console has them switched on. The code step is skipped for them.
+  // A calm line "or use your e-mail" separates them from the e-mail option below.
+  const providers = el("div", { class: "provs hide", id: "si-providers" });
   const goTo = ctx.assign || ((u) => location.assign(u));
   for (const id of ["google", "microsoft"]) {
-    const b = button(`Continue with ${PROVIDER_NAMES[id]}`, { onclick: () => { try { sessionStorage.setItem("si-hint", email.value.trim()); } catch { /* optional */ } const h = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()) ? "&h=" + encodeURIComponent(email.value.trim()) : ""; goTo(`/auth/oauth/start?p=${id}${h}`); } });
+    const go = () => { try { sessionStorage.setItem("si-hint", email.value.trim()); } catch { /* optional */ } const h = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()) ? "&h=" + encodeURIComponent(email.value.trim()) : ""; goTo(`/auth/oauth/start?p=${id}${h}`); };
+    const b = id === "google"
+      ? el("button", { type: "button", class: "gbtn", onclick: go }, googleMark(), el("span", { text: `Continue with ${PROVIDER_NAMES[id]}` }))
+      : button(`Continue with ${PROVIDER_NAMES[id]}`, { onclick: go });
     b.dataset.provider = id; b.classList.add("hide"); providers.append(b);
   }
-  form.append(providers);
+  providers.append(el("p", { class: "orline", id: "si-or", text: "or use your e-mail" }));
+  form.append(providers,
+    el("div", { class: "field" }, el("label", { for: "si-email", text: "Your e-mail" }), email),
+    el("p", { class: "hintline", text: "The system sends one code to this address. No password." }),
+    sendBtn);
   // one small line BELOW the buttons; the three names open the one document at their sections (no tick box, owner rule 1 Nov)
   const doc = ctx.legalUrl || "https://home.corporatetambola.com/terms";
   const link = (t, a) => el("a", { href: `${doc}#${a}`, target: "_blank", rel: "noopener", text: t });
@@ -95,5 +114,5 @@ export function renderSignIn(outlet, ctx) {
   });
 
   clear(outlet);
-  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page signin" }, el("h1", { text: "Sign in" }), el("p", { class: "lead", text: "Use your work e-mail. The system sends you a code. There is no password to remember." }), el("p", { id: "si-sent", class: "hintline", role: "status" }), msg, form, codeForm)));
+  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page signin" }, el("h1", { text: "Sign in" }), el("p", { class: "lead", text: "Use your e-mail. The system sends you a code. There is no password to remember." }), el("p", { id: "si-sent", class: "hintline", role: "status" }), msg, form, codeForm)));
 }

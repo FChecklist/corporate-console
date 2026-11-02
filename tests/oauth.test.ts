@@ -28,7 +28,7 @@ test("a wrong nonce is refused", async () => { expect(await chk("google", await 
 test("a missing nonce is refused", async () => { expect((await chk("google", await token(g({ nonce: undefined })), "gid")).ok).toBe(false); });
 test("a token for another client (audience) is refused", async () => { expect(await chk("google", await token(g({ aud: "someone-else" })), "gid")).toEqual({ ok: false, reason: "audience" }); });
 test("an unverified Google e-mail is refused", async () => { expect(await chk("google", await token(g({ email_verified: false })), "gid")).toEqual({ ok: false, reason: "unverified" }); });
-test("a Microsoft work e-mail without a confirmed domain is refused", async () => { expect(await chk("microsoft", await token(ms({ xms_edov: undefined })), "mid")).toEqual({ ok: false, reason: "unverified" }); });
+test("a Microsoft e-mail without a confirmed domain is refused", async () => { expect(await chk("microsoft", await token(ms({ xms_edov: undefined })), "mid")).toEqual({ ok: false, reason: "unverified" }); });
 test("an expired token is refused", async () => { expect(await chk("google", await token(g({ exp: NOW / 1000 - 300 })), "gid")).toEqual({ ok: false, reason: "expired" }); });
 test("a wrong issuer is refused", async () => {
   expect(await chk("google", await token(g({ iss: "https://evil.example" })), "gid")).toEqual({ ok: false, reason: "issuer" });

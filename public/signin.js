@@ -3,6 +3,7 @@ import { showVersion } from "/core/version.js";
 const t = new URLSearchParams(location.search).get("t") || "";
 const msg = document.getElementById("msg"), go = document.getElementById("go");
 history.replaceState(null, "", location.pathname); // the one-time token leaves the address bar at once
+if (!t) location.replace("/"); // no token = nobody is finishing a sign-in here: this address is the sign-in screen itself (the one sign-in address is the console root)
 go.addEventListener("click", async () => {
   go.disabled = true;
   try {

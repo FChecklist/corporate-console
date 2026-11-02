@@ -1,0 +1,1 @@
+{"id": "signin-or-line-missing", "repo": ".", "file": "public/screens/signin.js", "find": "  providers.append(el(\"p\", { class: \"orline\", id: \"si-or\", text: \"or use your e-mail\" }));", "replace": "", "test": "tests/signin-one-page.test.ts", "note": "no divider line under the Google button"}
