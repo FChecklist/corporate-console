@@ -1,0 +1,1 @@
+{"id": "signin-work-email-label", "repo": ".", "file": "public/screens/signin.js", "find": "el(\"label\", { for: \"si-email\", text: \"Your e-mail\" })", "replace": "el(\"label\", { for: \"si-email\", text: \"Your work e-mail\" })", "test": "tests/signin-one-page.test.ts", "note": "the label says work e-mail again"}

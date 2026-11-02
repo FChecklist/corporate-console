@@ -40,7 +40,7 @@ const matches = (pattern: string, path: string) => pattern === path || (pattern.
 
 const { db } = makeD1();
 let lastMail = "";
-const env: Env = { DB: db, SESSION_PEPPER: "stack-pepper", CONSOLE_SIGNING_KEY: btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.exportKey("pkcs8", kp.privateKey)))), CONSOLE_ORIGIN: "", GAME_ORIGINS: JSON.stringify(ports), MAILER: async (_to, _subject, text) => { lastMail = text; } };
+const env: Env = { DB: db, SESSION_PEPPER: "stack-pepper", CONSOLE_SIGNING_KEY: btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.exportKey("pkcs8", kp.privateKey)))), CONSOLE_ORIGIN: "", GAME_ORIGINS: JSON.stringify(ports), MAILER: async (_to, _subject, text) => { lastMail = text; }, ...(process.env.STACK_GOOGLE === "1" ? { GOOGLE_CLIENT_ID: "stack-client-id", GOOGLE_CLIENT_SECRET: "stack-client-secret" } : {}) }; // STACK_GOOGLE=1: the console has "Continue with Google" switched on (fake keys: the button shows, nothing leaves this laptop)
 const con = Bun.serve({
   port: 0, hostname: "127.0.0.1",
   fetch: async (req) => {

@@ -1,0 +1,1 @@
+{"id": "signin-google-no-mark", "repo": ".", "file": "public/screens/signin.js", "find": "class: \"gbtn\", onclick: go }, googleMark(), ", "replace": "class: \"gbtn\", onclick: go }, ", "test": "tests/signin-one-page.test.ts", "note": "the Google button without the G mark"}
