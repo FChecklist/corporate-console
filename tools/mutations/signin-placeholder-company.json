@@ -1,0 +1,1 @@
+{"id": "signin-placeholder-company", "repo": ".", "file": "public/screens/signin.js", "find": "placeholder: \"Type your e-mail\"", "replace": "placeholder: \"you@yourcompany.com\"", "test": "tests/signin-one-page.test.ts", "note": "an example company domain in the field"}

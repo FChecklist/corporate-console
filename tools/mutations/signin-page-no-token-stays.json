@@ -1,0 +1,1 @@
+{"id": "signin-page-no-token-stays", "repo": ".", "file": "public/signin.js", "find": "if (!t) location.replace(\"/\");", "replace": "", "test": "tests/signin-one-page.test.ts", "note": "/signin.html without a token stays a dead-end page"}

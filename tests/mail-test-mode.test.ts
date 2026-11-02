@@ -63,7 +63,7 @@ test("every e-mail address in the tests, the test tools and the fixtures is a de
       const p = join(dir, e.name);
       if (e.isDirectory()) { if (!/^(node_modules|mutations)$/.test(e.name)) walk(p); continue; }
       if (!/\.(ts|js|mjs|json)$/.test(e.name) || /mail-test-mode\.test\.ts$/.test(e.name)) continue;
-      for (const m of readFileSync(p, "utf8").matchAll(/[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)) if (!OK.test(m[0]) && !/^(you@yourcompany\.com|name@company\.com|evil|x)@/.test(m[0]) && !/@evil\./.test(m[0])) bad.push(p.slice(ROOT.length + 1) + ": " + m[0]);
+      for (const m of readFileSync(p, "utf8").matchAll(/[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)) if (!OK.test(m[0]) && !/^(name@company\.com|evil|x)@/.test(m[0]) && !/@evil\./.test(m[0])) bad.push(p.slice(ROOT.length + 1) + ": " + m[0]);
     }
   };
   for (const d of ["tests", "packages/bridge/test-kit", "tools/fake-game", "tools/browser-tests"]) walk(join(ROOT, d));
