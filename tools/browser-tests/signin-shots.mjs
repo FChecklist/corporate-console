@@ -3,7 +3,7 @@
 // Saves signin-<google-on|google-off>-<light|dark>-<width>.png and checks on every picture: no sideways scroll | tap targets >= 44 px | no visible text under 13 px | no browser error
 //   | wording ("Your e-mail", "Type your e-mail", no work/company e-mail) | Google ON: the Google button is the FIRST control, the full width of the card, >= 52 px high, bold 17-18 px, with the four-colour G,
 //   then "or use your e-mail", then the e-mail field and "Send me a code" | Google OFF: no Google button, no divider.
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -18,7 +18,7 @@ const root = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)
 function startStack(google) {
   const stack = spawn("bun", ["tools/browser-tests/stack.ts"], { cwd: root, env: { ...process.env, STACK_GOOGLE: google ? "1" : "0" }, stdio: ["ignore", "pipe", "inherit"], shell: process.platform === "win32" });
   const info = new Promise((ok, bad) => { let buf = ""; stack.stdout.on("data", (d) => { buf += d; const m = /STACK (.+)\n/.exec(buf); if (m) ok(JSON.parse(m[1])); }); stack.on("exit", (c) => bad(new Error("stack stopped early " + c))); });
-  const stop = () => { try { stack.kill(); if (process.platform === "win32" && stack.pid) spawn("taskkill", ["/pid", String(stack.pid), "/t", "/f"], { stdio: "ignore" }); } catch { /* gone */ } };
+  const stop = () => { try { if (process.platform === "win32" && stack.pid) spawnSync("taskkill", ["/pid", String(stack.pid), "/t", "/f"], { stdio: "ignore" }); else stack.kill(); } catch { /* gone */ } }; // the whole tree first: killing the shell alone would leave the servers running
   return { info, stop };
 }
 
