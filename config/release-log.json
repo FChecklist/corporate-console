@@ -1,7 +1,17 @@
 {
  "source": "release handover, section 10 (release log)",
- "mirroredAt": "2026-11-02T07:49:49.625Z",
+ "mirroredAt": "2026-11-02T09:23:20.988Z",
  "entries": [
+  {
+   "day": "2026-11-02",
+   "time": "14:30",
+   "site": "several",
+   "from": null,
+   "to": null,
+   "rollback": "b4985a78",
+   "deployment": null,
+   "text": "2 Nov 14:30 to 14:34 IST (owner order: Razorpay approved international payments; \"complete the international integration\") INTERNATIONAL PAYMENTS SWITCHED ON on all six games: secret RAZORPAY_INTERNATIONAL=1 set on each Pages project and the SAME build redeployed, one site at a time (live gate 0 before each; local tree checked equal to live version.json commit and builtAt before each). New deployments: Luck by Chance 3bf0c431-cdfd-4169-96a2-86f3dc031f73 (rollback b4985a78); Tic Tac Toe 338877c2-9148-4fbf-a7b4-5f1fb973559a (rollback 05f7a0e0); Snakes and Ladders f9a2e2e2-b19a-45fc-9f89-0cba0..."
+  },
   {
    "day": "2026-11-02",
    "time": "10:51",
@@ -50,7 +60,7 @@
    "to": "c005f50",
    "rollback": "95ff2563",
    "deployment": "fd7310d2-2c4f-4bb6-8c23-f0d83a096dbe",
-   "text": "09:10 IST (2 Nov, time from the Cloudflare list) Home e3d367d -> c005f50, deployment fd7310d2-2c4f-4bb6-8c23-f0d83a096dbe, rollback 95ff2563. Owner-approved wording: the ID answer in \"Questions from HR, IT and Legal\" (Employee, Associate, Member or Vendor ID; no name, e-mail, mobile number or Aadhaar for people on the list), the compliance bullets (\"No personal data is asked for.\" and \"No advertising trackers. Players are never e-mailed, as no e-mail is collected.\"). Word limit T09 raised 1700 -> 1710 (real count 1709). Tests on this exact tree: 15 cases, 1871 checks, 0 failed. Live fetch c..."
+   "text": "09:10 IST (2 Nov, time from the Cloudflare list) Home e3d367d -> c005f50, deployment fd7310d2-2c4f-4bb6-8c23-f0d83a096dbe, rollback 95ff2563. Owner-approved wording: the ID answer in \"Questions from HR, IT and Legal\" (team member, Associate, Member or Vendor ID; no name, e-mail, mobile number or Aadhaar for people on the list), the compliance bullets (\"No personal data is asked for.\" and \"No advertising trackers. Players are never e-mailed, as no e-mail is collected.\"). Word limit T09 raised 1700 -> 1710 (real count 1709). Tests on this exact tree: 15 cases, 1871 checks, 0 failed. Live fetc..."
   },
   {
    "day": "2026-11-02",

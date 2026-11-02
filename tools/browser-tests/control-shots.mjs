@@ -51,7 +51,8 @@ try {
       rows.push(r);
       await page.screenshot({ path: join(out, `${mode}-${v.name}-${label}.png`), fullPage: true });
     };
-    await record("sign-in");
+    const shown = (id) => page.evaluate((i) => getComputedStyle(document.getElementById(i)).display !== "none", id);
+    await record("sign-in", { "tabs are not visible before sign-in": !(await shown("mc-app")) });
     // a wrong password must open nothing
     await page.fill("#mc-key", "this-is-not-the-password");
     await page.click("#mc-form button[type=submit]");
@@ -68,13 +69,34 @@ try {
         await page.waitForFunction(() => !document.getElementById("mc-panel").textContent.includes("One moment."), null, { timeout: 90000 });
       }
       const text = await page.evaluate(() => document.getElementById("mc-panel").textContent.trim());
-      await record(t, { "panel has content": text.length > 40, "no read failure": !/could not read this just now/i.test(text) });
+      await record(t, { "panel has content": text.length > 40, "no read failure": !/could not read this just now/i.test(text), ...(t === "overview" ? { "sign-in box is gone after sign-in": !(await shown("mc-form")), "version line is shown": (await page.evaluate(() => document.getElementById("version-line")?.textContent || "")).length > 0 } : {}) });
+      if (t === "games") { // every game opened, so the 'not available' lines can be seen
+        await page.evaluate(() => document.querySelectorAll("#mc-panel details").forEach((d) => { d.open = true; }));
+        await record("games-open");
+      }
     }
     // the password must not be anywhere in the page after sign-in
     const leaked = await page.evaluate((pw) => document.documentElement.outerHTML.includes(pw) || document.getElementById("mc-key").value.includes(pw), password);
     rows.push({ view: v.name, page: "after sign-in", "password not in the page": !leaked });
     await ctx.close();
   }
+  // the AI door, asked from outside the browser: the read key opens the read routes, nothing else does
+  const aiKey = mode === "sample" ? info.aiKey : ((/^AI_CONTROL_KEY=(.*)$/m.exec(readFileSync("C:/ct/tambola/config/mission-control-keys.txt", "utf8")) || [])[1] || "").trim();
+  if (aiKey) {
+    const hit = async (path, headers, method = "GET") => { const r = await fetch(info.origin + path, { method, headers }); let b = null; try { b = await r.json(); } catch { /* not json */ } return { status: r.status, body: b }; };
+    const ov = await hit("/api/control/overview", { "x-control-key": aiKey });
+    rows.push({
+      view: "AI door", page: "/api/control",
+      "AI key reads the overview (all nine lines)": ov.status === 200 && ov.body?.lines?.length === 9 && ov.body?.readOnly === true,
+      "AI key says who it is": (await hit("/api/control/ping", { "x-control-key": aiKey })).body?.who === "ai",
+      "no key gets 404": (await hit("/api/control/overview", {})).status === 404,
+      "a wrong key gets 404": (await hit("/api/control/overview", { "x-control-key": "x".repeat(48) })).status === 404,
+      "AI key in the owner header gets 404": (await hit("/api/control/overview", { "x-organizer": aiKey })).status === 404,
+      "AI key cannot do the organizer lookup": (await hit("/api/control/organizer", { "x-control-key": aiKey, "content-type": "application/json" }, "POST")).status === 404,
+      "AI key cannot change anything (POST on overview)": (await hit("/api/control/overview", { "x-control-key": aiKey }, "POST")).status === 404,
+      "the answer holds neither key nor password": !JSON.stringify(ov.body).includes(aiKey) && !JSON.stringify(ov.body).includes(password),
+    });
+  } else rows.push({ view: "AI door", page: "/api/control", "an AI key file was found": false });
 } finally { await chrome.close(); killTree(stack.pid); }
 
 const bad = rows.flatMap((r) => Object.entries(r).filter(([k, val]) => val === false).map(([k]) => `${r.view} / ${r.page}: ${k}`));

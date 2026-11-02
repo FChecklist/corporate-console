@@ -54,7 +54,7 @@ test("the owner password and the AI key each open the read routes; who is asking
 test("everything is read only: POST, PUT and DELETE on every route are 404, the organizer lookup is for the owner only, and no call to any site is anything but GET", async () => {
   const w = world({}, { cf: true });
   for (const p of ALL_GET) for (const method of ["POST", "PUT", "DELETE", "PATCH"]) expect([p, method, (await go(w, p, { method, body: "{}" })).status]).toEqual([p, method, 404]);
-  const lookup = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ game: "tambola", email: "organizer@acme.example" }) };
+  const lookup = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ game: "tambola", email: "demo21@demo-test.invalid" }) };
   expect((await go(w, "/api/control/organizer", { ...lookup, as: "ai" })).status).toBe(404);
   w.seen.length = 0;
   for (const p of ALL_GET) await go(w, p);
@@ -152,12 +152,12 @@ test("NO PERSONAL DETAILS: names, phone numbers, e-mail addresses, card ids and 
   const w = world({}, { cf: true });
   const seenText: string[] = [];
   for (const p of [...ALL_GET, "/api/control/game?id=bingo", "/api/control/games", ...CFG.games.map((g) => "/api/control/websites?site=" + g.id), "/api/control/payments?month=2026-11"]) for (const as of ["owner", "ai"] as const) seenText.push((await go(w, p, { as })).text);
-  const lookup = await go(w, "/api/control/organizer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ game: "tambola", email: "organizer@acme.example" }) });
+  const lookup = await go(w, "/api/control/organizer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ game: "tambola", email: "demo21@demo-test.invalid" }) });
   seenText.push(lookup.text);
-  expect(lookup.body.email).toBe("o***@acme.example"); // the address asked about comes back hidden
+  expect(lookup.body.email).toBe("d***@demo-test.invalid"); // the address asked about comes back hidden
   const all = seenText.join("\n");
   for (const bit of SECRET_BITS) expect([bit, all.includes(bit)]).toEqual([bit, false]);
-  expect(all).not.toContain("organizer@acme.example");
+  expect(all).not.toContain("demo21@demo-test.invalid");
   expect(all).not.toMatch(/card_last4|vpa_masked|attempts/); // no card or UPI details either
 });
 
@@ -170,8 +170,8 @@ test("NO PASSWORD IN ANY OUTPUT: neither the owner password nor the AI key nor t
 });
 
 test("scrub: e-mail addresses are hidden, long numbers removed, texts shortened, numbers left alone", () => {
-  expect(maskEmail("ravi@example.com")).toBe("r***@example.com");
-  expect(scrubText("write to a.b+c@x.co.in or call 9876543210 now")).toBe("write to a***@x.co.in or call ... now");
+  expect(maskEmail("demo24@demo-test.invalid")).toBe("d***@demo-test.invalid");
+  expect(scrubText("write to demo25@demo-test.invalid or call 9876543210 now")).toBe("write to d***@demo-test.invalid or call ... now");
   expect(scrub({ a: ["x@y.com", 12345678901], b: { c: "ok" } })).toEqual({ a: ["x***@y.com", 12345678901], b: { c: "ok" } });
   expect(scrubText("x".repeat(500)).length).toBe(300);
 });
@@ -287,11 +287,11 @@ test("History table works under a table prefix, like the other console tables", 
 test("Organizer lookup (owner only, read only): found, not found, bad input; the address is shown hidden", async () => {
   const w = world({ luckydraw: "lacking" });
   const post = (b: unknown) => go(w, "/api/control/organizer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(b) });
-  const ok = await post({ game: "bingo", email: "Organizer@Acme.example" });
-  expect(ok.body).toMatchObject({ ok: true, found: true, email: "o***@acme.example" });
+  const ok = await post({ game: "bingo", email: "DEMO21@demo-test.invalid" });
+  expect(ok.body).toMatchObject({ ok: true, found: true, email: "d***@demo-test.invalid" });
   expect(ok.body.games).toEqual([{ id: "E1", state: "ended", start: "2026-10-30T10:00:00.000Z", paid: true, created: "2026-10-29T10:00:00.000Z" }]);
-  expect((await post({ game: "bingo", email: "nobody@acme.example" })).body.found).toBe(false);
-  expect((await post({ game: "nope", email: "a@b.co" })).status).toBe(400);
+  expect((await post({ game: "bingo", email: "demo22@demo-test.invalid" })).body.found).toBe(false);
+  expect((await post({ game: "nope", email: "demo23@demo-test.invalid" })).status).toBe(400);
   expect((await post({ game: "bingo", email: "not-an-email" })).status).toBe(400);
 });
 

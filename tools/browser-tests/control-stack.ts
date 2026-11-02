@@ -26,7 +26,7 @@ let env: ControlEnv, fetchFn: typeof fetch, extra: Record<string, unknown> = {};
 if (mode === "sample") {
   const w = world({ tambola: "full", bingo: "lacking", tictactoe: "full", snakesladders: "test-mode", luckbychance: "many-errors", luckydraw: "down" }, { cf: true });
   env = w.env; fetchFn = w.fetchFn;
-  extra = { password: w.env.ORGANIZER_SECRET };
+  extra = { password: w.env.ORGANIZER_SECRET, aiKey: w.env.AI_CONTROL_KEY }; // both made up for this run
   // some history lines so the table is not empty in the pictures
   const t = Date.UTC(2026, 10, 2, 5, 0, 0);
   for (const [i, [who, site, what, result]] of ([["ai", "bingo", "Released Bingo fc5f01f", "live gate 0; version.json matches"], ["owner", "home", "Checked the 12 pages", "all fine"], ["ai", "console", "Looked at Mission Control", "no problems found"]] as const).entries())
@@ -43,7 +43,8 @@ if (mode === "sample") {
 }
 
 const dist = mkdtempSync(join(tmpdir(), "control-dist-"));
-build({ env: "test", out: dist });
+const rel = JSON.parse(readFileSync(new URL("../../releases.json", import.meta.url), "utf8"))[0]; // the real version and release time, so the version line shows as it will live
+build({ env: "test", out: dist, version: rel.version, releasedAt: rel.releasedAt });
 const cfg = JSON.parse(readFileSync(new URL("../../config/games.json", import.meta.url), "utf8"));
 const headers = headersFile(cfg, "test");
 writeFileSync(join(dist, "_headers"), headers);
@@ -63,5 +64,8 @@ const srv = Bun.serve({
     return new Response(readFileSync(file), { headers: h });
   },
 });
-console.log("STACK " + JSON.stringify({ mode, origin: `http://127.0.0.1:${srv.port}`, ...extra }));
+const selfOrigin = `http://127.0.0.1:${srv.port}`;
+const askedFor = fetchFn;
+fetchFn = ((input: any, init?: any) => ((typeof input === "string" ? input : input.url).startsWith(selfOrigin) ? fetch(input, init) : askedFor(input, init))) as typeof fetch; // the console's own version file is the real local one
+console.log("STACK " + JSON.stringify({ mode, origin: selfOrigin, ...extra }));
 await new Promise(() => {}); // run until stopped

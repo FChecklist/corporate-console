@@ -1,5 +1,6 @@
 // Mission Control (owner only, read only). The owner password is typed here and kept in this page's memory only: it is never stored on the device and never put in an address.
 // Every text is drawn with textContent. Every call goes to this console's own /api/control/* (the same data the AI reads with its own key).
+import { showVersion } from "../core/version.js"; // the version and release time on every page of the console (the owner's rule)
 const LIGHTS = { green: "Green", amber: "Amber", red: "Red" };
 const GONE = { not_available: "Not available on this game.", refused: "This game did not accept the owner password.", unreachable: "This game did not answer just now." };
 
@@ -215,4 +216,4 @@ export function start(doc = document, fetchFn = (...a) => fetch(...a)) {
   return { show, lock };
 }
 
-if (typeof document !== "undefined" && document.getElementById("mc-form") && !globalThis.__MC_NO_AUTOSTART) start(document);
+if (typeof document !== "undefined" && document.getElementById("mc-form") && !globalThis.__MC_NO_AUTOSTART) { start(document); showVersion(); }

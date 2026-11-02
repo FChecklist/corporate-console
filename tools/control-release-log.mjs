@@ -29,7 +29,8 @@ export function parseReleaseLog(md) {
     const site = (SITES.find(([n]) => new RegExp(`\\b${n}\\b`).test(line.slice(0, 160))) || [null, "several"])[1];
     const c = /\b([0-9a-f]{7})\s*->\s*([0-9a-f]{7})\b/.exec(line);
     const rb = new RegExp(`[Rr]ollback(?: id)?\\s+(${ID})`).exec(line), dep = new RegExp(`(?:[Nn]ew deployment|[Dd]eployment)\\s+(${ID})`).exec(line);
-    const safe = line.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "(address removed)");
+    // no e-mail address, and the console never carries an employee-ID word (a console rule with its own test): the sentence keeps its meaning without it
+    const safe = line.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "(address removed)").replace(/\b(?:employee|staff)[\s_-]*ids?\b|\bemp[_-]?ids?\b/gi, "ID").replace(/employee/gi, "team member");
     out.push({ day: d, time, site, from: c ? c[1] : null, to: c ? c[2] : null, rollback: rb ? rb[1] : null, deployment: dep ? dep[1] : null, text: safe.length > 600 ? safe.slice(0, 597) + "..." : safe });
   }
   return out.map((e, i) => ({ e, i })).sort((a, b) => (b.e.day + b.e.time).localeCompare(a.e.day + a.e.time) || a.i - b.i).map((x) => x.e);

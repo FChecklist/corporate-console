@@ -37,4 +37,6 @@
 .mc .gone { color: var(--muted); font-style: italic; }
 .mc-tool { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin: 8px 0 12px; }
 .mc code { font-size: 13px; overflow-wrap: anywhere; }
+.versionline { max-width: 1100px; margin: 24px auto 16px; padding: 0 16px; font-size: 13px; color: var(--muted); }
+.mc [hidden] { display: none !important; } /* the sign-in box really goes away after sign-in, and the tabs really stay away before it */
 @media (max-width: 560px) { .mc { padding: 12px; } .mc dl { grid-template-columns: 1fr; } .mc-line { grid-template-columns: 1fr; } }

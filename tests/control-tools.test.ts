@@ -23,7 +23,7 @@ test("history writer: a good line passes; a wrong writer, a bad site, empty or l
   expect(bad({ site: "Bad Site!" }).errors[0]).toMatch(/--site/);
   expect(bad({ what: "" }).ok).toBe(false);
   expect(bad({ result: "x".repeat(501) }).ok).toBe(false);
-  expect(bad({ what: "asked ravi@example.com to pay" }).errors.join()).toMatch(/person's details/);
+  expect(bad({ what: "asked demo24@demo-test.invalid to pay" }).errors.join()).toMatch(/person's details/);
   expect(bad({ result: "phone 9876543210" }).errors.join()).toMatch(/person's details/);
   expect(bad({ ref: "no spaces allowed" }).ok).toBe(false);
   expect(bad({ at: "not a time" }).ok).toBe(false);
@@ -47,7 +47,7 @@ test("history writer, command line: without --sqlite or --remote it only prints;
   expect(dry.status).toBe(0);
   expect(dry.stdout).toMatch(/^INSERT INTO control_history/);
   expect(dry.stdout).toContain("printed only");
-  const refused = run("--who", "ai", "--site", "home", "--what", "mail to a@b.co", "--result", "ok", "--remote");
+  const refused = run("--who", "ai", "--site", "home", "--what", "mail to demo23@demo-test.invalid", "--result", "ok", "--remote");
   expect(refused.status).toBe(2);
   expect(refused.stderr).toContain("Not written");
 });
@@ -55,7 +55,7 @@ test("history writer, command line: without --sqlite or --remote it only prints;
 test("release log mirror: release lines become entries with the ids cut out; other lines are left out; e-mail addresses are removed; newest first", () => {
   const md = [
     "# x", "## 10. Release log (append one line per release)",
-    "- 23:08 IST **Tambola** (corporate-tambola) e3d93e3 -> 88fa696 (boss session). Rollback id 21dc251c-2182-40c9-927a-844c5c0f9f39. New deployment 5a0429d6-667d-4e4e-b550-8f75696e24ae. Contact sneha@example.com",
+    "- 23:08 IST **Tambola** (corporate-tambola) e3d93e3 -> 88fa696 (boss session). Rollback id 21dc251c-2182-40c9-927a-844c5c0f9f39. New deployment 5a0429d6-667d-4e4e-b550-8f75696e24ae. Contact demo26@demo-test.invalid. Includes the uniform employee ID rule and the staff-ID check.",
     "- Disclosed differences from the rules: (1) something",
     "### Status snapshot 21:10 IST (exact)", "- Tambola a128674 (older claim-hold head): 3859 pass",
     "**2 Nov 2026 releases (boss session):**",
@@ -67,7 +67,9 @@ test("release log mirror: release lines become entries with the ids cut out; oth
   expect(e.map((x: any) => x.day + " " + x.time + " " + x.site)).toEqual(["2026-11-02 10:51 tictactoe", "2026-11-02 01:40 bingo", "2026-11-01 23:08 tambola"]);
   expect(e[2]).toMatchObject({ from: "e3d93e3", to: "88fa696", rollback: "21dc251c-2182-40c9-927a-844c5c0f9f39", deployment: "5a0429d6-667d-4e4e-b550-8f75696e24ae" });
   expect(e[2].text).toContain("(address removed)");
-  expect(e[2].text).not.toContain("sneha@");
+  expect(e[2].text).not.toContain("demo26@");
+  expect(e[2].text).toContain("the uniform ID rule and the ID check"); // the console never carries an employee-ID word
+  expect(e[2].text).not.toMatch(/employee|staff/i);
   expect(e[1]).toMatchObject({ from: "d5156bf", to: "fabd9a9", rollback: "c33752f8", deployment: "27fc8e5a" });
 });
 

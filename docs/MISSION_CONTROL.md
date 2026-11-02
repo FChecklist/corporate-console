@@ -20,7 +20,7 @@ The owner's control room for Corporate Games. One page, `/owner/` on the master 
 | **Logs and errors** | Errors by hour, mail problems, data requests, per game | `/api/owner/errors`, `/mail-events`, `/data-requests` |
 | **Releases and history** | Live version per game and its release notes, Cloudflare Pages deployments with rollback ids (when connected), the release log from the handover, and the append-only history table | `/version.json`, `/api/owner/releases`, Cloudflare API, `config/release-log.json`, D1 table `control_history` |
 
-If a game does not have one of these routes (for instance Tambola and Lucky Draw have no `/api/owner/funnel`), that panel says **"not available on this game"** and nothing else breaks.
+If a game does not have one of these routes, that panel says **"not available on this game"** and nothing else breaks. On 2 Nov 2026 the live games answered like this: Tambola has no `/api/owner/funnel` and no `/api/owner/game-records`, Lucky Draw has no `/api/owner/funnel`, and the other four have everything.
 
 ### The traffic lights
 
@@ -88,7 +88,7 @@ Tests: `bun test --isolate tests/control-core.test.ts tests/control-page.test.ts
 
 * Cloudflare deployments and rollback ids until a read-only `CF_API_TOKEN` and `CF_ACCOUNT_ID` are set as Pages secrets.
 * The central ledger (all games together) until `LEDGER_KEY` is set; the per-game ledgers work without it.
-* Anything a game does not offer yet (Tambola and Lucky Draw: funnel).
+* Anything a game does not offer yet (2 Nov 2026: Tambola has no step counts and no kept-games list; Lucky Draw has no step counts).
 * The home site, the console and the payment site get a light check in the overview (the front page, the sitemap or version file, the payment ping), not a deep one.
 * No live write of the history table, and no action of any kind.
 

@@ -128,11 +128,11 @@ test("Games tab: every game opens with its panels; 'not available' and 'did not 
   expect(t).toContain("Site viewed 12");
   expect(t).toContain("2 open, 1 late, 1 closed");
   expect(t).not.toMatch(/Ravi|9876543210|SECRET-NOTE/);
-  (p.doc.getElementById("mc-og") as any).value = "tambola"; (p.doc.getElementById("mc-oe") as any).value = "organizer@acme.example";
+  (p.doc.getElementById("mc-og") as any).value = "tambola"; (p.doc.getElementById("mc-oe") as any).value = "demo21@demo-test.invalid";
   p.doc.getElementById("mc-oe")!.closest("form")!.dispatchEvent(new p.win.Event("submit", { cancelable: true }));
-  await until(() => (p.doc.getElementById("mc-oout")!.textContent || "").includes("o***@acme.example"));
+  await until(() => (p.doc.getElementById("mc-oout")!.textContent || "").includes("d***@demo-test.invalid"));
   expect(p.doc.getElementById("mc-oout")!.textContent).toContain("1 game(s)");
-  expect(p.text()).not.toContain("organizer@acme.example");
+  expect(p.text()).not.toContain("demo21@demo-test.invalid");
 });
 
 test("Websites tab: a block per site with the search-engine rule, the answer and the speed of each page; a wrong rule is red", async () => {
