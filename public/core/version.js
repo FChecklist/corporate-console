@@ -7,7 +7,7 @@ export const MORE_FROM_US = [["VERIDIAN DPDP", "https://dpdp.veridian-aios.com/"
 export function showMoreLine(doc = document, before = null) {
   let p = doc.getElementById("more-line");
   if (p) return p;
-  p = doc.createElement("p"); p.id = "more-line"; p.className = "versionline"; p.append("More from us: ");
+  p = doc.createElement("p"); p.id = "more-line"; p.className = "versionline"; p.append("Explore more: ");
   MORE_FROM_US.forEach(([name, href], i) => {
     const a = doc.createElement("a"); a.href = href; a.rel = "noopener"; a.textContent = name; p.append(a);
     p.append(i < MORE_FROM_US.length - 2 ? ", " : i === MORE_FROM_US.length - 2 ? " and " : ".");
