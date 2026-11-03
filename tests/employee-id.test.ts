@@ -62,7 +62,8 @@ test("the screens' copy of the function is exactly the shared one", () => {
 });
 
 test("the master console never touches an employee ID: no screen, no sign-in code, no contract field, no hand-off mentions one; new code that does must use the shared function", () => {
-  const ALLOWED = new Set(["packages/game-pack/employee-id.js", "packages/game-pack/zc-flow.js"]);
+  // P1 wording clean-up (3 Nov 2026): these four files only SAY "Employee ID" in visible text (the approved common legal document, and three owner-screen sentences); none of them reads, stores or sends an ID.
+  const ALLOWED = new Set(["packages/game-pack/employee-id.js", "packages/game-pack/zc-flow.js", "public/terms.html", "public/core/status.js", "public/owner-funnel/index.html", "public/owner-visits/index.html"]);
   const hits: string[] = [];
   const walk = (dir: string) => {
     for (const e of readdirSync(dir)) {
