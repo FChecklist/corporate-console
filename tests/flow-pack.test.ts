@@ -204,13 +204,13 @@ test("the roll button is green when ready and grey with a countdown after a pres
   expect(F.nextControlText("manual", 100)).toBe("Wait 1 s");
 });
 
-test("Which ID?: the control appears in step 2 only for a game that declares idKind, defaults to Employee ID, and the saved setting is idKind 'emp' or 'email'", () => {
+test("Which Employee or Email ID?: the control appears in step 2 only for a game that declares idKind, defaults to Employee ID, and the saved setting is idKind 'emp' or 'email'", () => {
   const withIt = page("window.ZFLOW_GAME = { idKind: true };"), without = page("window.ZFLOW_GAME = {};");
   for (const [win, shown] of [[withIt, true], [without, false]] as const) {
     const F = win.ZFLOW, box = win.document.createElement("div");
     F.state.packs = []; F.registry[2](box);
     expect([shown, !!box.querySelector("#zf-idkind")]).toEqual([shown, shown]);
-    expect([shown, box.textContent.includes("Which ID?")]).toEqual([shown, shown]);
+    expect([shown, box.textContent.includes("Which Employee or Email ID?")]).toEqual([shown, shown]);
   }
   const F = withIt.ZFLOW, box = withIt.document.createElement("div");
   F.state.packs = []; F.registry[2](box);
@@ -222,7 +222,7 @@ test("Which ID?: the control appears in step 2 only for a game that declares idK
   expect(F.audienceSettings("people", 100, "anything else").idKind).toBe("emp");
 });
 
-test("Which ID?: the words follow idKind (add-person placeholder, list column, join page, hint) and the saved choice is read back from the game's info", () => {
+test("Which Employee or Email ID?: the words follow idKind (add-person placeholder, list column, join page, hint) and the saved choice is read back from the game's info", () => {
   const win = page("window.ZFLOW_GAME = { idKind: true };"), F = win.ZFLOW;
   expect(F.idWords("emp")).toMatchObject({ add: "Employee ID of the person", column: "Employee ID", join: "Your Employee ID" });
   expect(F.idWords("email")).toMatchObject({ add: "Email ID of the person", column: "Email ID", join: "Your Email ID" });

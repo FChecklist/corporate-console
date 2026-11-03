@@ -81,7 +81,7 @@ export function approverFor(linkType, game) {
   if (linkType === "organizer-link" || linkType === "host-link") return "The organizer or a Host lets in a person who is not on the list.";
   if (!supports(game, linkType)) return null;
   if (linkType === "cohost-link") return "A person who came with a Co-host\u2019s link is let in by that Co-host, a Host or the organizer.";
-  if (linkType === "family-link") return "A family host lets in their own family and friends, up to 15 minutes before the game begins. They need no ID.";
+  if (linkType === "family-link") return "A family host lets in their own family and friends, up to 15 minutes before the game begins. They need no Employee ID.";
   if (linkType === "open-link") return "In an open game nobody needs to let anyone in. A person gives their name, mobile number and email ID, and comes in.";
   return null;
 }

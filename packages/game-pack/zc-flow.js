@@ -473,8 +473,8 @@
     for (const k of choices) sel.append(el("option", { value: String(k.upTo), ...(who.upTo === k.upTo ? { selected: "" } : {}) }, k.label));
     box.append(sel);
     if (G.idKind) {
-      box.append(el("h3", { text: "Which ID?" }), el("p", { class: "zf-small", text: "Your people are known to the system by one ID. Choose the one your list has." }));
-      const ids = el("div", { class: "zf-chips", role: "radiogroup", "aria-label": "Which ID", id: "zf-idkind" });
+      box.append(el("h3", { text: "Which Employee or Email ID?" }), el("p", { class: "zf-small", text: "Your people are known to the system by one Employee or Email ID. Choose the one your list has." }));
+      const ids = el("div", { class: "zf-chips", role: "radiogroup", "aria-label": "Which Employee or Email ID", id: "zf-idkind" });
       for (const k of ["emp", "email"]) ids.append(el("button", { type: "button", role: "radio", class: "zf-chip" + (who.idKind === k ? " on" : ""), "aria-checked": String(who.idKind === k), "data-idkind": k, onclick: () => { who.idKind = k; draw(); } }, ID_WORDS[k].choice));
       box.append(ids, el("p", { class: "zf-small", id: "zf-idhint", text: ID_WORDS[who.idKind].hint }));
     }
