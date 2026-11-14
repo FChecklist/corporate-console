@@ -8,3 +8,6 @@ Plan: `C:\ct\test-sites\docs-games\MASTER_CONSOLE_BUILD_PLAN.md`.
 - `packages/bridge/` the ONE bridge module that is copied byte for byte into every game
 
 Rules: no secret or token in this repo (names only in `config/SECRETS_NAMES.md`); nothing is deployed without the owner's go.
+
+
+See [KNOWLEDGE-MAP.md](KNOWLEDGE-MAP.md) for what this repository is for and what the other repositories are for (updated 14 Nov 2026).
