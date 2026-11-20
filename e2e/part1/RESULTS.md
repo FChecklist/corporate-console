@@ -1,6 +1,6 @@
 # Part 1 results: organizer journey, local build
 
-Run of 2026-11-20T17:48:58.813Z against the **local build of this repository** (console + real sign-in service + fake games + test mailbox + payment stand-in). Scenarios: **171** = 152 pass, 0 fail, 19 blocked (cannot be tested from this repository, reason given).
+Run of 2026-11-20T17:52:14.308Z against the **local build of this repository** (console + real sign-in service + fake games + test mailbox + payment stand-in). Scenarios: **177** = 158 pass, 0 fail, 19 blocked (cannot be tested from this repository, reason given).
 
 Legend: `pass N` = N scenarios passed; `FAIL a/b` = a of b failed; `(+k blocked)` = k scenarios in that cell cannot run here; `-` = no scenario for that combination.
 
@@ -13,23 +13,23 @@ Legend: `pass N` = N scenarios passed; `FAIL a/b` = a of b failed; `(+k blocked)
 | 3 | Repeat visit | - | pass 4 | pass 3 | pass 1 | - | pass 1 | pass 1 | - | - | - | - | - |
 | 4 | Auto login / session | - | pass 5 | pass 4 | pass 1 | - | - | pass 1 | pass 6 | - | - | - | - |
 | 5 | Create game | pass 4 (+1 blocked) | - | pass 3 (+1 blocked) | pass 1 | pass 1 | pass 1 | pass 1 | pass 1 | pass 1 | pass 1 | - | - |
-| 6 | Manage | pass 1 | pass 5 | pass 5 | pass 1 | - | pass 1 | pass 1 | - | - | pass 2 | - | - |
+| 6 | Manage | pass 1 | pass 5 | pass 5 | pass 1 | pass 1 | pass 1 | pass 1 | - | - | pass 2 | - | - |
 | 7 | Edit | - | pass 3 (+1 blocked) | pass 3 (+1 blocked) | - | - | pass 1 | - | - | pass 1 | pass 2 | - | - |
 | 8 | Date | blocked | pass 6 | pass 5 (+1 blocked) | pass 1 | - | - | - | - | - | pass 2 | - | - |
 | 9 | Options | pass 2 (+1 blocked) | pass 1 | pass 2 (+1 blocked) | pass 1 | - | - | - | - | - | pass 1 | - | - |
 | 10 | Upload IDs | blocked | - | pass 3 (+1 blocked) | pass 1 | - | pass 1 | - | - | - | - | pass 4 | - |
 | 11 | Publish link | blocked | pass 4 | pass 3 (+1 blocked) | pass 1 | - | pass 1 | - | - | - | pass 2 | - | - |
 | 12 | Moneypenny credit | pass 1 (+1 blocked) | pass 2 | pass 2 (+1 blocked) | pass 1 | - | - | - | - | - | pass 1 | - | - |
-| 13 | Payment | - | pass 4 (+1 blocked) | pass 3 (+1 blocked) | pass 1 | - | pass 1 | pass 1 | pass 1 | pass 1 | pass 3 | - | - |
+| 13 | Payment | - | pass 4 (+1 blocked) | pass 3 (+1 blocked) | pass 1 | pass 1 | pass 1 | pass 1 | pass 1 | pass 1 | pass 3 | - | - |
 | 14 | Payment confirmation | - | pass 2 (+1 blocked) | pass 1 (+1 blocked) | pass 1 | - | pass 1 | - | - | pass 1 | pass 1 | - | - |
-| 15 | Start | blocked | pass 3 | pass 2 (+1 blocked) | pass 1 | - | pass 1 | pass 1 | pass 1 | pass 1 | pass 2 | - | - |
+| 15 | Start | blocked | pass 3 | pass 2 (+1 blocked) | pass 1 | pass 1 | pass 1 | pass 1 | pass 1 | pass 1 | pass 2 | - | - |
 | 16 | Play (all 4 start formats) | - | pass 2 | pass 1 | pass 1 | - | - | - | - | - | - | - | pass 12 (+4 blocked) |
 | 17 | Complete | - | pass 3 (+1 blocked) | pass 2 (+1 blocked) | pass 1 | - | - | - | - | - | pass 2 | - | - |
-| 18 | E-mails after each step | pass 1 (+1 blocked) | pass 1 | pass 2 (+1 blocked) | - | - | - | - | - | - | pass 1 | - | - |
-| 19 | Data to organizer | - | pass 2 (+1 blocked) | pass 2 (+1 blocked) | - | - | - | - | - | - | pass 3 | - | - |
-| 20 | Deletion within 24 h | - | pass 4 (+1 blocked) | pass 4 (+1 blocked) | - | - | pass 1 | - | pass 1 | pass 1 | pass 1 | - | - |
+| 18 | E-mails after each step | pass 1 (+1 blocked) | pass 1 | pass 2 (+1 blocked) | pass 1 | - | - | - | - | - | pass 1 | - | - |
+| 19 | Data to organizer | - | pass 2 (+1 blocked) | pass 2 (+1 blocked) | pass 1 | - | - | - | - | - | pass 3 | - | - |
+| 20 | Deletion within 24 h | - | pass 4 (+1 blocked) | pass 4 (+1 blocked) | pass 1 | - | pass 1 | - | pass 1 | pass 1 | pass 1 | - | - |
 
-Permutation words: new/returning = organizer with / without earlier games; desktop 1280x800, mobile 390x844 touch; slow = 400 ms delay and 400 kbit/s; refresh = page reloaded mid-step; back = browser Back/Forward; expired = session or code that has run out; dblclick = double click; wrong = wrong or hostile input, game down, bad data; badids = ID list with bad rows; fmt = the four start formats.
+Permutation words: new = first-time organizer (no account, no games), returning = organizer who has signed in before and has games; desktop 1280x800, mobile 390x844 touch; slow = 400 ms delay and 400 kbit/s; refresh = page reloaded mid-step; back = browser Back/Forward; expired = session or code that has run out; dblclick = double click; wrong = wrong or hostile input, game down, bad data; badids = ID list with bad rows; fmt = the four start formats.
 
 ## Failures in the last run
 
