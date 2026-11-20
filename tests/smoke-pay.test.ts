@@ -321,3 +321,22 @@ test("S-voice every sentence the pay step puts on the organizer's or the payee's
   if (/\b(we|our|us|I)\b/.test(html)) hits.push("pay-link.html text");
   expect(hits).toEqual([]);
 });
+
+// ---------- audit HIGH-1: paid at a small size, game edited to a bigger size, then "check": the game must NOT be marked paid at the bigger size ----------
+for (const route of ["quote", "check", "event"] as const) {
+  test(`HIGH-1 (${route}): a game paid at 100 and then edited to 10000 is never marked paid at 10000; Moneypenny's paid item decides`, async () => {
+    const w = await world({ game: "bingo", size: 100 });
+    const lk = await w.call("POST", "/pay/link", w.ask("100", costOf(100))); expect(lk.json.ok).toBe(true);
+    const t = lk.json.url.split("/pay/")[1];
+    expect((await w.call("POST", "/pay/link/start", { t, email: "demo1@demo-test.invalid" }, { sid: null })).json.ok).toBe(true); // the payee opens the window; the money lands at Moneypenny, the console's notice is lost
+    const ev = w.fake.complete(EID);
+    w.host.raw.run("UPDATE engagement SET cap=? WHERE id=?", [10000, EID]); // the organizer edits the game to the biggest size
+    const r = route === "quote" ? await w.call("GET", w.Q("10000"))
+      : route === "check" ? await w.call("POST", "/pay/check", w.ask("10000", costOf(10000)))
+      : await w.event(ev);
+    expect(w.state().pay_state).not.toBe("paid");
+    expect(w.paidRows().c).toBe(0);
+    expect(w.note().every((n) => n.state !== "told")).toBe(true);
+    expect([200, 202, 409]).toContain(r.status);
+  });
+}
