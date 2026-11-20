@@ -213,7 +213,7 @@
   const gameLink = (origin, eid) => origin + "/z.html?e=" + eid;
   const boardLink = (origin, eid) => origin + "/board.html?e=" + eid;
   const shareMessage = (name, link, eid) => "You are welcome to join our " + name + " game." + (eid ? " Game ID: " + eid + "." : "") + " Open this game link on your phone: " + link;
-  const PAY_PRINT = "The payment is small, so many organizers pay it themselves and claim it back (recommended). You can also copy the payment link and share it with the person who will pay. The payment link works for 7 days. The money goes into your own credits for this game.";
+  const PAY_PRINT = "The payment is small, so many organizers pay it themselves and claim it back (recommended). You can also copy the payment link and share it with the person who will pay. The money goes into your own credits for this game.";
   /* ---- Step 6: Pay (pure). Every number is given by the console from Moneypenny; nothing here knows a price. ---- */
   const PAY = {
     title: "Game only starts when you pay",
@@ -705,7 +705,7 @@
     { const w = startWarning(state.when ? state.when.ms : 0, Date.now()); if (w) box.append(el("div", { class: "zf-warn", id: "zf-startwarn" }, w)); }
     if (G.sample) box.append(el("h3", { text: "What your participants will see" }), previewNode());
     box.append(el("h3", { text: "Your contact" }));
-    box.append(el("p", { class: "zf-small", text: "Only you see these. The invoice and your game report are sent here. They are never shown to participants." }));
+    box.append(el("p", { class: "zf-small", text: "Only you see these. They are never shown to participants." }));
     box.append(el("label", { for: "zf-pemail", text: "Your email ID" }), el("input", { type: "email", id: "zf-pemail", autocomplete: "email", value: pub.email, oninput: (e) => { pub.email = e.target.value; } }));
     box.append(el("label", { for: "zf-pphone", text: "Your mobile number" }), el("input", { type: "tel", id: "zf-pphone", autocomplete: "tel", placeholder: "98765 43210", value: pub.phone, oninput: (e) => { pub.phone = e.target.value; } }));
     if (G.rehearsal) box.append(rehearsalPreview());
@@ -729,7 +729,7 @@
   };
 
   /* ---- Step 6: Pay. The page asks the console; the console asks Moneypenny. This page never talks to a payment company. ---- */
-  const pay = { q: null, loading: false, loaded: false, err: "", signIn: "", note: "", waiting: false, frame: null, link: "", busyBtn: "", timer: null };
+  const pay = { closed: false, q: null, loading: false, loaded: false, err: "", signIn: "", note: "", waiting: false, frame: null, link: "", busyBtn: "", timer: null };
   api.pay = pay;
   const payBase = () => consoleBase(G, location.search, location.hostname);
   async function payCall(method, path, body) {
@@ -738,7 +738,7 @@
       return { status: r.status, j: (await r.json().catch(() => ({}))) || {} };
     } catch { return { status: 503, j: { ok: false, error: "busy", message: PAY.busy } }; }
   }
-  const payAsk = () => ({ game: G.payGame, eid: state.eid, item: payItem(who.upTo, state.raw) });
+  const payAsk = () => ({ game: G.payGame, eid: state.eid, item: payItem(who.upTo, state.raw), ...(pay.q && pay.q.price && pay.q.price.credits ? { price: pay.q.price.credits } : {}) }); // price = what this screen showed: if the list moved, nothing is charged
   const payRedraw = () => { if (state.view === "steps" && state.open === 6) draw(); };
   async function payLoad() {
     if (pay.loading) return;
@@ -746,6 +746,7 @@
     const a = payAsk();
     const r = await payCall("GET", "/pay/quote?game=" + encodeURIComponent(a.game) + "&eid=" + encodeURIComponent(a.eid) + "&item=" + encodeURIComponent(a.item));
     pay.loading = false; pay.loaded = true;
+    pay.closed = r.j && r.j.error === "not_open"; // the console has not opened paying yet: the game's own pay link stays
     if (r.status === 200 && r.j.ok) { pay.q = r.j; if (r.j.paid) return payPaid(); if (r.j.waiting && !pay.waiting) payWatch(); } else { pay.q = null; pay.err = r.j.message || PAY.busy; pay.signIn = r.status === 401 ? (r.j.signIn || payBase()) : ""; }
     payRedraw();
   }
@@ -799,7 +800,7 @@
       if (r.j && r.j.ok && r.j.frame) { payOverlay(r.j.frame); payWatch(); }
       else pay.note = r.j.message || PAY.busy;
     } else {
-      if (r.j && r.j.ok && r.j.url) { pay.link = r.j.url; try { await navigator.clipboard.writeText(r.j.url); pay.note = PAY.link; } catch { pay.note = "Please copy the payment link by hand."; } }
+      if (r.j && r.j.ok && r.j.url) { pay.link = r.j.url; const until = r.j.expiresMs ? " It works until " + new Date(r.j.expiresMs).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) + "." : ""; try { await navigator.clipboard.writeText(r.j.url); pay.note = PAY.link + until; } catch { pay.note = "Please copy the payment link by hand."; } }
       else pay.note = r.j.message || PAY.busy;
     }
     payRedraw();
@@ -814,6 +815,13 @@
     }
     if (!pay.loaded && !pay.loading) payLoad();
     if (!pay.q) {
+      if (pay.closed) { // flag off: the game's older pay link keeps working, and nothing here promises more
+        const old = (state.info && state.info.payPage) || (state.raw && state.raw.payPage) || "";
+        box.append(el("p", { class: "zf-msg", id: "zf-payclosed", role: "status", text: pay.err }));
+        if (old) box.append(el("p", {}, el("a", { class: "zf-go", id: "zf-payold", href: old }, "Pay now")));
+        box.append(el("p", {}, el("button", { type: "button", class: "zf-add", id: "zf-paydash", onclick: () => done(6) }, "Open your Game dashboard")));
+        return;
+      }
       if (pay.err) {
         box.append(el("div", { class: "zf-warn", id: "zf-payerr", role: "status" }, pay.err));
         const row = el("p", { class: "zf-btnrow" });

@@ -59,7 +59,7 @@ test("Dashboard v2 pure parts: the waiting table shows a column only when somebo
   const m = F.shareMessage("Team party", "http://x/z?e=E1", "E1");
   expect(m).toContain("Game ID: E1"); expect(m).toContain("http://x/z?e=E1");
   expect(F.PAY_PRINT).toContain("claim it back (recommended)");
-  expect(F.PAY_PRINT).toContain("works for 7 days");
+  expect(F.PAY_PRINT).not.toMatch(/7 days/); // the real expiry comes from the link itself
 });
 
 test("the retro board uses the game's own title and size from its descriptor", () => {

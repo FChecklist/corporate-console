@@ -42,9 +42,14 @@ async function world(o: { flag?: boolean; catalogue?: any[] } = {}) {
     const sig = [...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(ts + "." + text)))].map((x) => x.toString(16).padStart(2, "0")).join("");
     return call("POST", "/pay/event", undefined, { cookie: false, raw: text, headers: { "x-mnp-timestamp": String(ts), "x-mnp-signature": sig } });
   };
-  return { ctx, h, env, fake, call, state, event, hosts, alice, raw, stop: () => server.stop(true) };
+  const signAs = async (email: string, hash: string) => { // a second signed-in person, cookie "b" x 64
+    raw.query("INSERT OR REPLACE INTO console_email(email_hash,email_sealed,created_ms,last_seen_ms,consent_ms) VALUES(?,?,?,?,?)").run(hash, await sealText(env, email), h.clock.ms, h.clock.ms, h.clock.ms);
+    raw.query("INSERT OR REPLACE INTO session(sid_hash,email_hash,created_ms,last_seen_ms,expires_ms) VALUES(?,?,?,?,?)").run(await sha256hex("sid|" + "b".repeat(64)), hash, h.clock.ms, h.clock.ms, h.clock.ms + 86400_000);
+  };
+  const callAs = (sid: string, method: string, path: string, body?: unknown) => handlePay(new Request(CONSOLE + path, { method, headers: { "content-type": "application/json", origin: h.origin, cookie: "cbsess=" + sid }, body: body === undefined ? undefined : JSON.stringify(body) }), env, h.clock.ms, { mnp: fake.mnp, fetch: doFetch }).then(async (r) => ({ status: r.status, json: await r.clone().json().catch(() => ({})) as any }));
+  return { ctx, h, env, fake, call, signAs, callAs, state, event, hosts, alice, raw, stop: () => server.stop(true) };
 }
-const ASK = { game: "bingo", eid: "WAIT001", item: "250" };
+const ASK = { game: "bingo", eid: "WAIT001", item: "250", price: 5000 };
 const Q = "/pay/quote?game=bingo&eid=WAIT001&item=250";
 
 test("DARK: with the flag off every pay route says 'not open yet'", async () => {
@@ -82,7 +87,6 @@ test("no price is written in the console: change Moneypenny's price list and the
   try {
     w.fake.give(w.alice.email, 100);
     const r = await w.call("GET", Q); expect(r.json.price.credits).toBe(7777); expect(r.json.price.usd).toBe("77.77");
-    const none = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=999"); expect(none.status).toBe(404); expect(none.json.error).toBe("no_item");
   } finally { w.stop(); }
 });
 
@@ -112,13 +116,33 @@ test("short of credits: 'pay' is refused softly and nothing is taken", async () 
   } finally { w.stop(); }
 });
 
-test("the game refuses for sure (wrong size): Moneypenny has the money, so the answer is 'being checked' (never 'paid'), and the game stays unpaid", async () => {
-  const w = await world({ catalogue: [{ product: "bingo", item: "100", credits: 3400 }] });
+test("the game refuses for sure AFTER Moneypenny took the credits: the answer is 'being checked' (never 'paid') and the game stays unpaid", async () => {
+  const w = await world();
   try {
     w.fake.give(w.alice.email, 6000);
-    const r = await w.call("POST", "/pay/pay", { ...ASK, item: "100" }); // the game's own size is 250
+    w.h.adapter.markPaid = async () => { throw Object.assign(new Error("no"), { definite: true }); };
+    const r = await w.call("POST", "/pay/pay", ASK);
     expect(r.status).toBe(409); expect(r.json.message).toContain("being checked");
     expect(w.state("WAIT001")).toEqual({ status: "waiting_payment", pay_state: "waiting" });
+  } finally { w.stop(); }
+});
+
+test("C-1: only the game's own organizer can use any pay route: a stranger, a host and a wrong size are refused BEFORE Moneypenny is asked; the organizer is not blocked afterwards", async () => {
+  const w = await world();
+  try {
+    const bob = w.ctx.people.bob;
+    await w.signAs(bob.email, bob.sub);
+    w.fake.give(bob.email, 9000);
+    const eve = { cookie: "cbsess=" + "b".repeat(64) };
+    for (const [m, p, b] of [["GET", Q, undefined], ["POST", "/pay/pay", ASK], ["POST", "/pay/buy", ASK], ["POST", "/pay/link", ASK], ["POST", "/pay/check", ASK], ["POST", "/pay/confirm", { ...ASK, orderId: "x", resp: { razorpay_order_id: "a", razorpay_payment_id: "b", razorpay_signature: "c" } }]] as const) {
+      const r = await w.callAs("b".repeat(64), m, p, b);
+      expect([m + p, r.status, r.json.error]).toEqual([m + p, 403, "not_yours"]);
+    }
+    expect(w.fake.state.calls).toEqual([]); // Moneypenny was never asked and no game was claimed
+    expect(w.fake.games.size).toBe(0);
+    const wrongSize = await w.call("POST", "/pay/pay", { ...ASK, item: "100" }); expect(wrongSize.status).toBe(403); expect(w.fake.games.size).toBe(0);
+    w.fake.give(w.alice.email, 6000);
+    expect((await w.call("POST", "/pay/pay", ASK)).json.paid).toBe(true); // the real organizer pays as usual
   } finally { w.stop(); }
 });
 
@@ -137,17 +161,17 @@ test("Moneypenny down: soft words, nothing taken, no hard error", async () => {
   } finally { w.stop(); }
 });
 
-test("the game cannot be reached right after Moneypenny took the credits: 'on its way' (202), and the next look tells the game; the game is marked once", async () => {
+test("the game fails to save right after Moneypenny took the credits: 'on its way' (202); after the short lease the next look tells the game again and it is marked once (C-3)", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 6000);
-    const real = w.env.GAME_ORIGINS;
-    w.env.GAME_ORIGINS = JSON.stringify({ bingo: "http://127.0.0.1:1" }); // the game does not answer
+    const real = w.h.adapter.markPaid!;
+    w.h.adapter.markPaid = async () => { throw new Error("disk went away"); };
     const r = await w.call("POST", "/pay/pay", ASK);
     expect([r.status, r.json.pending]).toEqual([202, true]); expect(r.json.message).toContain("You do not need to pay again");
     expect(w.state("WAIT001").status).toBe("waiting_payment");
-    w.env.GAME_ORIGINS = real;
-    w.h.clock.ms += 60_000;
+    w.h.adapter.markPaid = real;
+    w.h.clock.ms += 31_000;
     const look = await w.call("POST", "/pay/check", ASK); expect(look.json.paid).toBe(true);
     expect(w.state("WAIT001")).toEqual({ status: "ready", pay_state: "paid" });
     expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(1000); // taken once
@@ -313,5 +337,73 @@ test("error words: nothing the organizer or payee reads names the backend, and M
     for (const m of src.match(/^  [a-zA-Z]+: "[^"]+",$/gm) || []) seen.push(m);
     expect(seen.length).toBeGreaterThan(8);
     for (const s of seen) expect(s).not.toMatch(/moneypenny|\bapi\b|it services|razorpay|payu|server|exception|\berror\b|failed|invalid|undefined|text the console must not show/i);
+  } finally { w.stop(); }
+});
+
+// ---- audit B fixes ----
+import { mnpClient } from "../functions/_lib/pay-core";
+
+test("C-2/C-6: link creation and start always use a fresh idempotency key (an old answer is never replayed, so a second link has its token and a stale 'short' answer is never repeated); a plain call keeps the repeatable key", async () => {
+  const seen: string[] = [];
+  const stub = (async (_u: any, init: any) => { seen.push(init.headers["idempotency-key"] ?? ""); return new Response("{}", { status: 200 }); }) as typeof fetch;
+  const env: any = { MNP_URL: "https://mnp.test", MNP_KEY: "k", MNP_SECRET: "s" };
+  const c = mnpClient(env, stub);
+  await c.post("/v1/game_pay/link", { a: 1 }, { fresh: true }); await c.post("/v1/game_pay/link", { a: 1 }, { fresh: true });
+  expect(seen[0]).not.toBe(seen[1]);
+  await c.post("/v1/game_pay/confirm", { a: 1 }); await c.post("/v1/game_pay/confirm", { a: 1 });
+  expect(seen[2]).toBe(seen[3]);
+  const w = await world();
+  try {
+    const used: Array<[string, boolean]> = []; const real = w.fake.mnp.post;
+    (w.fake.mnp as any).post = async (p: string, b: any, o?: any) => { used.push([p, !!o?.fresh]); return real(p, b); };
+    w.fake.give(w.alice.email, 2000);
+    await w.call("POST", "/pay/link", ASK); await w.call("POST", "/pay/link", ASK); await w.call("POST", "/pay/buy", ASK);
+    expect(used.filter(([p]) => p === "/v1/game_pay/link" || p === "/v1/game_pay/start").every(([, f]) => f)).toBe(true);
+    expect(used.filter(([p]) => p === "/v1/game_pay/link").length).toBe(2);
+  } finally { w.stop(); }
+});
+
+test("C-2: a second payment link for the same game is made, has its own token, and the first one stops working", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 2000);
+    const a = await w.call("POST", "/pay/link", ASK), b = await w.call("POST", "/pay/link", ASK);
+    expect(a.json.ok && b.json.ok).toBe(true); expect(a.json.url).not.toBe(b.json.url);
+    expect((await w.call("GET", "/pay/link/info?t=" + a.json.url.split("/pay/")[1], undefined, { cookie: false })).status).toBe(404);
+    expect((await w.call("GET", "/pay/link/info?t=" + b.json.url.split("/pay/")[1], undefined, { cookie: false })).json.ok).toBe(true);
+  } finally { w.stop(); }
+});
+
+test("C-5: the price the screen showed is pinned: if the list moved since, nothing is taken and the organizer is told the price changed; without a price the call is refused", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 6000);
+    const r = await w.call("POST", "/pay/pay", { ...ASK, price: 4000 }); // the screen showed 4,000; the list now says 5,000
+    expect([r.status, r.json.error]).toEqual([409, "price_changed"]); expect(r.json.message).toContain("price of this game has just changed");
+    expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(6000); expect(w.state("WAIT001").status).toBe("waiting_payment");
+    const none = await w.call("POST", "/pay/pay", { game: "bingo", eid: "WAIT001", item: "250" }); expect(none.status).toBe(400);
+    expect((await w.call("POST", "/pay/pay", ASK)).json.paid).toBe(true);
+  } finally { w.stop(); }
+});
+
+test("C-7: the payee's calls are limited per link and per address, so nobody can use up the console's budget at Moneypenny", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 2000);
+    const t = (await w.call("POST", "/pay/link", ASK)).json.url.split("/pay/")[1];
+    let slow = 0;
+    for (let i = 0; i < 14; i++) { const r = await w.call("POST", "/pay/link/start", { t, email: "demo9@demo-test.invalid" }, { cookie: false }); if (r.status === 429) slow++; }
+    expect(slow).toBeGreaterThan(0); expect((await w.call("POST", "/pay/link/start", { t, email: "demo9@demo-test.invalid" }, { cookie: false })).json.message).toContain("wait a little");
+  } finally { w.stop(); }
+});
+
+test("C-8: the payee page keeps the console's security headers (no framing, no referrer, the CSP of the asset)", async () => {
+  const w = await world();
+  try {
+    const assets = async () => new Response("<html></html>", { headers: { "content-security-policy": "default-src 'self'", "referrer-policy": "no-referrer" } });
+    const r = await handlePay(new Request(CONSOLE + "/pay/" + "a".repeat(43)), w.env, w.h.clock.ms, { mnp: w.fake.mnp, assets });
+    expect(r.headers.get("content-security-policy")).toBe("default-src 'self'"); expect(r.headers.get("x-frame-options")).toBe("DENY"); expect(r.headers.get("referrer-policy")).toBe("no-referrer");
+    const bare = await handlePay(new Request(CONSOLE + "/pay/" + "a".repeat(43)), w.env, w.h.clock.ms, { mnp: w.fake.mnp, assets: async () => new Response("<html></html>") });
+    expect(bare.headers.get("x-frame-options")).toBe("DENY"); expect(bare.headers.get("referrer-policy")).toBe("no-referrer");
   } finally { w.stop(); }
 });

@@ -71,6 +71,7 @@ export function makeFakeMoneypenny(o: { packs?: number[]; catalogue?: Array<{ pr
       state.calls.push("POST " + p); state.bodies.push({ p, b }); if (state.down) throw new Error("down");
       if (p === "/v1/game_pay/start") {
         const cost = price(b.product, b.item); if (cost === undefined) return bad(404, "no_item");
+        if (b.credits != null && b.credits !== cost) return bad(409, "price_changed", { price_credits: cost });
         let g = games.get(b.order_ref);
         if (g && (g.email !== em(b.email) || g.product !== b.product || g.item !== b.item)) return bad(409, "game_ref_used");
         if (!g) { g = { ref: b.order_ref, email: em(b.email), product: b.product, item: b.item, credits: cost, status: "open", orderId: null, payer: null, paidSource: null }; games.set(g.ref, g); }

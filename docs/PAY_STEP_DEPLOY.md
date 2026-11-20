@@ -5,7 +5,7 @@ Owner approval (20 Nov 2026, "Approve all"): deploy of the console pay step AND 
 ## Before (all must be true)
 1. Two independent PASS audits are written in `docs/STATE.md` for the exact commit you are about to deploy (`git rev-parse HEAD`). If the commit moved, the audits no longer count.
 2. `bun test --isolate tests` ends with only the two known unrelated failures (stale local `dist/`, Games bar hash).
-3. The game side is ready (each game re-vendored, `markPaid`, `payGame`, `consoleOrigin`, `legacyPayRedirect`). Until a game is, its Pay step says "Payment is not set up for this game yet." and nothing breaks.
+3. The game side is ready (each game re-vendored, `markPaid`, `payGame`, `consoleOrigin`, `legacyPayRedirect`). Until a game sets `payGame`, its Pay step says "Payment is not set up for this game yet." Deploy the re-vendored pack of a game and open the flag (`PAY_VIA_MONEYPENNY=1`) together: with the flag off the step shows the game's own Pay now link if it has one (it may have none after a re-vendor), so never leave a re-vendored game on a closed flag for long.
 4. Moneypenny's game-pay routes are deployed (branch `claude/game-pay-chain-085185`, commit ea2469c or later) and the console address is in IT Services' allowed sites (owner-approved; deployed through IT Services' own deploy, `docs/GO_LIVE_RUNBOOK.md` step 1).
 
 ## Deploy (one step, the rest is the existing recipe in `docs/RELEASE_RECIPE.md`)

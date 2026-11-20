@@ -52,7 +52,7 @@ test("credits short: the cost, the existing credits, 'You only need to buy N cre
     expect(t.d.getElementById("zf-copypay").textContent).toBe("Copy payment link");
     expect(t.d.getElementById("zf-payprimary")).toBe(null);
     expect(s).toContain("You don't have to buy software or a subscription or download anything. You only pay per game. Simple and easy.");
-    expect(s).toContain("The payment link works for 7 days");
+    expect(s).not.toMatch(/7 days|invoice|PDF/i); // C-9, C-11: no promise the system does not keep
   } finally { t.stop(); }
 });
 
@@ -70,7 +70,7 @@ test("credits already cover the game: ONE button, 'Pay with your credits'; press
     t.d.getElementById("zf-payprimary").click(); await tick(); await tick();
     expect(t.d.getElementById("zf-paid").textContent).toBe("Thank you. Your game is paid and ready.");
     expect(t.d.getElementById("zf-paydash").textContent).toBe("Open your Game dashboard");
-    expect(t.log.filter((x) => x.method === "POST").map((x) => x.url + " " + JSON.stringify(x.body))).toEqual([BASE + "/pay/pay " + JSON.stringify({ game: "bingo", eid: "WAIT001", item: "250" })]);
+    expect(t.log.filter((x) => x.method === "POST").map((x) => x.url + " " + JSON.stringify(x.body))).toEqual([BASE + "/pay/pay " + JSON.stringify({ game: "bingo", eid: "WAIT001", item: "250", price: 5000 })]);
   } finally { t.stop(); }
 });
 
@@ -166,8 +166,20 @@ test("the secure window: when it says ready it is handed the order; when it says
     expect(sent).toEqual([[{ t: "open", opts: FRAME.opts }, FRAME.origin]]);
     say({ t: "paid", resp: { a: "1", b: "2" } }, "https://evil.example", cw); await tick(); expect(confirms.length).toBe(0);
     say({ t: "paid", resp: { a: "1", b: "2" } }, FRAME.origin, cw); await tick(); await tick(); await tick();
-    expect(confirms).toEqual([{ game: "bingo", eid: "WAIT001", item: "250", orderId: "o1", resp: { a: "1", b: "2" } }]);
+    expect(confirms).toEqual([{ game: "bingo", eid: "WAIT001", item: "250", price: 5000, orderId: "o1", resp: { a: "1", b: "2" } }]);
     expect(t.d.getElementById("zf-payoverlay")).toBe(null);
     expect(t.d.getElementById("zf-paid").textContent).toBe("Thank you. Your game is paid and ready.");
   } finally { t.stop(); }
+});
+
+test("C-9: the payment link note says when THIS link really ends (Moneypenny's expiry), not a fixed number of days", async () => {
+  const t = boot({ ...quoteOk(Q_SHORT), "POST /pay/link": () => ({ status: 200, body: { ok: true, url: "https://console.example/pay/" + "a".repeat(43), expiresMs: Date.UTC(2026, 10, 24, 6, 30) } }) });
+  Object.defineProperty(globalThis.navigator, "clipboard", { value: { writeText: async () => {} }, configurable: true });
+  try { await tick(); t.d.getElementById("zf-copypay").click(); await tick(); await tick(); const n = t.d.getElementById("zf-paynote").textContent; expect(n).toContain("Payment link copied"); expect(n).toContain("It works until"); expect(n).toMatch(/24.Nov.2026/); expect(n).not.toMatch(/7 days/); } finally { t.stop(); }
+});
+
+test("C-10: while the console has not opened paying, the game's own Pay now link stays and nothing is promised", async () => {
+  const t = boot({ "GET /pay/quote": () => ({ status: 503, body: { ok: false, error: "not_open", message: "Paying for games is not open yet. Please check again soon." } }) });
+  t.F.state.info = { published: true, paid: false, payPage: "/pay.html?e=WAIT001" };
+  try { await tick(); t.F.draw(); await tick(); expect(t.d.getElementById("zf-payold").getAttribute("href")).toBe("/pay.html?e=WAIT001"); expect(t.d.getElementById("zf-payclosed").textContent).toContain("not open yet"); expect(t.d.getElementById("zf-buynow")).toBe(null); } finally { t.stop(); }
 });

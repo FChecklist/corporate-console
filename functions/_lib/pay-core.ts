@@ -11,16 +11,16 @@
 //   POST /pay/event                    Moneypenny's signed "game.paid" notice; the console then tells the game (act 'paid', once per order id)
 // Dark by default: PAY_VIA_MONEYPENNY must be "1". Voice: 'you', polite, simple English, no threats.
 import type { D1 } from "../../packages/bridge/src/d1";
-import { sessionOf, unsealText, sealText, sha256hex, type Env } from "./auth-core";
+import { sessionOf, unsealText, sealText, sha256hex, bump, type Env } from "./auth-core";
 import { tables } from "./tables";
 import { signAssertion, b64uEncode, type Payload } from "../../packages/bridge/src/assertion";
 
-export type Mnp = { get(path: string): Promise<{ status: number; body: any }>; post(path: string, body: unknown): Promise<{ status: number; body: any }> };
+export type Mnp = { get(path: string): Promise<{ status: number; body: any }>; post(path: string, body: unknown, o?: { fresh?: boolean }): Promise<{ status: number; body: any }> };
 export interface PayDeps { mnp?: Mnp; fetch?: typeof fetch; assets?: (path: string) => Promise<Response> }
 
 /** the six games' names (labels only; no price anywhere). A test keeps this list equal to config/games.json. */
 export const GAME_NAMES: Record<string, string> = { tambola: "Corporate Tambola", bingo: "Corporate Bingo", tictactoe: "Corporate Tic Tac Toe", snakesladders: "Corporate Snakes and Ladders", luckbychance: "Corporate Luck by Chance", luckydraw: "Corporate Lucky Draw" };
-export const LINK_MS = 7 * 86400_000; // the payment link works 7 days (the words already printed on the screen)
+const PAYEE_CALLS_PER_HOUR = 200, PAYEE_STARTS_PER_HOUR = 12;
 const EID = /^[A-Za-z0-9_-]{4,40}$/, ITEM = /^[A-Za-z0-9_.-]{1,40}$/, TOKEN = /^[A-Za-z0-9_-]{20,80}$/;
 
 const json = (status: number, body: unknown, extra: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...extra } });
@@ -39,6 +39,8 @@ const MSG = {
   price: "The price of this game has just changed. Please check the new amount and try again.",
   payer: "This payment was made with a different e-mail address. Please pay with the e-mail address of the account that owns the game.",
   alreadyPaid: "This game is already paid. Thank you.",
+  notYours: "This game is not in your account. Only the organizer who made the game can pay for it.",
+  slow: "Please wait a little and try again.",
   email: "Please type your e-mail address so we can match your payment.",
 };
 const fail = (status: number, error: string, message: string, extra: Record<string, unknown> = {}) => json(status, { ok: false, error, message, ...extra });
@@ -55,17 +57,18 @@ function cors(env: Env, req: Request): Record<string, string> {
 export function mnpClient(env: Env, doFetch: typeof fetch = fetch): Mnp {
   const te = new TextEncoder();
   const hex = (b: ArrayBuffer | Uint8Array) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
-  const call = async (method: string, path: string, body?: unknown) => {
+  const call = async (method: string, path: string, body?: unknown, fresh = false) => {
     if (!env.MNP_URL || !env.MNP_KEY || !env.MNP_SECRET) throw new Error("moneypenny not configured");
     const text = body === undefined ? "" : JSON.stringify(body);
     const ts = String(Date.now()), nonce = b64uEncode(crypto.getRandomValues(new Uint8Array(12)));
-    const idem = method === "GET" ? "" : (await sha256hex(method + path + text)).slice(0, 64); // the same request repeated returns Moneypenny's first answer
+    // the same request repeated returns Moneypenny's first answer; a click that must see the CURRENT state (start, new link) uses a fresh key, so an old answer is never replayed
+    const idem = method === "GET" ? "" : fresh ? b64uEncode(crypto.getRandomValues(new Uint8Array(24))) : (await sha256hex(method + path + text)).slice(0, 64);
     const key = await crypto.subtle.importKey("raw", te.encode(env.MNP_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     const sig = hex(await crypto.subtle.sign("HMAC", key, te.encode([ts, nonce, method, path, await sha256hex(text), idem].join("\n"))));
     const r = await doFetch(env.MNP_URL.replace(/\/$/, "") + path, { method, signal: AbortSignal.timeout(3000), headers: { "content-type": "application/json", "x-mnp-key": env.MNP_KEY, "x-mnp-timestamp": ts, "x-mnp-nonce": nonce, "x-mnp-signature": sig, ...(idem ? { "idempotency-key": idem } : {}) }, body: method === "GET" ? undefined : text });
     return { status: r.status, body: await r.json().catch(() => ({})) };
   };
-  return { get: (p) => call("GET", p), post: (p, b) => call("POST", p, b) };
+  return { get: (p) => call("GET", p), post: (p, b, o) => call("POST", p, b, !!o?.fresh) };
 }
 
 type Who = { emailHash: string; email: string };
@@ -85,16 +88,30 @@ async function worth(mnp: Mnp, credits: number) {
   return { credits, usd: String(q.body.usd), inrMinor: Number(q.body.inr_minor) };
 }
 
-const asks = (b: any): { game: string; eid: string; item: string } | null => (b && typeof b.game === "string" && typeof b.eid === "string" && typeof b.item === "string" && EID.test(b.eid) && ITEM.test(b.item) ? { game: b.game, eid: b.eid, item: b.item } : null);
+const asks = (b: any): { game: string; eid: string; item: string; price?: number } | null => (b && typeof b.game === "string" && typeof b.eid === "string" && typeof b.item === "string" && EID.test(b.eid) && ITEM.test(b.item) ? { game: b.game, eid: b.eid, item: b.item, ...(Number.isSafeInteger(b.price) && b.price > 0 ? { price: b.price } : {}) } : null);
 const orderRefOf = (game: string, eid: string) => `GAME-${game}-${eid}`; // the id the game's "paid" notice carries (a game marks itself paid once per id)
+
+async function signFor(env: Env, now: number, aud: string, sub: string, act: "paid" | "payable", eid: string): Promise<string> {
+  const key = await crypto.subtle.importKey("pkcs8", Uint8Array.from(atob(env.CONSOLE_SIGNING_KEY), (c) => c.charCodeAt(0)), { name: "Ed25519" }, false, ["sign"]);
+  const p: Payload = { v: 1, kid: env.CONSOLE_KID || "k1", aud, sub, act, eid, jti: b64uEncode(crypto.getRandomValues(new Uint8Array(16))), iat: Math.floor(now / 1000), exp: Math.floor(now / 1000) + 60 };
+  return signAssertion(p, key);
+}
+
+/** The game decides: is this game the signed-in person's own (as its ORGANIZER, not a host) and is this its size? Asked before every organizer action, so nobody can start, quote or link a game that is not theirs. */
+async function ownGame(env: Env, doFetch: typeof fetch, now: number, me: { emailHash: string }, a: { game: string; eid: string; item: string }): Promise<{ yours: boolean; paid: boolean }> {
+  const aud = origins(env)[a.game];
+  if (!aud) return { yours: false, paid: false };
+  const r = await doFetch(aud + "/api/console/payable", { method: "POST", signal: AbortSignal.timeout(5000), headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: await signFor(env, now, aud, me.emailHash, "payable", a.eid), eid: a.eid }) });
+  if (r.status !== 200) throw new Error("game_unclear_" + r.status); // soft 'busy': nothing was started
+  const j: any = await r.json().catch(() => ({}));
+  return { yours: j.ok === true && j.owner === true && j.item === a.item, paid: j.paid === true };
+}
 
 /** Tell the game it is paid (its bridge, act 'paid'). A definite refusal throws with definite:true; anything unclear throws plainly and is repeated. */
 export async function tellGamePaid(env: Env, doFetch: typeof fetch, now: number, o: { game: string; eid: string; item: string; orderRef: string; emailHash: string }) {
   const aud = origins(env)[o.game];
   if (!aud) throw Object.assign(new Error("unknown game"), { definite: true });
-  const key = await crypto.subtle.importKey("pkcs8", Uint8Array.from(atob(env.CONSOLE_SIGNING_KEY), (c) => c.charCodeAt(0)), { name: "Ed25519" }, false, ["sign"]);
-  const p: Payload = { v: 1, kid: env.CONSOLE_KID || "k1", aud, sub: o.emailHash, act: "paid", eid: o.eid, jti: b64uEncode(crypto.getRandomValues(new Uint8Array(16))), iat: Math.floor(now / 1000), exp: Math.floor(now / 1000) + 60 };
-  const r = await doFetch(aud + "/api/console/paid", { method: "POST", signal: AbortSignal.timeout(8000), headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: await signAssertion(p, key), eid: o.eid, item: o.item, orderRef: o.orderRef }) });
+  const r = await doFetch(aud + "/api/console/paid", { method: "POST", signal: AbortSignal.timeout(8000), headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: await signFor(env, now, aud, o.emailHash, "paid", o.eid), eid: o.eid, item: o.item, orderRef: o.orderRef }) });
   if (r.status === 200) return;
   const j: any = await r.json().catch(() => ({}));
   if (r.status === 409 && j.error === "game_refused") throw Object.assign(new Error(String(j.message || "refused")), { definite: true });
@@ -162,13 +179,19 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     // ---- the payee's page is a console page: /pay/<token> (the same page for every token; it asks /pay/link/info) ----
     if (req.method === "GET" && /^\/pay\/[A-Za-z0-9_-]{20,80}$/.test(path) && deps.assets) {
       const r = await deps.assets("/pay-link.html");
-      return new Response(r.body, { status: r.status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } });
+      const h = new Headers(r.headers); // keeps the console's own security headers (CSP, no framing, no referrer) that the asset carries
+      h.set("content-type", "text/html; charset=utf-8"); h.set("cache-control", "no-store"); h.set("x-robots-tag", "noindex");
+      if (!h.has("referrer-policy")) h.set("referrer-policy", "no-referrer"); if (!h.has("x-frame-options")) h.set("x-frame-options", "DENY"); // the link's token must not leak by Referer, and the page must not be framed
+      return new Response(r.body, { status: r.status, headers: h });
     }
 
     // ---- the payee's calls: no sign-in; the link is the key ----
     if (path === "/pay/link/info" || path === "/pay/link/start" || path === "/pay/link/confirm") {
       const t = path.endsWith("info") ? url.searchParams.get("t") : body?.t;
       if (typeof t !== "string" || !TOKEN.test(t)) return reply(fail(404, "bad_link", MSG.link));
+      const ip = req.headers.get("cf-connecting-ip") || "none"; // each call here makes a signed call to Moneypenny: nobody may use up its budget
+      if (!(await bump(env, "pay:ip:" + (await sha256hex("ip|" + ip)), PAYEE_CALLS_PER_HOUR, now)).ok) return reply(fail(429, "slow", MSG.slow));
+      if (path !== "/pay/link/info" && !(await bump(env, "pay:link:" + (await sha256hex("pl|" + t)), PAYEE_STARTS_PER_HOUR, now)).ok) return reply(fail(429, "slow", MSG.slow));
       const li = await mnp.get(`/v1/game_pay/link?token=${encodeURIComponent(t)}`);
       if (li.status !== 200 || !li.body?.ok) return reply(softError(codeOf(li)));
       const L = li.body, gameName = GAME_NAMES[String(L.product)] ?? "a game";
@@ -179,7 +202,7 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
       if (path === "/pay/link/start") {
         const email = typeof body?.email === "string" ? body.email.trim() : "";
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) return reply(fail(400, "email", MSG.email));
-        const s = await mnp.post("/v1/game_pay/link/start", { token: t, payer_email: email, currency: L.currency });
+        const s = await mnp.post("/v1/game_pay/link/start", { token: t, payer_email: email, currency: L.currency }, { fresh: true });
         if (s.status !== 200 || !s.body?.ok) return reply(softError(codeOf(s)));
         const frame = frameOf(env, s.body.order, email);
         return reply(frame ? json(200, { ok: true, frame }) : busy());
@@ -197,11 +220,13 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     // ---- everything below is the signed-in organizer ----
     const me = await whoIs(req, env, now);
     if (!me) return reply(fail(401, "sign_in", MSG.signIn, { signIn: env.CONSOLE_ORIGIN }));
-    const gp = (a: { game: string; eid: string; item: string }) => ({ order_ref: a.eid, product: a.game, item: a.item, email: me.email });
+    const gp = (a: { game: string; eid: string; item: string; price?: number }) => ({ order_ref: a.eid, product: a.game, item: a.item, email: me.email, ...(a.price ? { credits: a.price } : {}) }); // credits = the price the screen showed: if the list moved since, Moneypenny says so instead of charging a price nobody saw
+    const mine = async (a: { game: string; eid: string; item: string }) => (await ownGame(env, doFetch, now, me, a)).yours; // C-1: the game decides who owns it
 
     if (req.method === "GET" && path === "/pay/quote") {
       const a = asks({ game: url.searchParams.get("game"), eid: url.searchParams.get("eid"), item: url.searchParams.get("item") });
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
+      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
       const q = await mnp.get(`/v1/game_pay/quote?order_ref=${encodeURIComponent(a.eid)}&product=${encodeURIComponent(a.game)}&item=${encodeURIComponent(a.item)}&email=${encodeURIComponent(me.email)}`);
       if (q.status !== 200 || !q.body?.ok) return reply(softError(codeOf(q)));
       const Q = q.body;
@@ -214,8 +239,10 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     if (req.method === "POST" && (path === "/pay/pay" || path === "/pay/buy")) {
       const a = asks(body);
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
+      if (!a.price) return reply(fail(400, "invalid", MSG.bad));
+      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
       await noteGame(env, db, now, { ...me, ...a });
-      const s = await mnp.post("/v1/game_pay/start", { ...gp(a), currency: "INR" });
+      const s = await mnp.post("/v1/game_pay/start", { ...gp(a), currency: "INR" }, { fresh: true });
       if (s.status !== 200 || !s.body?.ok) return reply(softError(codeOf(s)));
       if (s.body.paid === true || s.body.status === "paid") { const left = await settle(env, doFetch, now, db, a.game, a.eid); return reply(left ?? json(200, { ok: true, paid: true })); }
       if (path === "/pay/pay") return reply(fail(402, "short", MSG.short));
@@ -226,6 +253,7 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     if (req.method === "POST" && path === "/pay/confirm") { // the payment window finished: Moneypenny checks what really happened and pays the game
       const a = asks(body), resp = respOf(body), oid = typeof body?.orderId === "string" ? body.orderId : "";
       if (!a || !resp || !oid || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
+      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
       await noteGame(env, db, now, { ...me, ...a });
       const cf = await mnp.post("/v1/game_pay/confirm", { order_ref: a.eid, order_id: oid, ...resp });
       if (cf.status !== 200 || !cf.body?.ok) return reply(softError(codeOf(cf)));
@@ -237,8 +265,9 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     if (req.method === "POST" && path === "/pay/link") {
       const a = asks(body);
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
+      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
       await noteGame(env, db, now, { ...me, ...a }); // so the game is told even if the payee pays after this tab is closed
-      const l = await mnp.post("/v1/game_pay/link", gp(a));
+      const l = await mnp.post("/v1/game_pay/link", gp(a), { fresh: true }); // a new link each time (the old one stops); never an old answer without its token
       if (l.status !== 200 || !l.body?.ok || typeof l.body.token !== "string") return reply(softError(codeOf(l)));
       return reply(json(200, { ok: true, url: `${env.CONSOLE_ORIGIN}/pay/${l.body.token}`, expiresMs: Number(l.body.expires_at) || null }));
     }
@@ -246,6 +275,7 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     if (req.method === "POST" && path === "/pay/check") { // a closed tab, a missed notice: ask Moneypenny whether this game is paid
       const a = asks(body);
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
+      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
       const s = await mnp.get(`/v1/game_pay/status?order_ref=${encodeURIComponent(a.eid)}`);
       if (s.status !== 200 || !s.body?.ok) return reply(softError(codeOf(s)));
       if (s.body.paid === true || s.body.status === "paid") { const left = await settle(env, doFetch, now, db, a.game, a.eid); return reply(left ?? json(200, { ok: true, paid: true })); }

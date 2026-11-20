@@ -63,6 +63,12 @@ test("an unclear failure inside the game is not a refusal: 503, the order stays 
     t.h.adapter.markPaid = real;
     const again = await t.paid("alice", "WAIT001", "250", "tambola-order0004");
     expect(again.status).toBe(409); expect(again.body.error).toBe("in_progress");
+    // C-3: it is only a short lease. After it, the next try takes over and marks again, so one transient failure never leaves a paid game unpaid.
+    t.h.clock.ms += 31_000;
+    const later = await t.paid("alice", "WAIT001", "250", "tambola-order0004");
+    expect(later.status).toBe(200); expect(later.body.repeat).toBe(false);
+    expect(t.state("WAIT001")).toEqual({ status: "ready", pay_state: "paid" });
+    expect((await t.paid("alice", "WAIT001", "250", "tambola-order0004")).body.repeat).toBe(true); // paid is final
   } finally { t.stop(); }
 });
 
@@ -85,4 +91,28 @@ test("D3: with the flag on, a game's own pay screen and pay routes answer 302 to
   }
   for (const p of ["/z.html", "/api/z/ABCD1234/info", "/api/z/ABCD1234/publish", "/api/webhook/razorpay", "/api/console/paid"]) expect(go(p, "1")).toBe(null);
   expect(go("/api/mypay", "1", [/^\/api\/mypay$/])!.status).toBe(302);
+});
+
+test("C-3: two tries after the lease ran out: only one takes the mark, the game is marked once", async () => {
+  const t = await up();
+  try {
+    let calls = 0; const real = t.h.adapter.markPaid!;
+    t.h.adapter.markPaid = async (e: any, o: any) => { calls++; if (calls === 1) throw new Error("disk went away"); await new Promise((r) => setTimeout(r, 30)); return real(e, o); };
+    expect((await t.paid("alice", "WAIT001", "250", "tambola-order0010")).status).toBe(503);
+    t.h.clock.ms += 31_000;
+    const [a, b] = await Promise.all([t.paid("alice", "WAIT001", "250", "tambola-order0010"), t.paid("alice", "WAIT001", "250", "tambola-order0010")]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]); expect(calls).toBe(2);
+  } finally { t.stop(); }
+});
+
+test("C-1: the game answers who OWNS it as organizer (read-only); a stranger and a host do not", async () => {
+  const ctx = await makeCtx(); const h = await makeHost(); seed(h); h.env.CONSOLE_PUBKEYS = "k1:" + ctx.publicB64u;
+  const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: async (req) => (await handleConsole(h.adapter, req, h.env)) ?? new Response("{}", { status: 404 }) });
+  h.origin = `http://127.0.0.1:${server.port}`; h.env.PUBLIC_ORIGIN = h.origin;
+  try {
+    const ask = async (person: string, eid: string) => { const a = (await buildAssertion(ctx, { act: "payable", person, eid }, h.origin, h.clock.ms)).token; const r = await fetch(h.origin + "/api/console/payable", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: a, eid }) }); return { status: r.status, body: await r.json() as any }; };
+    expect((await ask("alice", "WAIT001")).body).toMatchObject({ ok: true, owner: true, item: "250", paid: false });
+    expect((await ask("bob", "WAIT001")).body).toMatchObject({ ok: true, owner: false, item: null, paid: false });
+    expect(JSON.stringify((await ask("bob", "WAIT001")).body)).not.toContain("250"); // a stranger learns nothing about the game
+  } finally { server.stop(true); }
 });
