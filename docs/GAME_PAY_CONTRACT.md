@@ -5,6 +5,7 @@ The console (console.corporatetambola.com) shows the Pay step and talks to Money
 
 ## 1. Re-vendor
 - Copy the console's bridge and game pack again (`tools/vendor-bridge.mjs`, `tools/vendor-pack.mjs`), byte for byte. Do not edit the copies.
+- **Bridge version 0.1.1 or later is required** (the 30 second lease on `marking`, `MARK_LEASE_MS`). A game that vendored an older bridge answers 409 `in_progress` for ever after one failed `markPaid`: check that your `bridge.ts` contains `MARK_LEASE_MS`, and run the console's `tests/bridge-stale-marking.test.ts` ideas against your adapter.
 
 ## 2. Two adapter functions (the game's own code)
 `payInfo(env, { eid, sub })` — read only, changes nothing.
