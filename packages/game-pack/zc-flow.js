@@ -456,6 +456,10 @@
 
   /* ---- Step 2 ---- */
   const who = { card: "people", upTo: 0, how: "self", idKind: "emp", per: 4 };
+  // OWNER RULE (20 Nov 2026), the invite screen: invite people with ONLY an ID (employee, associate, vendor or customer ID). No name, no mobile number, no e-mail.
+  // The screen text below is the owner's, word for word: do not reword it. One ID per line; PDF and CSV uploads stay; a visible "Paste a list" button.
+  // IDs are cleaned the same way everywhere (upload, join, approval, matching): every character that is not a letter or a number is dropped, then capitals. A-1101, A 1101 and A/1101 are ONE ID.
+  // An ID that is not on the list waits for the organizer's yes or no. The list and all IDs are deleted within 24 hours after the game ends. Notes: marketing-ledger plans/ID-INVITE-AND-ARCHITECTURE-RULES-2026-11-20.md
   /** Owner text, 20 Nov 2026: invite people with just an ID. Word for word. */
   const ID_INVITE_LINES = ["Invite people with just an ID", "No names or personal details are needed.", "Just upload or paste the IDs of the people you want to invite: employee ID, associate ID, vendor ID or customer ID, whichever you use.", "Your invitee opens the game link and enters their ID. If it is on your list, they join and play. If it is not, you get a request to approve or decline.", "The list and all IDs are deleted within 24 hours after the game ends."];
   /** One ID per line (a comma or a tab also separates). The game cleans them: A-1101, A 1101 and A/1101 are the same ID. */
@@ -483,7 +487,7 @@
         if (!state.eid) { pasteMsg.textContent = "Please save step 1 first."; return; }
         pasteMsg.textContent = "Adding…";
         try { const r = await call("POST", `/api/z/${state.eid}/people`, { people: ids.map((empId) => ({ empId })) }); who.pasted = ""; who.paste = false; who.added = r.added == null ? ids.length : r.added; draw(); } catch (e) { pasteMsg.textContent = e.message; }
-      } }, "Add to my list"));
+      } }, "Add to your list"));
     }
     box.append(pasteMsg);
     if (who.added != null) pasteMsg.textContent = who.added + (who.added === 1 ? " ID was added to your list." : " IDs were added to your list.");

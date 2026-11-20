@@ -251,3 +251,13 @@ test("step 2: the owner's ID-invite text, Paste a list, family 1 to 10 (4 by def
   expect(F.audienceSettings("family", 100, undefined, 10).invites.per).toBe(10); expect(F.audienceSettings("family", 100, undefined, 0).invites.per).toBe(4); expect(F.audienceSettings("family", 100, undefined, 11).invites.per).toBe(10);
   expect(F.badWords("Invite people with just an ID").length).toBe(0);
 });
+
+// 20 Nov 2026 (owner rule, console voice): the console speaks TO the organizer as "you". No "I", "my", "me" or "myself" in the shared screens (docs/CONSOLE_VOICE.md).
+test("console voice: no I, my, me or myself in the strings of the shared pack", () => {
+  const bad: string[] = [];
+  src.replace(/\r\n/g, "\n").split("\n").forEach((ln, i) => {
+    const t = ln.trim(); if (t.startsWith("//") || t.startsWith("/*") || t.startsWith("*")) return;
+    for (const m of ln.replace(/\s\/\/ .*$/, "").matchAll(/"((?:[^"\\\n]|\\.)*)"|`((?:[^`\\]|\\.)*)`/g)) { const x = (m[1] ?? m[2] ?? "").replace(/<[^>]*>/g, " ").replace(/\$\{[^}]*\}/g, " "); if (/(^|[\s>(“"'])(I|I'm|I'll|I've|my|My|me|Me|myself|mine)($|[\s.,?!:;)<"'”’])/.test(x)) bad.push(`zc-flow.js:${i + 1} ${x.slice(0, 70)}`); }
+  });
+  expect(bad).toEqual([]);
+});
