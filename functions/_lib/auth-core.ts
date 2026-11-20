@@ -28,6 +28,7 @@ export interface Env {
   MNP_KEY?: string; // the console's spend key id at Moneypenny (secret)
   MNP_SECRET?: string; // its signing secret (secret)
   MNP_WEBHOOK_SECRET?: string; // checks the 'game paid' notices Moneypenny sends (secret)
+  PAYFRAME_ORIGIN?: string; // where the secure payment window comes from (default: the IT Services pages address)
   PAY_VIA_MONEYPENNY?: string; // "1" opens the pay step; anything else keeps it dark
   BOUNCE_ADDRESS?: string; // return-path / notice address, default hello@corporatetambola.com
 }

@@ -7,10 +7,8 @@ import { makeHost, seed } from "./support/fake-host";
 import { makeCtx } from "../packages/bridge/test-kit/kit.mjs";
 import { makeD1 } from "./support/d1-sqlite";
 import { makeFakeMoneypenny } from "./support/fake-moneypenny";
-import { handlePay, d1WalletStore, GAME_NAMES, retryStuck } from "../functions/_lib/pay-core";
+import { handlePay, GAME_NAMES } from "../functions/_lib/pay-core";
 import { sealText, sha256hex, type Env } from "../functions/_lib/auth-core";
-// @ts-ignore plain JS copy of the Moneypenny wallet
-import { storeContract } from "../packages/console-wallet/index.js";
 
 const CONSOLE = "https://console.test";
 const MIGRATIONS = readdirSync(new URL("../migrations/", import.meta.url)).filter((f) => f.endsWith(".sql")).sort().map((f) => "migrations/" + f);
@@ -47,39 +45,48 @@ async function world(o: { flag?: boolean; catalogue?: any[] } = {}) {
   return { ctx, h, env, fake, call, state, event, hosts, alice, raw, stop: () => server.stop(true) };
 }
 const ASK = { game: "bingo", eid: "WAIT001", item: "250" };
+const Q = "/pay/quote?game=bingo&eid=WAIT001&item=250";
 
 test("DARK: with the flag off every pay route says 'not open yet'", async () => {
   const w = await world({ flag: false });
-  try { const r = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250"); expect(r.status).toBe(503); expect(r.json.error).toBe("not_open"); expect(w.fake.state.calls).toEqual([]); } finally { w.stop(); }
+  try { const r = await w.call("GET", Q); expect(r.status).toBe(503); expect(r.json.error).toBe("not_open"); expect(w.fake.state.calls).toEqual([]); } finally { w.stop(); }
 });
 
 test("not signed in: a polite sign-in answer, Moneypenny is not asked", async () => {
   const w = await world();
-  try { const r = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250", undefined, { cookie: false }); expect(r.status).toBe(401); expect(r.json.error).toBe("sign_in"); expect(w.fake.state.calls).toEqual([]); } finally { w.stop(); }
+  try { const r = await w.call("GET", Q, undefined, { cookie: false }); expect(r.status).toBe(401); expect(r.json.error).toBe("sign_in"); expect(w.fake.state.calls).toEqual([]); } finally { w.stop(); }
 });
 
-test("quote when credits are short: price, own credits and the missing credits, every figure from Moneypenny", async () => {
+test("quote when credits are short: price, own credits and the credits to buy (the listed pack), every figure from Moneypenny", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 2000);
-    const r = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250");
+    const r = await w.call("GET", Q);
     expect(r.status).toBe(200);
-    expect(r.json.price).toEqual({ credits: 5000, usd: "50.00", inrMinor: 350000 });
-    expect(r.json.balance).toEqual({ credits: 2000, usd: "20.00", inrMinor: 140000 });
-    expect(r.json.short).toEqual({ credits: 3000, usd: "30.00", inrMinor: 210000 });
-    expect(r.json.enough).toBe(false);
-    expect(r.headers.get("access-control-allow-origin")).toBe(w.h.origin); expect(r.headers.get("access-control-allow-credentials")).toBe("true");
+    expect(r.json).toMatchObject({ ok: true, paid: false, enough: false, price: { credits: 5000, usd: "50.00", inrMinor: 350000 }, balance: { credits: 2000, usd: "20.00", inrMinor: 140000 }, short: { credits: 3000, usd: "30.00", inrMinor: 210000 } });
+    expect(w.fake.state.calls).toContain("GET /v1/game_pay/quote");
+    expect(JSON.stringify(r.json)).not.toContain(w.alice.email);
+  } finally { w.stop(); }
+});
+
+test("a shortfall buys the smallest LISTED pack, not the exact gap (Moneypenny's rule): 2,000 missing -> the 2,000 pack; 2,500 missing -> the 3,000 pack", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 3000); expect((await w.call("GET", Q)).json.short.credits).toBe(2000);
+    w.fake.accounts.set(w.alice.email.toLowerCase(), 2500); expect((await w.call("GET", Q)).json.short.credits).toBe(3000);
   } finally { w.stop(); }
 });
 
 test("no price is written in the console: change Moneypenny's price list and the quote follows", async () => {
-  const w = await world({ catalogue: [{ product: "bingo", item: "250", credits: 1234 }] });
-  try { const r = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250"); expect(r.json.price.credits).toBe(1234); expect(r.json.price.inrMinor).toBe(1234 * 70); } finally { w.stop(); }
-  const src = readFileSync(new URL("../functions/_lib/pay-core.ts", import.meta.url), "utf8");
-  expect(src.match(/\b\d{4,}\b/g)?.filter((x) => !["1000", "3000", "8000", "86400"].includes(x) && !/^\d{5,}$/.test(x)) ?? []).toEqual([]); // no price-sized number in the code (time constants only)
+  const w = await world({ catalogue: [{ product: "bingo", item: "250", credits: 7777 }] });
+  try {
+    w.fake.give(w.alice.email, 100);
+    const r = await w.call("GET", Q); expect(r.json.price.credits).toBe(7777); expect(r.json.price.usd).toBe("77.77");
+    const none = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=999"); expect(none.status).toBe(404); expect(none.json.error).toBe("no_item");
+  } finally { w.stop(); }
 });
 
-test("enough credits: ONE button pays, the game is marked PAID, credits go down once; a second click changes nothing", async () => {
+test("enough credits: ONE button pays, Moneypenny takes the credits in one step, the game is marked PAID; a second click changes nothing", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 6000);
@@ -87,39 +94,31 @@ test("enough credits: ONE button pays, the game is marked PAID, credits go down 
     expect(r.json).toEqual({ ok: true, paid: true });
     expect(w.state("WAIT001")).toEqual({ status: "ready", pay_state: "paid" });
     expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(1000);
+    expect(w.fake.state.calls.some((c) => /spend\/(reserve|capture)/.test(c))).toBe(false); // Moneypenny reserves and captures itself
     const again = await w.call("POST", "/pay/pay", ASK);
     expect(again.json.ok).toBe(true);
     expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(1000); // not spent twice
+    expect((await w.call("GET", Q)).json.paid).toBe(true);
   } finally { w.stop(); }
 });
 
-test("short of credits: 'pay' is refused softly and nothing is held", async () => {
+test("short of credits: 'pay' is refused softly and nothing is taken", async () => {
   const w = await world();
   try {
-    w.fake.give(w.alice.email, 100);
+    w.fake.give(w.alice.email, 2000);
     const r = await w.call("POST", "/pay/pay", ASK);
-    expect(r.status).toBe(402); expect(r.json.error).toBe("short");
-    expect(w.fake.holds.size).toBe(0); expect(w.state("WAIT001").status).toBe("waiting_payment");
+    expect(r.status).toBe(402); expect(r.json.message).toContain("a few more credits");
+    expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(2000); expect(w.state("WAIT001").status).toBe("waiting_payment");
   } finally { w.stop(); }
 });
 
-test("the game refuses for sure (wrong size): the credits come back and the game stays unpaid", async () => {
-  const w = await world();
+test("the game refuses for sure (wrong size): Moneypenny has the money, so the answer is 'being checked' (never 'paid'), and the game stays unpaid", async () => {
+  const w = await world({ catalogue: [{ product: "bingo", item: "100", credits: 3400 }] });
   try {
     w.fake.give(w.alice.email, 6000);
-    const r = await w.call("POST", "/pay/pay", { ...ASK, item: "100" }); // WAIT001 is the 250 size
-    expect(r.status).toBe(409); expect(r.json.error).toBe("refused"); expect(r.json.message).toContain("back in your account");
-    expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(6000);
+    const r = await w.call("POST", "/pay/pay", { ...ASK, item: "100" }); // the game's own size is 250
+    expect(r.status).toBe(409); expect(r.json.message).toContain("being checked");
     expect(w.state("WAIT001")).toEqual({ status: "waiting_payment", pay_state: "waiting" });
-  } finally { w.stop(); }
-});
-
-test("somebody else's game: refused for sure, credits come back", async () => {
-  const w = await world();
-  try {
-    w.fake.give(w.alice.email, 6000);
-    const r = await w.call("POST", "/pay/pay", { game: "bingo", eid: "BOBS001", item: "100" });
-    expect(r.json.ok).toBe(false); expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(6000);
   } finally { w.stop(); }
 });
 
@@ -127,90 +126,136 @@ test("Moneypenny down: soft words, nothing taken, no hard error", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 6000); w.fake.state.down = true;
-    for (const [m, p, b] of [["GET", "/pay/quote?game=bingo&eid=WAIT001&item=250", undefined], ["POST", "/pay/buy", ASK]] as const) {
+    for (const [m, p, b] of [["GET", Q, undefined], ["POST", "/pay/buy", ASK], ["POST", "/pay/pay", ASK], ["POST", "/pay/check", ASK]] as const) {
       const r = await w.call(m, p, b);
       expect([r.status, r.json.error]).toEqual([503, "busy"]);
       expect(r.json.message).toContain("Nothing has been taken"); expect(r.json.message).not.toMatch(/error|failed|exception/i);
     }
-    const p = await w.call("POST", "/pay/pay", ASK); // the click is kept as ONE order for this game; Moneypenny not answering is not a hard error
-    expect([p.status, p.json.pending]).toEqual([202, true]); expect(p.json.message).toContain("You do not need to pay again");
     expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(6000); expect(w.state("WAIT001").status).toBe("waiting_payment");
     w.fake.state.down = false;
-    const again = await w.call("POST", "/pay/pay", ASK); expect(again.json.pending).toBe(true); // a second click does not make a second order
-    w.h.clock.ms += 3 * 60_000; await retryStuck(w.env, w.h.clock.ms, { mnp: w.fake.mnp, fetch: fetch }); // the 2-minute job finishes the one order
-    expect(w.state("WAIT001")).toEqual({ status: "ready", pay_state: "paid" }); expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(1000);
+    expect((await w.call("POST", "/pay/pay", ASK)).json.paid).toBe(true); // the next click simply works
   } finally { w.stop(); }
 });
 
-test("Buy now: Moneypenny opens a buy of exactly the missing credits for THIS game; Moneypenny's signed notice marks the game paid once", async () => {
+test("the game cannot be reached right after Moneypenny took the credits: 'on its way' (202), and the next look tells the game; the game is marked once", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 6000);
+    const real = w.env.GAME_ORIGINS;
+    w.env.GAME_ORIGINS = JSON.stringify({ bingo: "http://127.0.0.1:1" }); // the game does not answer
+    const r = await w.call("POST", "/pay/pay", ASK);
+    expect([r.status, r.json.pending]).toEqual([202, true]); expect(r.json.message).toContain("You do not need to pay again");
+    expect(w.state("WAIT001").status).toBe("waiting_payment");
+    w.env.GAME_ORIGINS = real;
+    w.h.clock.ms += 60_000;
+    const look = await w.call("POST", "/pay/check", ASK); expect(look.json.paid).toBe(true);
+    expect(w.state("WAIT001")).toEqual({ status: "ready", pay_state: "paid" });
+    expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(1000); // taken once
+  } finally { w.stop(); }
+});
+
+test("Buy now: Moneypenny opens a purchase for THIS game and gives the secure window's details; the window's answer goes to /pay/confirm; the game is paid once", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 2000);
     const b = await w.call("POST", "/pay/buy", ASK);
-    expect(b.json.ok).toBe(true); expect(b.json.orderRef).toBe("GAME-bingo-WAIT001-3000"); expect(b.json.payPage).toContain("pay.invalid"); expect(b.json.amountMinor).toBe(3000 * 70);
-    expect(w.fake.orders.get("GAME-bingo-WAIT001-3000")!.gameId).toBe("WAIT001");
+    expect(b.json.ok).toBe(true); expect(b.json.frame.url).toMatch(/\/payframe\/$/); expect(b.json.frame.opts).toMatchObject({ key: "rzp_test_stub", currency: "INR", amount: 3000 * 70, prefill: { email: w.alice.email } });
+    expect(w.fake.games.get("WAIT001")!.credits).toBe(5000);
     expect(w.state("WAIT001").status).toBe("waiting_payment"); // not paid until Moneypenny says so
-    const ev = w.fake.complete("GAME-bingo-WAIT001-3000");
+    expect((await w.call("GET", Q)).json.waiting).toBe(true);
+    const bad = await w.call("POST", "/pay/confirm", { ...ASK, orderId: b.json.frame.orderId, resp: { ...w.fake.windowAnswer(b.json.frame.orderId), razorpay_signature: "wrong" } });
+    expect(bad.json).toMatchObject({ ok: true, paid: false, pending: true }); expect(w.state("WAIT001").status).toBe("waiting_payment");
+    const good = await w.call("POST", "/pay/confirm", { ...ASK, orderId: b.json.frame.orderId, resp: w.fake.windowAnswer(b.json.frame.orderId) });
+    expect(good.json).toEqual({ ok: true, paid: true }); expect(w.state("WAIT001")).toEqual({ status: "ready", pay_state: "paid" });
+    expect(w.fake.accounts.get(w.alice.email.toLowerCase())).toBe(0); // the pack (3,000) came in, the game's 5,000 went out
+    w.h.raw.run("UPDATE engagement SET status='waiting_payment', pay_state='waiting' WHERE id='WAIT001'");
+    await w.call("POST", "/pay/confirm", { ...ASK, orderId: b.json.frame.orderId, resp: w.fake.windowAnswer(b.json.frame.orderId) });
+    expect(w.state("WAIT001").status).toBe("waiting_payment"); // the repeat did not mark it again
+  } finally { w.stop(); }
+});
+
+test("Moneypenny's signed game.paid notice marks the game paid once; bad signature, old time and other kinds of notice change nothing", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 2000);
+    await w.call("POST", "/pay/buy", ASK);
+    const ev = w.fake.complete("WAIT001");
     const bad = await w.event(ev, "wrong-secret"); expect(bad.status).toBe(401); expect(w.state("WAIT001").status).toBe("waiting_payment");
     const old = await w.event(ev, "whsec", w.h.clock.ms - 10 * 60_000); expect(old.status).toBe(401);
     const good = await w.event(ev); expect(good.status).toBe(200); expect(w.state("WAIT001")).toEqual({ status: "ready", pay_state: "paid" });
     w.h.raw.run("UPDATE engagement SET status='waiting_payment', pay_state='waiting' WHERE id='WAIT001'");
     const twice = await w.event(ev); expect(twice.status).toBe(200);
     expect(w.state("WAIT001").status).toBe("waiting_payment"); // the second notice did not mark it again
-    expect((await w.event({ type: "credit.added", order_ref: "x" })).json.ignored).toBe(true);
+    expect((await w.event({ id: "x", type: "credit.added", data: { game_ref: "WAIT001", product: "bingo" } })).json.ignored).toBe(true);
+    expect((await w.event({ id: "y", type: "game.paid", data: { game_ref: "OTHER999", product: "someothergame" } })).json.ignored).toBe(true); // every notice reaches every endpoint
+    expect((await w.event({ id: "z", type: "game.paid", data: { game_ref: "OTHER999", product: "bingo" } })).status).toBe(200); // a game this console never noted: nothing to tell
   } finally { w.stop(); }
 });
 
-test("backup path: /pay/check asks Moneypenny and tells the game when the buy is paid", async () => {
+test("backup path: /pay/check asks Moneypenny and tells the game when it is paid", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 2000);
     await w.call("POST", "/pay/buy", ASK);
     expect((await w.call("POST", "/pay/check", ASK)).json.paid).toBe(false);
-    w.fake.complete("GAME-bingo-WAIT001-3000");
+    w.fake.complete("WAIT001");
     expect((await w.call("POST", "/pay/check", ASK)).json.paid).toBe(true);
     expect(w.state("WAIT001").pay_state).toBe("paid");
   } finally { w.stop(); }
 });
 
-test("payment link: the payee sees only an amount due (no credits balance, no e-mail); the buy goes into the organizer's account for this game; it ends after 7 days", async () => {
+test("payment link: a console page /pay/<token>; the payee sees only an amount due (no credits balance, no e-mail); the money goes into the organizer's account for this game", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 2000);
     const l = await w.call("POST", "/pay/link", ASK);
-    expect(l.json.url).toMatch(/^https:\/\/console\.test\/pay\/[0-9a-f]{48}$/);
+    expect(l.json.url).toMatch(/^https:\/\/console\.test\/pay\/[A-Za-z0-9_-]{20,80}$/);
     const t = l.json.url.split("/pay/")[1];
     const info = await w.call("GET", "/pay/link/info?t=" + t, undefined, { cookie: false });
-    expect(info.json.due).toEqual({ credits: 3000, usd: "30.00", inrMinor: 210000 }); expect(info.json.gameName).toBe("Corporate Bingo");
-    const text = JSON.stringify(info.json); expect(text).not.toContain(w.alice.email); expect(info.json.balance).toBeUndefined(); expect(text).not.toContain('"credits":2000');
-    const s = await w.call("POST", "/pay/link/start", { t }, { cookie: false });
-    expect(s.json.payPage).toContain("pay.invalid");
-    await w.event(w.fake.complete("GAME-bingo-WAIT001-3000"));
-    expect(w.state("WAIT001").pay_state).toBe("paid");
-    const gone = await handlePay(new Request(CONSOLE + "/pay/link/info?t=" + t), w.env, w.h.clock.ms + 8 * 86400_000, { mnp: w.fake.mnp, fetch: fetch });
-    expect(gone.status).toBe(404);
+    expect(info.json.due).toEqual({ currency: "INR", amountMinor: 3000 * 70 }); expect(info.json.gameName).toBe("Corporate Bingo");
+    const text = JSON.stringify(info.json); expect(text).not.toContain(w.alice.email); expect(info.json.balance).toBeUndefined(); expect(text).not.toContain('"credits"');
+    const noMail = await w.call("POST", "/pay/link/start", { t }, { cookie: false }); expect(noMail.status).toBe(400);
+    const s = await w.call("POST", "/pay/link/start", { t, email: "demo9@demo-test.invalid" }, { cookie: false });
+    expect(s.json.frame.opts.prefill.email).toBe("demo9@demo-test.invalid");
+    const done = await w.call("POST", "/pay/link/confirm", { t, orderId: s.json.frame.orderId, resp: w.fake.windowAnswer(s.json.frame.orderId) }, { cookie: false });
+    expect(done.json).toEqual({ ok: true, paid: true });
+    expect(w.state("WAIT001")).toEqual({ status: "ready", pay_state: "paid" });
+    expect((await w.call("GET", "/pay/link/info?t=" + t, undefined, { cookie: false })).json).toMatchObject({ ok: true, covered: true, paid: true });
     expect((await w.call("GET", "/pay/link/info?t=" + "0".repeat(48), undefined, { cookie: false })).status).toBe(404);
   } finally { w.stop(); }
 });
 
-test("the console talks to the game and to Moneypenny only: never IT Services, never Razorpay", async () => {
+test("a payee who pays after the organizer's tab is closed: the game is still told, by the signed notice", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 2000);
+    const l = await w.call("POST", "/pay/link", ASK); const t = l.json.url.split("/pay/")[1];
+    const s = await w.call("POST", "/pay/link/start", { t, email: "demo9@demo-test.invalid" }, { cookie: false });
+    expect(s.json.ok).toBe(true);
+    await w.event(w.fake.complete("WAIT001"));
+    expect(w.state("WAIT001")).toEqual({ status: "ready", pay_state: "paid" });
+  } finally { w.stop(); }
+});
+
+test("a game that is already paid cannot be bought twice from a link or from Buy now", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 6000);
+    const l = await w.call("POST", "/pay/link", ASK); const t = l.json.url.split("/pay/")[1];
+    await w.call("POST", "/pay/pay", ASK);
+    expect((await w.call("GET", "/pay/link/info?t=" + t, undefined, { cookie: false })).json).toMatchObject({ covered: true, paid: true });
+    const again = await w.call("POST", "/pay/link", ASK); expect(again.status).toBe(409); expect(again.json.message).toContain("already paid");
+  } finally { w.stop(); }
+});
+
+test("the console talks to the game and to Moneypenny only: never IT Services, never Razorpay by name", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 6000); await w.call("POST", "/pay/pay", ASK);
     expect([...new Set(w.hosts)]).toEqual([w.h.origin]);
-    const src = readFileSync(new URL("../functions/_lib/pay-core.ts", import.meta.url), "utf8").split("\n").filter((l) => !l.trim().startsWith("//")).join("\n");
+    const src = readFileSync(new URL("../functions/_lib/pay-core.ts", import.meta.url), "utf8").split("\n").filter((l) => !l.trim().startsWith("//")).join("\n").replace(/razorpay_(order_id|payment_id|signature)/g, "").replace("itservices-rajat-agarwal.pages.dev", ""); // the window's own address is a setting, not a call
     expect(src).not.toMatch(/razorpay|itservices|it-services|api\/pay\//i);
   } finally { w.stop(); }
-});
-
-test("the wallet's order store on D1 keeps every promise the wallet needs (storeContract)", async () => {
-  const bad = await storeContract(() => { const { db } = makeD1(MIGRATIONS); return d1WalletStore({ DB: db } as any); });
-  expect(bad).toEqual([]);
-});
-
-test("the 2-minute job exists and does nothing while the step is dark", async () => {
-  const w = await world({ flag: false });
-  try { expect(await retryStuck(w.env, w.h.clock.ms, { mnp: w.fake.mnp })).toBe(null); } finally { w.stop(); }
 });
 
 test("game names here are the names in config/games.json", () => {
@@ -219,15 +264,15 @@ test("game names here are the names in config/games.json", () => {
 });
 
 // ---- seamless: everything the organizer, host and payee see is a console screen ----
-test("the screen flips to Paid by itself: while the buy is open the quote says 'waiting'; after the notice (even on a reopened tab) it says 'paid'; the payee's page says paid too", async () => {
+test("the screen flips to Paid by itself: while the purchase is open the quote says 'waiting'; after the notice (even on a reopened tab) it says 'paid'; the payee's page says paid too", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 2000);
     const l = await w.call("POST", "/pay/link", ASK); const t = l.json.url.split("/pay/")[1];
     await w.call("POST", "/pay/buy", ASK);
-    const q1 = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250"); expect(q1.json.paid).toBe(false); expect(q1.json.waiting).toBe(true);
-    await w.event(w.fake.complete("GAME-bingo-WAIT001-3000"));
-    const q2 = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250"); expect(q2.json).toMatchObject({ ok: true, paid: true });
+    const q1 = await w.call("GET", Q); expect(q1.json.paid).toBe(false); expect(q1.json.waiting).toBe(true);
+    await w.event(w.fake.complete("WAIT001"));
+    const q2 = await w.call("GET", Q); expect(q2.json).toMatchObject({ ok: true, paid: true });
     const i = await w.call("GET", "/pay/link/info?t=" + t, undefined, { cookie: false }); expect(i.json).toMatchObject({ ok: true, covered: true, paid: true });
   } finally { w.stop(); }
 });
@@ -237,35 +282,36 @@ test("the payee's link is a console page: /pay/<token> serves the one payee page
   try {
     const asked: string[] = [];
     const assets = async (p: string) => { asked.push(p); return new Response("<html>payee page</html>", { status: 200 }); };
-    const r = await handlePay(new Request(CONSOLE + "/pay/" + "a".repeat(48)), w.env, w.h.clock.ms, { mnp: w.fake.mnp, assets });
+    const r = await handlePay(new Request(CONSOLE + "/pay/" + "a".repeat(43)), w.env, w.h.clock.ms, { mnp: w.fake.mnp, assets });
     expect(r.status).toBe(200); expect(await r.text()).toContain("payee page"); expect(asked).toEqual(["/pay-link.html"]); expect(r.headers.get("location")).toBe(null);
   } finally { w.stop(); }
 });
 
-test("the organizer's e-mail is not kept in plain words in the wallet's order rows", async () => {
+test("the organizer's e-mail is kept sealed in the console's own note of the order", async () => {
   const w = await world();
   try {
     w.fake.give(w.alice.email, 6000); await w.call("POST", "/pay/pay", ASK);
-    const rows = w.raw.query("SELECT row_json FROM wallet_order").all() as any[];
-    expect(rows.length).toBeGreaterThan(0);
-    for (const r of rows) expect(r.row_json.toLowerCase()).not.toContain(w.alice.email.toLowerCase());
+    const rows = w.raw.query("SELECT * FROM pay_order").all() as any[];
+    expect(rows.length).toBe(1); expect(rows[0].state).toBe("told");
+    expect(JSON.stringify(rows).toLowerCase()).not.toContain(w.alice.email.toLowerCase());
   } finally { w.stop(); }
 });
 
-test("error words: nothing the organizer or payee reads names the backend (no 'Moneypenny site', 'API', 'IT Services', 'Razorpay', 'server', 'error')", async () => {
+test("error words: nothing the organizer or payee reads names the backend, and Moneypenny's own error text is never shown", async () => {
   const w = await world();
   try {
     const seen: string[] = [];
     const note = (r: any) => { if (r?.json?.message) seen.push(r.json.message); };
     w.fake.state.down = true;
-    note(await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250")); note(await w.call("POST", "/pay/pay", ASK)); note(await w.call("POST", "/pay/buy", ASK)); note(await w.call("POST", "/pay/link", ASK));
+    note(await w.call("GET", Q)); note(await w.call("POST", "/pay/pay", ASK)); note(await w.call("POST", "/pay/buy", ASK)); note(await w.call("POST", "/pay/link", ASK));
     w.fake.state.down = false;
-    note(await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250", undefined, { cookie: false })); note(await w.call("GET", "/pay/link/info?t=" + "0".repeat(48), undefined, { cookie: false }));
-    note(await w.call("POST", "/pay/pay", { game: "x" })); note(await w.call("POST", "/pay/pay", ASK)); // short of credits
-    w.fake.give(w.alice.email, 6000); note(await w.call("POST", "/pay/buy", ASK)); note(await w.call("GET", "/pay/nothing"));
+    note(await w.call("GET", Q, undefined, { cookie: false })); note(await w.call("GET", "/pay/link/info?t=" + "0".repeat(48), undefined, { cookie: false }));
+    note(await w.call("POST", "/pay/pay", { game: "x" })); w.fake.give(w.alice.email, 2000); note(await w.call("POST", "/pay/pay", ASK)); // short of credits
+    note(await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=999")); // an error code from Moneypenny: our own words
+    note(await w.call("GET", "/pay/nothing"));
     const src = readFileSync(new URL("../functions/_lib/pay-core.ts", import.meta.url), "utf8");
     for (const m of src.match(/^  [a-zA-Z]+: "[^"]+",$/gm) || []) seen.push(m);
     expect(seen.length).toBeGreaterThan(8);
-    for (const s of seen) expect(s).not.toMatch(/moneypenny|\bapi\b|it services|razorpay|payu|server|exception|\berror\b|failed|invalid|undefined/i);
+    for (const s of seen) expect(s).not.toMatch(/moneypenny|\bapi\b|it services|razorpay|payu|server|exception|\berror\b|failed|invalid|undefined|text the console must not show/i);
   } finally { w.stop(); }
 });

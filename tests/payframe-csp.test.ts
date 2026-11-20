@@ -16,7 +16,13 @@ test("a payframe address in config goes into frame-src only; the rules still pas
   expect(text).toContain("frame-ancestors 'none'");
 });
 
-test("with no payframe address yet, frame-src is only the games' player views", () => {
-  const frameSrc = /frame-src ([^;\n]+)/.exec(headersFile(cfg, "live"))![1];
-  expect(frameSrc.split(/\s+/).every((x: string) => x.endsWith("/screenview/"))).toBe(true);
+test("frame-src is the games' player views plus exactly the configured payment-window address, nothing else", () => {
+  const frameSrc: string[] = /frame-src ([^;
+]+)/.exec(headersFile(cfg, "live"))![1].split(/\s+/);
+  const allowed = new Set<string>(cfg.payframeOrigins.live);
+  expect(frameSrc.every((x) => x.endsWith("/screenview/") || allowed.has(x))).toBe(true);
+  expect(frameSrc.filter((x) => allowed.has(x)).length).toBe(allowed.size);
+  const none = /frame-src ([^;
+]+)/.exec(headersFile({ ...cfg, payframeOrigins: undefined }, "live"))![1].split(/\s+/);
+  expect(none.every((x) => x.endsWith("/screenview/"))).toBe(true);
 });

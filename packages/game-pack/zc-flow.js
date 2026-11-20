@@ -222,6 +222,8 @@
     close: "Close",
     frame: "Secure payment",
     again: "Open the payment window again",
+    checking: "Checking your payment. This page updates by itself.",
+    notDone: "The payment did not go through. Nothing has been taken. You can try again.",
     busy: "Credits are refreshing. Nothing has been taken from you. Please try again in a few minutes.",
     link: "Payment link copied. The person who pays adds credits to your account for this game, and your game is marked paid by itself.",
     waiting: "Waiting for your payment. This page updates by itself when it arrives. You do not need to do anything else.",
@@ -727,7 +729,7 @@
   };
 
   /* ---- Step 6: Pay. The page asks the console; the console asks Moneypenny. This page never talks to a payment company. ---- */
-  const pay = { q: null, loading: false, loaded: false, err: "", signIn: "", note: "", waiting: false, payPage: "", link: "", busyBtn: "", timer: null };
+  const pay = { q: null, loading: false, loaded: false, err: "", signIn: "", note: "", waiting: false, frame: null, link: "", busyBtn: "", timer: null };
   api.pay = pay;
   const payBase = () => consoleBase(G, location.search, location.hostname);
   async function payCall(method, path, body) {
@@ -747,17 +749,28 @@
     if (r.status === 200 && r.j.ok) { pay.q = r.j; if (r.j.paid) return payPaid(); if (r.j.waiting && !pay.waiting) payWatch(); } else { pay.q = null; pay.err = r.j.message || PAY.busy; pay.signIn = r.status === 401 ? (r.j.signIn || payBase()) : ""; }
     payRedraw();
   }
-  /** The secure payment window opens ON TOP of this page (a frame), so nobody leaves the console. Closing it brings back the same screen. */
-  function payOverlay(url) {
+  /** The secure payment window opens ON TOP of this page (a frame), so nobody leaves the console. `frame` is the console's answer ({url, origin, opts, orderId}). The window says when it is ready, we hand it the order, and it hands back what happened. */
+  let payListener = null;
+  function payOverlay(frame) {
     payOverlayClose();
-    if (!url) return;
+    if (!frame || !frame.url) return;
+    pay.frame = frame;
+    const iframe = el("iframe", { id: "zf-payiframe", title: PAY.frame, src: frame.url, allow: "payment" });
     const box = el("div", { id: "zf-payoverlay", class: "zf-payoverlay", role: "dialog", "aria-modal": "true", "aria-label": PAY.frame },
-      el("div", { class: "zf-payframe" },
-        el("button", { type: "button", class: "zf-add", id: "zf-payclose", onclick: payOverlayClose }, PAY.close),
-        el("iframe", { id: "zf-payiframe", title: PAY.frame, src: url, allow: "payment" })));
+      el("div", { class: "zf-payframe" }, el("button", { type: "button", class: "zf-add", id: "zf-payclose", onclick: payOverlayClose }, PAY.close), iframe));
     document.body.append(box);
+    let sent = false;
+    payListener = async (ev) => {
+      if (ev.source !== iframe.contentWindow || ev.origin !== frame.origin || !ev.data) return;
+      const t = ev.data.t;
+      if (t === "ready" && !sent) { sent = true; iframe.contentWindow.postMessage({ t: "open", opts: frame.opts }, frame.origin); }
+      else if (t === "paid") { payOverlayClose(); pay.note = PAY.checking; payRedraw(); const a = payAsk(); const r = await payCall("POST", "/pay/confirm", { ...a, orderId: frame.orderId, resp: ev.data.resp }); if (r.j && r.j.paid) return payPaid(); pay.note = r.j.message || PAY.busy; payWatch(); payRedraw(); }
+      else if (t === "failed") { payOverlayClose(); pay.note = PAY.notDone; payRedraw(); }
+      else if (t === "dismissed") { payOverlayClose(); payRedraw(); }
+    };
+    window.addEventListener("message", payListener);
   }
-  function payOverlayClose() { const o = document.getElementById("zf-payoverlay"); if (o) o.remove(); }
+  function payOverlayClose() { const o = document.getElementById("zf-payoverlay"); if (o) o.remove(); if (payListener) { window.removeEventListener("message", payListener); payListener = null; } }
   api.payOverlay = payOverlay;
   function payStop() { if (pay.timer) { clearInterval(pay.timer); pay.timer = null; } pay.waiting = false; }
   /** After Buy now: look at the game every 5 seconds (and ask the console every 15) until it is paid. */
@@ -782,7 +795,8 @@
       if (r.j && r.j.pending) payWatch();
       if (r.status === 402) pay.loaded = false;
     } else if (which === "buy") {
-      if (r.j && r.j.ok && r.j.payPage) { pay.payPage = r.j.payPage; payOverlay(r.j.payPage); payWatch(); }
+      if (r.j && r.j.paid) return payPaid();
+      if (r.j && r.j.ok && r.j.frame) { payOverlay(r.j.frame); payWatch(); }
       else pay.note = r.j.message || PAY.busy;
     } else {
       if (r.j && r.j.ok && r.j.url) { pay.link = r.j.url; try { await navigator.clipboard.writeText(r.j.url); pay.note = PAY.link; } catch { pay.note = "Please copy the payment link by hand."; } }
@@ -817,7 +831,7 @@
     if (pay.q.enough) row.append(el("button", { type: "button", class: "zf-go", id: "zf-payprimary", ...dis, onclick: () => payClick("pay") }, L.primary));
     else row.append(el("button", { type: "button", class: "zf-go", id: "zf-buynow", ...dis, onclick: () => payClick("buy") }, L.primary), " ", el("button", { type: "button", class: "zf-add", id: "zf-copypay", ...(pay.busyBtn ? { disabled: "" } : {}), onclick: () => payClick("link") }, "Copy payment link"));
     box.append(row);
-    if (pay.waiting) box.append(el("div", { class: "zf-warn", id: "zf-paywait", role: "status" }, PAY.waiting, pay.payPage ? [" ", el("button", { type: "button", class: "zf-add", id: "zf-payopen", onclick: () => payOverlay(pay.payPage) }, PAY.again)] : null));
+    if (pay.waiting) box.append(el("div", { class: "zf-warn", id: "zf-paywait", role: "status" }, PAY.waiting, pay.frame ? [" ", el("button", { type: "button", class: "zf-add", id: "zf-payopen", onclick: () => payOverlay(pay.frame) }, PAY.again)] : null));
     if (pay.link) box.append(el("label", { for: "zf-paylink", text: "Payment link" }), el("input", { type: "text", readonly: "", id: "zf-paylink", value: pay.link }));
     box.append(el("p", { class: "zf-msg", id: "zf-paynote", role: "status", text: pay.note }));
     if (!pay.q.enough) box.append(el("p", { class: "zf-small", id: "zf-payprint", text: PAY_PRINT }));

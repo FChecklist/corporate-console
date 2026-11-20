@@ -31,6 +31,7 @@ function boot(script: Record<string, (init: any) => any>, o: { descriptor?: stri
   F.draw();
   return { win, F, d: win.document, log, text: () => win.document.getElementById("zf-sec6").textContent as string, stop: () => { if (F.pay.timer) clearInterval(F.pay.timer); } };
 }
+const FRAME = { url: "https://window.example/payframe/", origin: "https://window.example", opts: { key: "k", order_id: "order_o1", amount: 1, currency: "INR" }, orderId: "o1" };
 const quoteOk = (q: any) => ({ "GET /pay/quote": () => ({ status: 200, body: q }) });
 
 test("six steps; Pay is the last and opens after publishing", () => {
@@ -74,7 +75,7 @@ test("credits already cover the game: ONE button, 'Pay with your credits'; press
 });
 
 test("Buy now opens the secure payment window on top of the page and waits; Copy payment link copies the payee link", async () => {
-  const t = boot({ ...quoteOk(Q_SHORT), "POST /pay/buy": () => ({ status: 200, body: { ok: true, orderRef: "GAME-bingo-WAIT001-3000", payPage: "https://pay.invalid/stub/x" } }), "POST /pay/link": () => ({ status: 200, body: { ok: true, url: "https://console.example/pay/" + "a".repeat(48) } }), "GET /api/z/WAIT001/info": () => ({ status: 200, body: { startMs: 1, unpaid: true } }) });
+  const t = boot({ ...quoteOk(Q_SHORT), "POST /pay/buy": () => ({ status: 200, body: { ok: true, frame: FRAME } }), "POST /pay/link": () => ({ status: 200, body: { ok: true, url: "https://console.example/pay/" + "a".repeat(48) } }), "GET /api/z/WAIT001/info": () => ({ status: 200, body: { startMs: 1, unpaid: true } }) });
   t.win.open = () => { throw new Error("the payment window must not open as a new window or address"); };
   const copied: string[] = [];
   Object.defineProperty(globalThis.navigator, "clipboard", { value: { writeText: async (v: string) => { copied.push(v); } }, configurable: true });
@@ -86,10 +87,10 @@ test("Buy now opens the secure payment window on top of the page and waits; Copy
     expect((t.d.getElementById("zf-paylink") as any).value).toBe(copied[0]);
     t.d.getElementById("zf-buynow").click(); await tick(); await tick();
     const fr = t.d.getElementById("zf-payiframe") as any; // the secure window sits ON this page, in a frame
-    expect(fr.getAttribute("src")).toBe("https://pay.invalid/stub/x"); expect(t.d.getElementById("zf-payoverlay").getAttribute("aria-modal")).toBe("true");
+    expect(fr.getAttribute("src")).toBe(FRAME.url); expect(t.d.getElementById("zf-payoverlay").getAttribute("aria-modal")).toBe("true");
     t.d.getElementById("zf-payclose").click(); expect(t.d.getElementById("zf-payoverlay")).toBe(null);
     expect(t.d.getElementById("zf-paywait").textContent).toContain("Waiting for your payment");
-    t.d.getElementById("zf-payopen").click(); expect((t.d.getElementById("zf-payiframe") as any).getAttribute("src")).toBe("https://pay.invalid/stub/x");
+    t.d.getElementById("zf-payopen").click(); expect((t.d.getElementById("zf-payiframe") as any).getAttribute("src")).toBe(FRAME.url);
     expect(t.d.getElementById("zf-buynow").hasAttribute("disabled")).toBe(true); // no second purchase while waiting
   } finally { t.stop(); }
 });
@@ -149,4 +150,24 @@ test("PRIVACY NOTE says only what is true today: designed to follow the laws, ID
   const p = F.ZFLOW.PAY.privacy;
   expect(p).toBe("No personal details needed. All participant information is deleted within 24 hours of the game. Our games are designed to follow US privacy laws, the EU GDPR and India's DPDP.");
   expect(p).not.toMatch(/pdf|e-?mail|comply|complies|compliant|guarantee/i);
+});
+
+test("the secure window: when it says ready it is handed the order; when it says paid the console is asked to confirm and the screen turns Paid; a message from anywhere else is ignored", async () => {
+  const sent: any[] = [];
+  const confirms: any[] = [];
+  const t = boot({ ...quoteOk(Q_SHORT), "POST /pay/buy": () => ({ status: 200, body: { ok: true, frame: FRAME } }), "POST /pay/confirm": (init: any) => { confirms.push(JSON.parse(init.body)); return { status: 200, body: { ok: true, paid: true } }; }, "GET /api/z/WAIT001/info": () => ({ status: 200, body: { draft: false, unpaid: false } }) });
+  try {
+    await tick(); t.d.getElementById("zf-buynow").click(); await tick(); await tick();
+    const fr = t.d.getElementById("zf-payiframe") as any;
+    const cw = fr.contentWindow; if (cw) cw.postMessage = (m: any, o: string) => sent.push([m, o]);
+    const say = (data: any, origin: string, source: any) => t.win.dispatchEvent(new t.win.MessageEvent("message", { data, origin, source }));
+    say({ t: "ready" }, "https://evil.example", cw); expect(sent.length).toBe(0); // not the window's address
+    say({ t: "ready" }, FRAME.origin, cw);
+    expect(sent).toEqual([[{ t: "open", opts: FRAME.opts }, FRAME.origin]]);
+    say({ t: "paid", resp: { a: "1", b: "2" } }, "https://evil.example", cw); await tick(); expect(confirms.length).toBe(0);
+    say({ t: "paid", resp: { a: "1", b: "2" } }, FRAME.origin, cw); await tick(); await tick(); await tick();
+    expect(confirms).toEqual([{ game: "bingo", eid: "WAIT001", item: "250", orderId: "o1", resp: { a: "1", b: "2" } }]);
+    expect(t.d.getElementById("zf-payoverlay")).toBe(null);
+    expect(t.d.getElementById("zf-paid").textContent).toBe("Thank you. Your game is paid and ready.");
+  } finally { t.stop(); }
 });

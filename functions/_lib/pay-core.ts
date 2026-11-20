@@ -1,19 +1,19 @@
 // The pay step of the organizer's game flow (last step, all six games). The console talks ONLY to Moneypenny; it never calls IT Services or Razorpay.
 // Every number (price, balance, shortfall, dollars, rupees) comes from Moneypenny's answers. Nothing here knows a price.
-//   GET  /pay/quote?game=&eid=&item=   price of this game, the organizer's credits, what is missing
-//   POST /pay/pay                      enough credits: reserve, capture, then tell the game it is paid (console-wallet)
-//   POST /pay/buy                      credits are short: Moneypenny opens a buy of exactly the missing credits for this game; the person pays at the address it gives
-//   POST /pay/link                     a payment link a payee can open (7 days); the money goes to the organizer's own Moneypenny account for this game
-//   GET  /pay/link/info, POST /pay/link/start   the payee's page (no sign-in; sees only an amount due)
-//   POST /pay/check                    asks Moneypenny whether the buy of this game is paid (a backup for the notice below)
-//   POST /pay/event                    Moneypenny's signed "game paid" notice; the console then tells the game (act 'paid', once per order id)
+// Moneypenny's game-pay routes (contract/v1/openapi.json, game_pay): the game id is the order reference.
+//   GET  /pay/quote?game=&eid=&item=   price of this game, the organizer's credits, the credits still to buy (the smallest listed pack); says 'paid' once it is paid
+//   POST /pay/pay                      enough credits: Moneypenny reserves and captures in one step; then the game is told it is paid
+//   POST /pay/buy                      credits are short: Moneypenny opens a purchase and gives the secure payment window's details (shown on top of the page)
+//   POST /pay/confirm                  the window finished: Moneypenny checks what really happened and pays the game
+//   POST /pay/link                     a payment link (a console page /pay/<token>); the money goes to the organizer's own account for this game
+//   GET  /pay/link/info, POST /pay/link/start, /pay/link/confirm   the payee's page (no sign-in; sees only an amount due)
+//   POST /pay/check                    asks Moneypenny whether this game is paid (a closed tab, a missed notice)
+//   POST /pay/event                    Moneypenny's signed "game.paid" notice; the console then tells the game (act 'paid', once per order id)
 // Dark by default: PAY_VIA_MONEYPENNY must be "1". Voice: 'you', polite, simple English, no threats.
 import type { D1 } from "../../packages/bridge/src/d1";
 import { sessionOf, unsealText, sealText, sha256hex, type Env } from "./auth-core";
 import { tables } from "./tables";
 import { signAssertion, b64uEncode, type Payload } from "../../packages/bridge/src/assertion";
-// @ts-ignore the wallet is a plain JS file copied from the Moneypenny repo (packages/console-wallet/VENDORED.md)
-import { createWallet } from "../../packages/console-wallet/index.js";
 
 export type Mnp = { get(path: string): Promise<{ status: number; body: any }>; post(path: string, body: unknown): Promise<{ status: number; body: any }> };
 export interface PayDeps { mnp?: Mnp; fetch?: typeof fetch; assets?: (path: string) => Promise<Response> }
@@ -21,7 +21,7 @@ export interface PayDeps { mnp?: Mnp; fetch?: typeof fetch; assets?: (path: stri
 /** the six games' names (labels only; no price anywhere). A test keeps this list equal to config/games.json. */
 export const GAME_NAMES: Record<string, string> = { tambola: "Corporate Tambola", bingo: "Corporate Bingo", tictactoe: "Corporate Tic Tac Toe", snakesladders: "Corporate Snakes and Ladders", luckbychance: "Corporate Luck by Chance", luckydraw: "Corporate Lucky Draw" };
 export const LINK_MS = 7 * 86400_000; // the payment link works 7 days (the words already printed on the screen)
-const EID = /^[A-Za-z0-9_-]{4,40}$/, ITEM = /^[A-Za-z0-9_.-]{1,40}$/, TOKEN = /^[0-9a-f]{48}$/;
+const EID = /^[A-Za-z0-9_-]{4,40}$/, ITEM = /^[A-Za-z0-9_.-]{1,40}$/, TOKEN = /^[A-Za-z0-9_-]{20,80}$/;
 
 const json = (status: number, body: unknown, extra: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...extra } });
 const MSG = {
@@ -31,11 +31,15 @@ const MSG = {
   noItem: "This game size is not on the price list yet. Please try again later.",
   enough: "You already have enough credits for this game.",
   short: "You need a few more credits for this game.",
-  refused: "This game could not accept the payment. Your credits are back in your account.",
+  refused: "This game could not accept the payment. Your payment is safe and is being checked.",
   pending: "Your payment is on its way. It can take a few minutes. You do not need to pay again.",
   review: "Your payment is being checked. Your credits are safe.",
   link: "This payment link is not valid any more. Please ask the organizer for a new one.",
   bad: "The request is not complete.",
+  price: "The price of this game has just changed. Please check the new amount and try again.",
+  payer: "This payment was made with a different e-mail address. Please pay with the e-mail address of the account that owns the game.",
+  alreadyPaid: "This game is already paid. Thank you.",
+  email: "Please type your e-mail address so we can match your payment.",
 };
 const fail = (status: number, error: string, message: string, extra: Record<string, unknown> = {}) => json(status, { ok: false, error, message, ...extra });
 const busy = () => fail(503, "busy", MSG.busy);
@@ -64,32 +68,6 @@ export function mnpClient(env: Env, doFetch: typeof fetch = fetch): Mnp {
   return { get: (p) => call("GET", p), post: (p, b) => call("POST", p, b) };
 }
 
-/** console-wallet's order store on the console's own database (it must pass storeContract). */
-export function d1WalletStore(env: Env) {
-  const db: D1 = tables(env);
-  // the organizer's e-mail is kept sealed (encrypted) inside each order row
-  const open = async (r: any) => { if (!r) return null; const o = JSON.parse(r.row_json); if (typeof o.email === "string" && o.email) o.email = await unsealText(env, o.email); return o; };
-  const seal = async (o: any) => JSON.stringify(typeof o.email === "string" && o.email ? { ...o, email: await sealText(env, o.email) } : o);
-  return {
-    get: async (id: string) => open(await db.prepare("SELECT row_json FROM wallet_order WHERE id=?").bind(id).first()),
-    all: async () => Promise.all((await db.prepare("SELECT row_json FROM wallet_order WHERE status NOT IN ('granted','refused','refunded') OR at_ms>? ").bind(Date.now() - 3 * 86400_000).all<any>()).results.map(open)),
-    putNew: async (id: string, row: any) => {
-      const r = await db.prepare("INSERT OR IGNORE INTO wallet_order(id,spend_key,order_ref,status,row_json,at_ms) VALUES(?,?,?,?,?,?)").bind(id, row.spendKey, row.orderRef ?? "", row.status, await seal(row), row.at ?? 0).run();
-      if (r.meta.changes === 1) return null;
-      return open(await db.prepare("SELECT row_json FROM wallet_order WHERE spend_key=?").bind(row.spendKey).first());
-    },
-    cas: async (id: string, from: string[], patch: any) => {
-      const raw = await db.prepare("SELECT row_json FROM wallet_order WHERE id=?").bind(id).first<{ row_json: string }>();
-      const cur = await open(raw);
-      if (!cur || !from.includes(cur.status)) return false;
-      const next = { ...cur, ...patch };
-      const marks = from.map(() => "?").join(",");
-      const r = await db.prepare(`UPDATE wallet_order SET row_json=?, status=?, at_ms=? WHERE id=? AND status IN (${marks}) AND row_json=?`).bind(await seal(next), next.status, next.at ?? Date.now(), id, ...from, raw!.row_json).run();
-      return r.meta.changes === 1;
-    },
-  };
-}
-
 type Who = { emailHash: string; email: string };
 async function whoIs(req: Request, env: Env, now: number): Promise<Who | null> {
   const s = await sessionOf(req, env, now);
@@ -106,29 +84,9 @@ async function worth(mnp: Mnp, credits: number) {
   if (q.status !== 200) throw new Error("quote_failed");
   return { credits, usd: String(q.body.usd), inrMinor: Number(q.body.inr_minor) };
 }
-async function priceCredits(mnp: Mnp, product: string, item: string): Promise<number | null> {
-  const c = await mnp.get(`/v1/catalogue?product=${encodeURIComponent(product)}`);
-  if (c.status !== 200) throw new Error("catalogue_failed");
-  const it = (c.body.items || []).find((x: any) => x.product === product && x.item === item && Number.isSafeInteger(x.credits) && x.credits >= 0);
-  return it ? it.credits : null;
-}
-/** price, balance and what is missing for one game of one person */
-async function figures(mnp: Mnp, email: string, product: string, item: string) {
-  const price = await priceCredits(mnp, product, item);
-  if (price === null) return null;
-  const b = await mnp.get(`/v1/balance?email=${encodeURIComponent(email)}`);
-  if (b.status !== 200) throw new Error("balance_failed");
-  const have = Math.max(0, Number(b.body.balance) || 0), short = Math.max(0, price - have);
-  return { price, have, short, label: String(b.body?.display?.label || "Moneypenny") };
-}
-
-/** has this game been paid (the console told the game, once per order)? Looks at the console's own order list. */
-async function toldPaid(db: D1, game: string, eid: string, emailHash?: string) {
-  const r = await db.prepare("SELECT 1 AS x FROM pay_order WHERE game=? AND eid=? AND state='told'" + (emailHash ? " AND email_hash=?" : "")).bind(...(emailHash ? [game, eid, emailHash] : [game, eid])).first();
-  return !!r;
-}
 
 const asks = (b: any): { game: string; eid: string; item: string } | null => (b && typeof b.game === "string" && typeof b.eid === "string" && typeof b.item === "string" && EID.test(b.eid) && ITEM.test(b.item) ? { game: b.game, eid: b.eid, item: b.item } : null);
+const orderRefOf = (game: string, eid: string) => `GAME-${game}-${eid}`; // the id the game's "paid" notice carries (a game marks itself paid once per id)
 
 /** Tell the game it is paid (its bridge, act 'paid'). A definite refusal throws with definite:true; anything unclear throws plainly and is repeated. */
 export async function tellGamePaid(env: Env, doFetch: typeof fetch, now: number, o: { game: string; eid: string; item: string; orderRef: string; emailHash: string }) {
@@ -143,36 +101,49 @@ export async function tellGamePaid(env: Env, doFetch: typeof fetch, now: number,
   throw new Error("game_unclear_" + r.status);
 }
 
-const walletOf = (env: Env, mnp: Mnp, doFetch: typeof fetch, now: number) => {
-  const store = d1WalletStore(env);
-  // the game's own step = tell it 'paid'. The game id is the part of the click's key after the colon (the key is "<person>:<game id>").
-  const games: Record<string, any> = {};
-  for (const product of Object.keys(origins(env))) {
-    games[product] = {
-      entitle: async ({ email, item, orderRef }: { email: string; item: string; orderRef: string }) => {
-        const row = await tables(env).prepare("SELECT row_json FROM wallet_order WHERE order_ref=?").bind(orderRef).first<{ row_json: string }>();
-        const w = row ? JSON.parse(row.row_json) : null;
-        const eid = w ? String(w.spendKey).split(":")[1] : "";
-        if (!w || !EID.test(eid)) throw Object.assign(new Error("no such order"), { definite: true });
-        await tellGamePaid(env, doFetch, now, { game: product, eid, item, orderRef, emailHash: await sha256hex("email|" + email.trim().toLowerCase()) });
-      },
-    };
-  }
-  return createWallet({ mnp, games, store, now: () => now, alert: (r: any) => console.log(JSON.stringify({ walletNeedsReview: r.orderRef, reason: r.reason })) }); // no e-mail in the log
-};
-
-/** The 2-minute job: repeats anything the wallet left half done. */
-export async function retryStuck(env: Env, now: number, deps: PayDeps = {}) {
-  if (env.PAY_VIA_MONEYPENNY !== "1") return null;
-  const doFetch = deps.fetch ?? fetch, mnp = deps.mnp ?? mnpClient(env, doFetch);
-  return walletOf(env, mnp, doFetch, now).retryStuck();
-}
-
 async function purgeOld(env: Env, now: number) {
-  const db = tables(env);
-  await db.prepare("DELETE FROM pay_link WHERE expires_ms<?").bind(now - 86400_000).run();
-  await db.prepare("DELETE FROM pay_order WHERE created_ms<?").bind(now - 90 * 86400_000).run();
+  await tables(env).prepare("DELETE FROM pay_order WHERE created_ms<?").bind(now - 90 * 86400_000).run();
 }
+
+/** The console's own note of a game being paid for: who (sealed e-mail), which game, and whether the game has been told. */
+async function noteGame(env: Env, db: D1, now: number, o: { email: string; emailHash: string; game: string; eid: string; item: string }) {
+  await db.prepare("INSERT OR IGNORE INTO pay_order(order_ref,email_hash,email_sealed,game,eid,item,state,created_ms) VALUES(?,?,?,?,?,?,'open',?)").bind(orderRefOf(o.game, o.eid), o.emailHash, await sealText(env, o.email), o.game, o.eid, o.item, now).run();
+}
+
+/** Moneypenny says this game is paid: tell the game (once per order id; repeated safely). Returns null when the game knows, or an answer to send when it does not yet. */
+async function settle(env: Env, doFetch: typeof fetch, now: number, db: D1, game: string, eid: string): Promise<Response | null> {
+  const ref = orderRefOf(game, eid);
+  const o = await db.prepare("SELECT order_ref, email_hash, game, eid, item, state FROM pay_order WHERE order_ref=?").bind(ref).first<any>();
+  if (!o) return null; // not a game this console is paying for: nothing to tell
+  if (o.state === "told") return null;
+  try { await tellGamePaid(env, doFetch, now, { game: o.game, eid: o.eid, item: o.item, orderRef: o.order_ref, emailHash: o.email_hash }); }
+  catch (e: any) { return e?.definite ? fail(409, "review", MSG.review) : json(202, { ok: true, paid: false, pending: true, message: MSG.pending }); } // the payment is safe at Moneypenny; the next look tells the game again
+  await db.prepare("UPDATE pay_order SET state='told' WHERE order_ref=?").bind(ref).run();
+  return null;
+}
+
+/** Moneypenny's error code -> our own soft words (its text is never shown). */
+function softError(code: string): Response {
+  switch (code) {
+    case "no_item": case "no_pack_covers": return fail(404, "no_item", MSG.noItem);
+    case "price_changed": return fail(409, "price_changed", MSG.price);
+    case "payer_mismatch": return fail(409, "payer", MSG.payer);
+    case "game_ref_used": case "account_frozen": return fail(409, "review", MSG.review);
+    case "already_paid": return fail(409, "paid", MSG.alreadyPaid);
+    case "link_expired": case "no_link": return fail(404, "bad_link", MSG.link);
+    default: return busy();
+  }
+}
+const codeOf = (r: { status: number; body: any }) => String(r?.body?.error?.code ?? "");
+
+/** The secure payment window's details (Moneypenny's order.payframe) plus where the window comes from. The page opens the window on top of itself. */
+function frameOf(env: Env, order: any, email: string) {
+  const f = order?.payframe;
+  if (!f || typeof f.key !== "string" || typeof f.order_id !== "string") return null;
+  const base = String(env.PAYFRAME_ORIGIN || "https://itservices-rajat-agarwal.pages.dev").replace(/\/$/, "");
+  return { url: base + "/payframe/", origin: base, opts: { key: f.key, order_id: f.order_id, amount: f.amount, currency: f.currency, name: "Corporate Games", description: "Credits for your game", prefill: { email } }, orderId: String(order.order_id || f.order_id) };
+}
+const respOf = (b: any) => (b && b.resp && typeof b.resp.razorpay_order_id === "string" && typeof b.resp.razorpay_payment_id === "string" && typeof b.resp.razorpay_signature === "string" ? { razorpay_order_id: b.resp.razorpay_order_id, razorpay_payment_id: b.resp.razorpay_payment_id, razorpay_signature: b.resp.razorpay_signature } : null);
 
 export async function handlePay(req: Request, env: Env, now: number, deps: PayDeps = {}): Promise<Response> {
   const url = new URL(req.url), path = url.pathname.replace(/\/+$/, ""), c = cors(env, req);
@@ -185,108 +156,105 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     const rawText = req.method === "POST" ? await req.text().catch(() => "") : "";
     let body: any = null; try { body = rawText ? JSON.parse(rawText) : null; } catch { body = null; }
 
-    // ---- Moneypenny's notice: this game's buy is paid ----
-    if (req.method === "POST" && path === "/pay/event") {
-      return reply(await onEvent(env, doFetch, now, req, body, rawText));
-    }
+    // ---- Moneypenny's signed notice: a game is paid ----
+    if (req.method === "POST" && path === "/pay/event") return reply(await onEvent(env, doFetch, now, req, body, rawText));
 
     // ---- the payee's page is a console page: /pay/<token> (the same page for every token; it asks /pay/link/info) ----
-    if (req.method === "GET" && /^\/pay\/[0-9a-f]{48}$/.test(path) && deps.assets) {
+    if (req.method === "GET" && /^\/pay\/[A-Za-z0-9_-]{20,80}$/.test(path) && deps.assets) {
       const r = await deps.assets("/pay-link.html");
       return new Response(r.body, { status: r.status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } });
     }
 
-    // ---- the payee's page: no sign-in ----
-    if (path === "/pay/link/info" || path === "/pay/link/start") {
+    // ---- the payee's calls: no sign-in; the link is the key ----
+    if (path === "/pay/link/info" || path === "/pay/link/start" || path === "/pay/link/confirm") {
       const t = path.endsWith("info") ? url.searchParams.get("t") : body?.t;
       if (typeof t !== "string" || !TOKEN.test(t)) return reply(fail(404, "bad_link", MSG.link));
-      const row = await db.prepare("SELECT email_hash, email_sealed, game, eid, item, expires_ms FROM pay_link WHERE token_hash=?").bind(await sha256hex("paylink|" + t)).first<any>();
-      if (!row || row.expires_ms < now) return reply(fail(404, "bad_link", MSG.link));
-      if (await toldPaid(db, row.game, row.eid, row.email_hash)) return reply(json(200, { ok: true, covered: true, paid: true, game: row.game, gameName: GAME_NAMES[row.game] }));
-      const email = await unsealText(env, row.email_sealed);
-      const f = await figures(mnp, email, row.game, row.item);
-      if (!f) return reply(fail(404, "no_item", MSG.noItem));
-      if (f.short === 0) return reply(json(200, { ok: true, covered: true, game: row.game, gameName: GAME_NAMES[row.game] }));
-      const due = await worth(mnp, f.short);
-      if (path.endsWith("info")) return reply(json(200, { ok: true, covered: false, game: row.game, gameName: GAME_NAMES[row.game], due, label: f.label, expiresMs: row.expires_ms }));
-      return reply(await startBuy(env, mnp, db, now, { email, emailHash: row.email_hash, game: row.game, eid: row.eid, item: row.item, short: f.short }));
+      const li = await mnp.get(`/v1/game_pay/link?token=${encodeURIComponent(t)}`);
+      if (li.status !== 200 || !li.body?.ok) return reply(softError(codeOf(li)));
+      const L = li.body, gameName = GAME_NAMES[String(L.product)] ?? "a game";
+      if (L.status === "paid" || L.status === "nothing_due") return reply(json(200, { ok: true, covered: true, paid: L.status === "paid", gameName }));
+      if (L.status !== "open") return reply(fail(409, "price_changed", MSG.price));
+      const due = { currency: String(L.currency), amountMinor: Number(L.amount_minor) };
+      if (path === "/pay/link/info") return reply(json(200, { ok: true, covered: false, gameName, due, expiresMs: Number(L.expires_at) || null }));
+      if (path === "/pay/link/start") {
+        const email = typeof body?.email === "string" ? body.email.trim() : "";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) return reply(fail(400, "email", MSG.email));
+        const s = await mnp.post("/v1/game_pay/link/start", { token: t, payer_email: email, currency: L.currency });
+        if (s.status !== 200 || !s.body?.ok) return reply(softError(codeOf(s)));
+        const frame = frameOf(env, s.body.order, email);
+        return reply(frame ? json(200, { ok: true, frame }) : busy());
+      }
+      // confirm: the payment window finished; Moneypenny checks what really happened
+      const resp = respOf(body), oid = typeof body?.orderId === "string" ? body.orderId : "";
+      if (!resp || !oid) return reply(fail(400, "invalid", MSG.bad));
+      const cf = await mnp.post("/v1/game_pay/confirm", { order_ref: String(L.order_ref), order_id: oid, ...resp });
+      if (cf.status !== 200 || !cf.body?.ok) return reply(softError(codeOf(cf)));
+      if (!cf.body.paid) return reply(json(200, { ok: true, paid: false, pending: true, message: MSG.pending }));
+      const left = await settle(env, doFetch, now, db, String(L.product), String(L.order_ref));
+      return reply(left ?? json(200, { ok: true, paid: true }));
     }
 
     // ---- everything below is the signed-in organizer ----
     const me = await whoIs(req, env, now);
     if (!me) return reply(fail(401, "sign_in", MSG.signIn, { signIn: env.CONSOLE_ORIGIN }));
+    const gp = (a: { game: string; eid: string; item: string }) => ({ order_ref: a.eid, product: a.game, item: a.item, email: me.email });
 
-    // anything the wallet left half done is finished whenever somebody looks at the pay screen (no separate timer is needed to start)
-    if (path === "/pay/quote" || path === "/pay/check") { try { await walletOf(env, mnp, doFetch, now).retryStuck(); } catch { /* the next look tries again */ } }
     if (req.method === "GET" && path === "/pay/quote") {
       const a = asks({ game: url.searchParams.get("game"), eid: url.searchParams.get("eid"), item: url.searchParams.get("item") });
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
-      if (await toldPaid(db, a.game, a.eid, me.emailHash)) return reply(json(200, { ok: true, paid: true, game: a.game, eid: a.eid }));
-      const f = await figures(mnp, me.email, a.game, a.item);
-      if (!f) return reply(fail(404, "no_item", MSG.noItem));
-      const open = await db.prepare("SELECT 1 AS x FROM pay_order WHERE game=? AND eid=? AND email_hash=? AND state='open' AND created_ms>?").bind(a.game, a.eid, me.emailHash, now - 2 * 3600_000).first();
-      return reply(json(200, { ok: true, paid: false, waiting: !!open, game: a.game, gameName: GAME_NAMES[a.game], eid: a.eid, item: a.item, label: f.label, price: await worth(mnp, f.price), balance: await worth(mnp, f.have), short: await worth(mnp, f.short), enough: f.short === 0 }));
+      const q = await mnp.get(`/v1/game_pay/quote?order_ref=${encodeURIComponent(a.eid)}&product=${encodeURIComponent(a.game)}&item=${encodeURIComponent(a.item)}&email=${encodeURIComponent(me.email)}`);
+      if (q.status !== 200 || !q.body?.ok) return reply(softError(codeOf(q)));
+      const Q = q.body;
+      if (Q.paid === true || Q.status === "paid") { const left = await settle(env, doFetch, now, db, a.game, a.eid); return reply(left ?? json(200, { ok: true, paid: true, game: a.game, eid: a.eid })); }
+      const enough = Q.can_pay_now === true || Number(Q.short_by) <= 0;
+      if (!enough && !(Q.to_buy && Number.isSafeInteger(Q.to_buy.credits))) return reply(fail(404, "no_item", MSG.noItem));
+      return reply(json(200, { ok: true, paid: false, waiting: Q.status === "awaiting_payment", game: a.game, gameName: GAME_NAMES[a.game], eid: a.eid, item: a.item, label: "Moneypenny", price: { credits: Number(Q.cost_credits), usd: String(Q.cost_usd), inrMinor: Number(Q.cost_inr_minor) }, balance: await worth(mnp, Math.max(0, Number(Q.balance) || 0)), short: enough ? await worth(mnp, 0) : await worth(mnp, Q.to_buy.credits), enough }));
     }
 
-    if (req.method === "POST" && path === "/pay/pay") {
+    if (req.method === "POST" && (path === "/pay/pay" || path === "/pay/buy")) {
       const a = asks(body);
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
-      const r = await walletOf(env, mnp, doFetch, now).spend({ email: me.email, product: a.game, item: a.item, spendKey: a.eid });
-      if (r.ok) return reply(json(200, { ok: true, paid: true }));
-      if (r.code === "insufficient_credits") return reply(fail(402, "short", MSG.short));
-      if (r.code === "order_in_progress") return reply(json(202, { ok: true, paid: false, pending: true, message: MSG.pending })); // Moneypenny did not answer clearly: the 2-minute job finishes it; one order per game, so it can never be taken twice
-      if (r.code === "game_step_refused") return reply(fail(409, "refused", MSG.refused));
-      if (r.code === "with_owner") return reply(fail(409, "review", MSG.review));
-      if (r.code === "no_item") return reply(fail(404, "no_item", MSG.noItem));
-      return reply(busy());
+      await noteGame(env, db, now, { ...me, ...a });
+      const s = await mnp.post("/v1/game_pay/start", { ...gp(a), currency: "INR" });
+      if (s.status !== 200 || !s.body?.ok) return reply(softError(codeOf(s)));
+      if (s.body.paid === true || s.body.status === "paid") { const left = await settle(env, doFetch, now, db, a.game, a.eid); return reply(left ?? json(200, { ok: true, paid: true })); }
+      if (path === "/pay/pay") return reply(fail(402, "short", MSG.short));
+      const frame = frameOf(env, s.body.order, me.email);
+      return reply(frame ? json(200, { ok: true, frame }) : busy());
     }
 
-    if (req.method === "POST" && (path === "/pay/buy" || path === "/pay/link")) {
-      const a = asks(body);
-      if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
-      const f = await figures(mnp, me.email, a.game, a.item);
-      if (!f) return reply(fail(404, "no_item", MSG.noItem));
-      if (f.short === 0) return reply(fail(409, "enough", MSG.enough));
-      if (path === "/pay/buy") return reply(await startBuy(env, mnp, db, now, { email: me.email, emailHash: me.emailHash, game: a.game, eid: a.eid, item: a.item, short: f.short }));
-      const t = [...crypto.getRandomValues(new Uint8Array(24))].map((x) => x.toString(16).padStart(2, "0")).join("");
-      await db.prepare("INSERT INTO pay_link(token_hash,email_hash,email_sealed,game,eid,item,expires_ms) VALUES(?,?,?,?,?,?,?)").bind(await sha256hex("paylink|" + t), me.emailHash, await sealText(env, me.email), a.game, a.eid, a.item, now + LINK_MS).run();
-      return reply(json(200, { ok: true, url: `${env.CONSOLE_ORIGIN}/pay/${t}`, expiresMs: now + LINK_MS }));
+    if (req.method === "POST" && path === "/pay/confirm") { // the payment window finished: Moneypenny checks what really happened and pays the game
+      const a = asks(body), resp = respOf(body), oid = typeof body?.orderId === "string" ? body.orderId : "";
+      if (!a || !resp || !oid || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
+      await noteGame(env, db, now, { ...me, ...a });
+      const cf = await mnp.post("/v1/game_pay/confirm", { order_ref: a.eid, order_id: oid, ...resp });
+      if (cf.status !== 200 || !cf.body?.ok) return reply(softError(codeOf(cf)));
+      if (!cf.body.paid) return reply(json(200, { ok: true, paid: false, pending: true, message: MSG.pending }));
+      const left = await settle(env, doFetch, now, db, a.game, a.eid);
+      return reply(left ?? json(200, { ok: true, paid: true }));
     }
 
-    if (req.method === "POST" && path === "/pay/check") { // backup for the notice: ask Moneypenny, and tell the game if the buy is paid
+    if (req.method === "POST" && path === "/pay/link") {
       const a = asks(body);
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
-      const rows = (await db.prepare("SELECT order_ref, email_hash, state FROM pay_order WHERE game=? AND eid=? AND email_hash=? ORDER BY created_ms DESC LIMIT 3").bind(a.game, a.eid, me.emailHash).all<any>()).results;
-      for (const o of rows) {
-        if (o.state === "told") return reply(json(200, { ok: true, paid: true }));
-        const s = await mnp.get(`/v1/game_order?order_ref=${encodeURIComponent(o.order_ref)}`);
-        if (s.status === 200 && s.body.status === "paid") { const r = await tellFromOrder(env, doFetch, now, db, o.order_ref); if (r) return reply(r); return reply(json(200, { ok: true, paid: true })); }
-      }
-      return reply(json(200, { ok: true, paid: false }));
+      await noteGame(env, db, now, { ...me, ...a }); // so the game is told even if the payee pays after this tab is closed
+      const l = await mnp.post("/v1/game_pay/link", gp(a));
+      if (l.status !== 200 || !l.body?.ok || typeof l.body.token !== "string") return reply(softError(codeOf(l)));
+      return reply(json(200, { ok: true, url: `${env.CONSOLE_ORIGIN}/pay/${l.body.token}`, expiresMs: Number(l.body.expires_at) || null }));
+    }
+
+    if (req.method === "POST" && path === "/pay/check") { // a closed tab, a missed notice: ask Moneypenny whether this game is paid
+      const a = asks(body);
+      if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
+      const s = await mnp.get(`/v1/game_pay/status?order_ref=${encodeURIComponent(a.eid)}`);
+      if (s.status !== 200 || !s.body?.ok) return reply(softError(codeOf(s)));
+      if (s.body.paid === true || s.body.status === "paid") { const left = await settle(env, doFetch, now, db, a.game, a.eid); return reply(left ?? json(200, { ok: true, paid: true })); }
+      return reply(json(200, { ok: true, paid: false, review: s.body.status === "review" }));
     }
     return reply(fail(404, "not_found", "There is nothing at this address."));
   } catch {
     return reply(busy()); // Moneypenny (or the game) did not answer: soft words, and nothing was taken
   }
-}
-
-/** Moneypenny opens a buy of exactly the missing credits for this game. The person pays at the address Moneypenny gives (it leads on to the payment company). */
-async function startBuy(env: Env, mnp: Mnp, db: D1, now: number, o: { email: string; emailHash: string; game: string; eid: string; item: string; short: number }) {
-  const orderRef = `GAME-${o.game}-${o.eid}-${o.short}`;
-  const r = await mnp.post("/v1/buy_credits", { email: o.email, credits: o.short, currency: "INR", order_ref: orderRef, product: o.game, item: o.item, game_id: o.eid });
-  if (r.status !== 200 || !r.body.ok) return r.status >= 500 || r.status === 429 ? busy() : fail(r.status === 503 ? 503 : 409, "buy_failed", MSG.busy);
-  await db.prepare("INSERT OR IGNORE INTO pay_order(order_ref,email_hash,email_sealed,game,eid,item,state,created_ms) VALUES(?,?,?,?,?,?,'open',?)").bind(orderRef, o.emailHash, await sealText(env, o.email), o.game, o.eid, o.item, now).run();
-  return json(200, { ok: true, orderRef, payPage: r.body.pay_url ?? null, amountMinor: r.body.amount_minor ?? null, currency: r.body.currency ?? "INR" });
-}
-
-async function tellFromOrder(env: Env, doFetch: typeof fetch, now: number, db: D1, orderRef: string): Promise<Response | null> {
-  const o = await db.prepare("SELECT order_ref, email_hash, game, eid, item, state FROM pay_order WHERE order_ref=?").bind(orderRef).first<any>();
-  if (!o) return fail(404, "unknown_order", "That order is not known here.");
-  if (o.state === "told") return null;
-  try { await tellGamePaid(env, doFetch, now, { game: o.game, eid: o.eid, item: o.item, orderRef: o.order_ref, emailHash: o.email_hash }); }
-  catch (e: any) { return e?.definite ? fail(409, "refused", MSG.refused) : busy(); }
-  await db.prepare("UPDATE pay_order SET state='told' WHERE order_ref=?").bind(orderRef).run();
-  return null;
 }
 
 async function onEvent(env: Env, doFetch: typeof fetch, now: number, req: Request, body: any, text: string): Promise<Response> {
@@ -296,7 +264,8 @@ async function onEvent(env: Env, doFetch: typeof fetch, now: number, req: Reques
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const want = [...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(ts + "." + text)))].map((x) => x.toString(16).padStart(2, "0")).join("");
   if (want.length !== sig.length || [...want].reduce((d, ch, i) => d | (ch.charCodeAt(0) ^ sig.charCodeAt(i)), 0) !== 0) return fail(401, "bad_signature", "This notice could not be checked.");
-  if (!body || body.type !== "game.paid" || typeof body.order_ref !== "string") return json(200, { ok: true, ignored: true }); // other kinds of notice are not for the pay step
-  const r = await tellFromOrder(env, doFetch, now, tables(env), body.order_ref);
+  const d = body?.data;
+  if (!body || body.type !== "game.paid" || !d || typeof d.product !== "string" || typeof d.game_ref !== "string" || !EID.test(d.game_ref) || !origins(env)[d.product]) return json(200, { ok: true, ignored: true }); // every notice reaches every endpoint: only a game of ours is for the pay step
+  const r = await settle(env, doFetch, now, tables(env), d.product, d.game_ref);
   return r ?? json(200, { ok: true });
 }
