@@ -54,7 +54,13 @@ export function renderSignIn(outlet, ctx) {
     sendBtn.disabled = true; resendBtn.disabled = true; say("Sending…"); // locked while it works: a second tap would make the first code useless
     const r = await api.auth.request(email.value.trim(), true);
     sendBtn.disabled = false;
+    if (!r.ok && r.json?.error === "mail_slow") { // the mail service may still deliver this mail and its code works: keep the code box open and make the person wait before asking again (a second mail would replace this code)
+      say(""); form.classList.add("hide"); codeForm.classList.remove("hide"); codeBox.focus();
+      outlet.querySelector("#si-sent").textContent = `The e-mail to ${normEmail(email.value)} is taking longer than usual and may still arrive. If it does, type its code here. Please wait a minute before asking for another one.`;
+      lockResend(); return;
+    }
     if (!r.ok) { resendBtn.disabled = false; return say(r.json?.message || "The system could not send the code. Please try again.", true); }
+    if (r.json?.testAddress) { resendBtn.disabled = false; return say("This looks like a test address, so no e-mail can be sent to it. Please type your own work e-mail.", true); } // a code that can never arrive must not be waited for
     say(""); form.classList.add("hide"); codeForm.classList.remove("hide"); codeBox.focus();
     outlet.querySelector("#si-sent").textContent = `${again ? "A new code" : "A code"} is on its way to ${normEmail(email.value)}. It works for ${r.json?.codeMinutes || 30} minutes (until ${clock(r.json?.expiresMs || Date.now() + 30 * 60_000)}).`;
     lockResend();

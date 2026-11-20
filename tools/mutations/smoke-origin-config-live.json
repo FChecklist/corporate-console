@@ -1,0 +1,1 @@
+{"id": "smoke-origin-config-live", "repo": ".", "file": "wrangler.toml", "find": "CONSOLE_ORIGIN = \"https://console.corporatetambola.com\"", "replace": "CONSOLE_ORIGIN = \"https://corporate-console.pages.dev\"", "test": "tests/smoke-auth.test.ts", "note": "the deployed settings name the trial address: every sign-in from the live address is refused (F-01)"}

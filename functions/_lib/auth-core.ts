@@ -12,6 +12,7 @@ export interface Env {
   CONSOLE_SIGNING_KEY: string; // base64 PKCS8 of the Ed25519 private key (set by the owner with wrangler, never in a repo)
   CONSOLE_KID?: string;
   CONSOLE_ORIGIN: string; // https://console.corporatetambola.com
+  CONSOLE_ALT_ORIGINS?: string; // other addresses the SAME console is also served from (comma list, for example the pages.dev address); a request from one of them is not refused. Links, mails and pay links always use CONSOLE_ORIGIN.
   GAME_ORIGINS: string; // JSON: {"tambola":"https://housie.corporatetambola.com", ...}
   RESEND_API_KEY?: string;
   MAIL_FROM?: string;
@@ -41,9 +42,17 @@ export const IP_PER_HOUR = 60; // per office address: several colleagues sign in
 export const HELP_MAIL = "hello@corporatetambola.com";
 export const SESSION_MS = 5 * 365 * 86400_000; // a person stays signed in until Sign out: the session slides, 5 years from the last visit (owner decision 30 Oct)
 export const COOKIE = "cbsess";
+export const MAIL_TIMEOUT_MS = 10_000; // the mail service gets this long; a service that never answers must not hang a sign-in
 const HOUR = 3600_000;
 const DEMO = new Set(["demo1@demo-test.invalid", "demo2@demo-test.invalid", "demo3@demo-test.invalid"]);
 const enc = new TextEncoder();
+
+/** Why a mail could not be sent, in a few safe words for the owner's log: the status and the mail service's own error name. Never an address, a code or the message text. */
+async function mailFailure(r: Response): Promise<Error> {
+  let name = ""; try { name = String(((await r.json()) as any)?.name || "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 40); } catch { /* no body */ }
+  return new Error("mail " + r.status + (name ? " " + name : ""));
+}
+const sameOrigin = (env: { CONSOLE_ORIGIN: string; CONSOLE_ALT_ORIGINS?: string }, o: string) => o === env.CONSOLE_ORIGIN || (env.CONSOLE_ALT_ORIGINS || "").split(",").map((x) => x.trim()).filter(Boolean).includes(o);
 
 const hex = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
 export const sha256hex = async (s: string) => hex(new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s))));
@@ -118,16 +127,16 @@ export async function sendMailEx(env: Env, o: { to: string[]; subject: string; t
   if (!real.length) return;
   if (env.MAILER) { for (const a of real) await env.MAILER(a, o.subject, o.text); return; }
   if (!env.RESEND_API_KEY) throw new Error("no mail key");
-  const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" }, body: JSON.stringify({ from: o.from || env.MAIL_FROM || "Corporate Games <console@corporatetambola.com>", to: real, subject: o.subject, text: o.text, ...(o.replyTo ? { reply_to: o.replyTo } : {}), ...(o.attachments?.length ? { attachments: o.attachments.map((a) => ({ filename: a.filename, content: a.contentB64 })) } : {}) }) });
-  if (!r.ok) throw new Error("mail " + r.status);
+  const r = await fetch("https://api.resend.com/emails", { method: "POST", signal: AbortSignal.timeout(MAIL_TIMEOUT_MS), headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" }, body: JSON.stringify({ from: o.from || env.MAIL_FROM || "Corporate Games <console@corporatetambola.com>", to: real, subject: o.subject, text: o.text, ...(o.replyTo ? { reply_to: o.replyTo } : {}), ...(o.attachments?.length ? { attachments: o.attachments.map((a) => ({ filename: a.filename, content: a.contentB64 })) } : {}) }) });
+  if (!r.ok) throw await mailFailure(r);
   try { return String(((await r.json()) as any)?.id || "") || undefined; } catch { return undefined; } // the mail service's id of this mail, so a later bounce notice can be matched
 }
 async function sendMail(env: Env, to: string, subject: string, text: string) {
   if (isTestAddress(to)) { recordedMail.push({ to, subject, text }); if (recordedMail.length > 50) recordedMail.shift(); if (env.MAILER) await env.MAILER(to, subject, text); return; } // a test mailer may watch it; the real mail service never does
   if (env.MAILER) return env.MAILER(to, subject, text);
   if (!env.RESEND_API_KEY) throw new Error("no mail key");
-  const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" }, body: JSON.stringify({ from: env.MAIL_FROM || "Corporate Games <console@corporatetambola.com>", to: [to], subject, text }) });
-  if (!r.ok) throw new Error("mail " + r.status);
+  const r = await fetch("https://api.resend.com/emails", { method: "POST", signal: AbortSignal.timeout(MAIL_TIMEOUT_MS), headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" }, body: JSON.stringify({ from: env.MAIL_FROM || "Corporate Games <console@corporatetambola.com>", to: [to], subject, text }) });
+  if (!r.ok) throw await mailFailure(r);
 }
 
 async function readJson(req: Request): Promise<any | null> {
@@ -146,7 +155,7 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
   if (post) { // every POST must come from the console's own page: custom header (cannot be sent cross-site without a preflight) and the right Origin
     if (req.headers.get("x-console") !== "1") return fail(403, "csrf", "This request did not come from the console page.");
     const o = req.headers.get("origin");
-    if (o && o !== env.CONSOLE_ORIGIN) return fail(403, "csrf", "This request did not come from the console page.");
+    if (o && !sameOrigin(env, o)) return fail(403, "csrf", "This request did not come from the console page.");
   }
   const ip = req.headers.get("cf-connecting-ip") || "0.0.0.0";
 
@@ -162,13 +171,23 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     const demo = env.TEST_MODE === "1" && DEMO.has(email);
     const code = demo ? "123456" : String(new DataView(crypto.getRandomValues(new Uint8Array(4)).buffer).getUint32(0) % 1_000_000).padStart(6, "0");
     const link = randHex(24);
+    const prev = await tables(env).prepare("SELECT email_sealed, code_hash, link_hash, expires_ms, attempts, sent_ms, consent_ms FROM login_code WHERE email_hash=?").bind(eh).first<any>(); // the code the person may already hold
+    const codeHash = await sha256hex(`code|${env.SESSION_PEPPER}|${eh}|${code}`);
     await tables(env).prepare("INSERT INTO login_code(email_hash,email_sealed,code_hash,link_hash,expires_ms,attempts,sent_ms,consent_ms) VALUES(?,?,?,?,?,0,?,?) ON CONFLICT(email_hash) DO UPDATE SET email_sealed=excluded.email_sealed, code_hash=excluded.code_hash, link_hash=excluded.link_hash, expires_ms=excluded.expires_ms, attempts=0, sent_ms=excluded.sent_ms, consent_ms=excluded.consent_ms")
-      .bind(eh, await sealText(env, email), await sha256hex(`code|${env.SESSION_PEPPER}|${eh}|${code}`), await sha256hex("link|" + link), now + CODE_TTL_MS, now, now).run();
+      .bind(eh, await sealText(env, email), codeHash, await sha256hex("link|" + link), now + CODE_TTL_MS, now, now).run();
     if (!demo) {
       try { await sendMail(env, email, `Your sign-in code is ${code}`, `Your code is ${code}. It works for ${CODE_MINUTES} minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf you did not ask for this, you can ignore this e-mail.`); }
-      catch { return fail(502, "mail", "The system could not send the e-mail. Please try again in a minute."); }
+      catch (e: any) {
+        // A definite refusal: the e-mail did not leave. The new code is useless (nobody has it): put back what the person held before, so an earlier e-mail still works, and give back the try, so a bad hour at the mail service never locks the person out.
+        console.error("sign-in mail not sent: " + String(e?.name === "TimeoutError" || e?.name === "AbortError" ? "mail timeout" : e?.message || "mail failed").slice(0, 80)); // no address, no code: only why
+        if (e?.name === "TimeoutError" || e?.name === "AbortError") return fail(502, "mail_slow", "The e-mail is taking longer than usual and may still arrive. Please wait a minute before asking for another one."); // the mail service may have taken the mail: the code in it must still work, so nothing is put back or taken away
+        if (prev) await tables(env).prepare("UPDATE login_code SET email_sealed=?, code_hash=?, link_hash=?, expires_ms=?, attempts=?, sent_ms=?, consent_ms=? WHERE email_hash=? AND code_hash=?").bind(prev.email_sealed, prev.code_hash, prev.link_hash, prev.expires_ms, prev.attempts, prev.sent_ms, prev.consent_ms, eh, codeHash).run();
+        else await tables(env).prepare("DELETE FROM login_code WHERE email_hash=? AND code_hash=?").bind(eh, codeHash).run();
+        await tables(env).prepare("UPDATE rate SET n=CASE WHEN n>0 THEN n-1 ELSE 0 END WHERE k=?").bind("mail:" + eh).run();
+        return fail(502, "mail", "The system could not send the e-mail. Please try again in a minute.");
+      }
     }
-    return json(200, { ...OK_REQUEST, expiresMs: now + CODE_TTL_MS });
+    return json(200, { ...OK_REQUEST, expiresMs: now + CODE_TTL_MS, ...(!demo && isTestAddress(email) && !env.MAILER ? { testAddress: true } : {}) }); // a test address (.invalid) is never mailed: the page must say so instead of waiting for a mail that cannot come
   }
 
   if (post && path === "/auth/verify") {

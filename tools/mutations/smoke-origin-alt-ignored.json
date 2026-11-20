@@ -1,0 +1,1 @@
+{"id": "smoke-origin-alt-ignored", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "o === env.CONSOLE_ORIGIN || (env.CONSOLE_ALT_ORIGINS || \"\")", "replace": "o === env.CONSOLE_ORIGIN || (\"\")", "test": "tests/smoke-auth.test.ts", "note": "the list of other addresses is ignored"}

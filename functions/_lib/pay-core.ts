@@ -28,6 +28,7 @@ const json = (status: number, body: unknown, extra: Record<string, string> = {})
 const MSG = {
   busy: "Credits are refreshing. Nothing has been taken from you. Please try again in a few minutes.",
   notOpen: "Paying for games is not open yet. Please check again soon.",
+  csrf: "This request did not come from a Corporate Games page. Please open the game from the console and try again.",
   signIn: "Please sign in to your console to pay for your game.",
   noItem: "This game size is not on the price list yet. Please try again later.",
   enough: "You already have enough credits for this game.",
@@ -41,17 +42,20 @@ const MSG = {
   payer: "This payment was made with a different e-mail address. Please pay with the e-mail address of the account that owns the game.",
   alreadyPaid: "This game is already paid. Thank you.",
   notYours: "This game is not in your account. Only the organizer who made the game can pay for it.",
+  sizeChanged: "The size of this game has changed. Please open your game again to see the new price.",
   slow: "Please wait a little and try again.",
-  email: "Please type your e-mail address so we can match your payment.",
+  email: "Please type your e-mail address. The system uses it to match your payment to the right game.",
 };
 const fail = (status: number, error: string, message: string, extra: Record<string, unknown> = {}) => json(status, { ok: false, error, message, ...extra });
 const busy = () => fail(503, "busy", MSG.busy);
 
 function origins(env: Env): Record<string, string> { try { return JSON.parse(env.GAME_ORIGINS); } catch { return {}; } }
+/** the pages that may call the signed-in pay routes: the console (also its other addresses) and the games */
+function pageOrigins(env: Env): string[] { return [env.CONSOLE_ORIGIN, ...String(env.CONSOLE_ALT_ORIGINS || "").split(",").map((x) => x.trim()).filter(Boolean), ...Object.values(origins(env))] as string[]; }
 function cors(env: Env, req: Request): Record<string, string> {
   const o = req.headers.get("origin") || "";
-  const ok = !!o && ([env.CONSOLE_ORIGIN, ...Object.values(origins(env))] as string[]).includes(o);
-  return ok ? { "access-control-allow-origin": o, "access-control-allow-credentials": "true", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-allow-headers": "content-type", vary: "origin" } : { vary: "origin" };
+  const ok = !!o && pageOrigins(env).includes(o);
+  return ok ? { "access-control-allow-origin": o, "access-control-allow-credentials": "true", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-allow-headers": "content-type, x-console", vary: "origin" } : { vary: "origin" };
 }
 
 /** The signed client to Moneypenny (API.md "Signing"). Three seconds at most per call. */
@@ -99,13 +103,14 @@ async function signFor(env: Env, now: number, aud: string, sub: string, act: "pa
 }
 
 /** The game decides: is this game the signed-in person's own (as its ORGANIZER, not a host) and is this its size? Asked before every organizer action, so nobody can start, quote or link a game that is not theirs. */
-async function ownGame(env: Env, doFetch: typeof fetch, now: number, me: { emailHash: string }, a: { game: string; eid: string; item: string }): Promise<{ yours: boolean; paid: boolean }> {
+async function ownGame(env: Env, doFetch: typeof fetch, now: number, me: { emailHash: string }, a: { game: string; eid: string; item: string }): Promise<{ yours: boolean; owner: boolean; paid: boolean }> {
   const aud = origins(env)[a.game];
-  if (!aud) return { yours: false, paid: false };
+  if (!aud) return { yours: false, owner: false, paid: false };
   const r = await doFetch(aud + "/api/console/payable", { method: "POST", signal: AbortSignal.timeout(5000), headers: { "content-type": "application/json" }, body: JSON.stringify({ assertion: await signFor(env, now, aud, me.emailHash, "payable", a.eid), eid: a.eid }) });
   if (r.status !== 200) throw new Error("game_unclear_" + r.status); // soft 'busy': nothing was started
   const j: any = await r.json().catch(() => ({}));
-  return { yours: j.ok === true && j.owner === true && j.item === a.item, paid: j.paid === true };
+  const owner = j.ok === true && j.owner === true; // the person IS the organizer; the size on their screen may be an old one (the game was edited)
+  return { yours: owner && j.item === a.item, owner, paid: j.paid === true };
 }
 
 /** Tell the game it is paid (its bridge, act 'paid'). A definite refusal throws with definite:true; anything unclear throws plainly and is repeated. */
@@ -124,17 +129,22 @@ async function purgeOld(env: Env, now: number) {
 }
 
 /** The console's own note of a game being paid for: who (sealed e-mail), which game, and whether the game has been told. */
-async function noteGame(env: Env, db: D1, now: number, o: { email: string; emailHash: string; game: string; eid: string; item: string }) {
-  await db.prepare("INSERT OR IGNORE INTO pay_order(order_ref,email_hash,email_sealed,game,eid,item,state,created_ms) VALUES(?,?,?,?,?,?,'open',?)").bind(orderRefOf(o.game, o.eid), o.emailHash, await sealText(env, o.email), o.game, o.eid, o.item, now).run();
+async function noteGame(env: Env, db: D1, now: number, o: { email: string; emailHash: string; game: string; eid: string; item: string }, follow = true) {
+  // follow=true (start, link, confirm: nothing is known to be paid yet): the size follows the game while the order is still open, so an organizer who edits the game's size and then pays has the game told THAT size (the game checks it). A paid ('told') note never changes.
+  // follow=false (quote and check, where Moneypenny has just said the game IS paid): the note is only created when none exists; an existing note is never moved by a screen that may show a size edited after the payment.
+  const conflict = follow ? "DO UPDATE SET item=excluded.item WHERE pay_order.state='open' AND pay_order.email_hash=excluded.email_hash" : "DO NOTHING";
+  await db.prepare("INSERT INTO pay_order(order_ref,email_hash,email_sealed,game,eid,item,state,created_ms) VALUES(?,?,?,?,?,?,'open',?) ON CONFLICT(order_ref) " + conflict).bind(orderRefOf(o.game, o.eid), o.emailHash, await sealText(env, o.email), o.game, o.eid, o.item, now).run();
 }
 
-/** Moneypenny says this game is paid: tell the game (once per order id; repeated safely). Returns null when the game knows, or an answer to send when it does not yet. */
-async function settle(env: Env, doFetch: typeof fetch, now: number, db: D1, game: string, eid: string): Promise<Response | null> {
+/** Moneypenny says this game is paid: tell the game (once per order id; repeated safely). Returns null when the game knows, or an answer to send when it does not yet.
+ *  FAIL CLOSED: the game is told only the size Moneypenny says was PAID. When Moneypenny's answer carries no (valid) `item`, nothing is told and the answer is 'review': the console's own note (or the size on a screen) may have been edited after the payment, so it is never a stand-in. The signed notice (which carries `item`) or a later look settles it. */
+async function settle(env: Env, doFetch: typeof fetch, now: number, db: D1, game: string, eid: string, paidItem?: unknown): Promise<Response | null> {
   const ref = orderRefOf(game, eid);
   const o = await db.prepare("SELECT order_ref, email_hash, game, eid, item, state FROM pay_order WHERE order_ref=?").bind(ref).first<any>();
   if (!o) return null; // not a game this console is paying for: nothing to tell
   if (o.state === "told") return null;
-  try { await tellGamePaid(env, doFetch, now, { game: o.game, eid: o.eid, item: o.item, orderRef: o.order_ref, emailHash: o.email_hash }); }
+  if (typeof paidItem !== "string" || !ITEM.test(paidItem)) return fail(409, "review", MSG.review); // no paid size from Moneypenny: tell nothing
+  try { await tellGamePaid(env, doFetch, now, { game: o.game, eid: o.eid, item: paidItem, orderRef: o.order_ref, emailHash: o.email_hash }); } // the size Moneypenny says it was PAID for: a game edited to a bigger size after paying is refused by the game, never marked paid at the new size
   catch (e: any) { return e?.definite ? fail(409, "review", MSG.review) : json(202, { ok: true, paid: false, pending: true, message: MSG.pending }); } // the payment is safe at Moneypenny; the next look tells the game again
   await db.prepare("UPDATE pay_order SET state='told' WHERE order_ref=?").bind(ref).run();
   return null;
@@ -197,7 +207,10 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
       const li = await mnp.get(`/v1/game_pay/link?token=${encodeURIComponent(t)}`);
       if (li.status !== 200 || !li.body?.ok) return reply(softError(codeOf(li)));
       const L = li.body, gameName = GAME_NAMES[String(L.product)] ?? "a game";
-      if (L.status === "paid" || L.status === "nothing_due") return reply(json(200, { ok: true, covered: true, paid: L.status === "paid", gameName }));
+      if (L.status === "paid" || L.status === "nothing_due") {
+        if (L.status === "paid") await settle(env, doFetch, now, db, String(L.product), String(L.order_ref), L.item); // the payee's page looks every 20 s: it also carries the news to the game when Moneypenny's notice was lost (nothing to tell if the console has no note of this game)
+        return reply(json(200, { ok: true, covered: true, paid: L.status === "paid", gameName }));
+      }
       if (L.status !== "open") return reply(fail(409, "price_changed", MSG.price));
       const due = { currency: String(L.currency), amountMinor: Number(L.amount_minor) };
       if (path === "/pay/link/info") return reply(json(200, { ok: true, covered: false, gameName, due, expiresMs: Number(L.expires_at) || null }));
@@ -215,24 +228,26 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
       const cf = await mnp.post("/v1/game_pay/confirm", { order_ref: String(L.order_ref), order_id: oid, ...resp });
       if (cf.status !== 200 || !cf.body?.ok) return reply(softError(codeOf(cf)));
       if (!cf.body.paid) return reply(json(200, { ok: true, paid: false, pending: true, message: MSG.pending }));
-      const left = await settle(env, doFetch, now, db, String(L.product), String(L.order_ref));
+      const left = await settle(env, doFetch, now, db, String(L.product), String(L.order_ref), cf.body.item ?? L.item);
       return reply(left ?? json(200, { ok: true, paid: true }));
     }
 
     // ---- everything below is the signed-in organizer ----
+    // The cookie is sent on same-site calls from any corporatetambola.com page, so a page that is not ours must not be able to act as the organizer: a custom header (it cannot be sent cross-site without a permission check that only our pages pass) and, when the browser says where the call comes from, that place must be the console or a game.
+    { const o = req.headers.get("origin"); if (req.headers.get("x-console") !== "1" || (o && !pageOrigins(env).includes(o))) return reply(fail(403, "csrf", MSG.csrf)); }
     const me = await whoIs(req, env, now);
     if (!me) return reply(fail(401, "sign_in", MSG.signIn, { signIn: env.CONSOLE_ORIGIN }));
     const gp = (a: { game: string; eid: string; item: string; price?: number }) => ({ order_ref: a.eid, product: a.game, item: a.item, email: me.email, ...(a.price ? { credits: a.price } : {}) }); // credits = the price the screen showed: if the list moved since, Moneypenny says so instead of charging a price nobody saw
-    const mine = async (a: { game: string; eid: string; item: string }) => (await ownGame(env, doFetch, now, me, a)).yours; // C-1: the game decides who owns it
+    const mine = async (a: { game: string; eid: string; item: string }): Promise<Response | null> => { const g = await ownGame(env, doFetch, now, me, a); return g.yours ? null : fail(403, g.owner ? "size_changed" : "not_yours", g.owner ? MSG.sizeChanged : MSG.notYours); }; // C-1: the game decides who owns it. The organizer with an old size on screen is told the size changed, not that the game is not theirs.
 
     if (req.method === "GET" && path === "/pay/quote") {
       const a = asks({ game: url.searchParams.get("game"), eid: url.searchParams.get("eid"), item: url.searchParams.get("item") });
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
-      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
+      { const no = await mine(a); if (no) return reply(no); }
       const q = await mnp.get(`/v1/game_pay/quote?order_ref=${encodeURIComponent(a.eid)}&product=${encodeURIComponent(a.game)}&item=${encodeURIComponent(a.item)}&email=${encodeURIComponent(me.email)}`);
       if (q.status !== 200 || !q.body?.ok) return reply(softError(codeOf(q)));
       const Q = q.body;
-      if (Q.paid === true || Q.status === "paid") { const left = await settle(env, doFetch, now, db, a.game, a.eid); return reply(left ?? json(200, { ok: true, paid: true, game: a.game, eid: a.eid })); }
+      if (Q.paid === true || Q.status === "paid") { await noteGame(env, db, now, { ...me, ...a }, false); const left = await settle(env, doFetch, now, db, a.game, a.eid, Q.item); return reply(left ?? json(200, { ok: true, paid: true, game: a.game, eid: a.eid })); }
       const enough = Q.can_pay_now === true || Number(Q.short_by) <= 0;
       if (!enough && !(Q.to_buy && Number.isSafeInteger(Q.to_buy.credits))) return reply(fail(404, "no_item", MSG.noItem));
       return reply(json(200, { ok: true, paid: false, waiting: Q.status === "awaiting_payment", game: a.game, gameName: GAME_NAMES[a.game], eid: a.eid, item: a.item, label: "Moneypenny", price: { credits: Number(Q.cost_credits), usd: String(Q.cost_usd), inrMinor: Number(Q.cost_inr_minor) }, balance: await worth(mnp, Math.max(0, Number(Q.balance) || 0)), short: enough ? await worth(mnp, 0) : await worth(mnp, Q.to_buy.credits), enough }));
@@ -242,11 +257,11 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
       const a = asks(body);
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
       if (!a.price) return reply(fail(400, "invalid", MSG.bad));
-      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
+      { const no = await mine(a); if (no) return reply(no); }
       await noteGame(env, db, now, { ...me, ...a });
       const s = await mnp.post("/v1/game_pay/start", { ...gp(a), currency: "INR" }, { fresh: true });
       if (s.status !== 200 || !s.body?.ok) return reply(softError(codeOf(s)));
-      if (s.body.paid === true || s.body.status === "paid") { const left = await settle(env, doFetch, now, db, a.game, a.eid); return reply(left ?? json(200, { ok: true, paid: true })); }
+      if (s.body.paid === true || s.body.status === "paid") { const left = await settle(env, doFetch, now, db, a.game, a.eid, s.body.item); return reply(left ?? json(200, { ok: true, paid: true })); }
       if (path === "/pay/pay") return reply(fail(402, "short", MSG.short));
       const frame = frameOf(env, s.body.order, me.email);
       return reply(frame ? json(200, { ok: true, frame }) : busy());
@@ -255,19 +270,19 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     if (req.method === "POST" && path === "/pay/confirm") { // the payment window finished: Moneypenny checks what really happened and pays the game
       const a = asks(body), resp = respOf(body), oid = typeof body?.orderId === "string" ? body.orderId : "";
       if (!a || !resp || !oid || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
-      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
+      { const no = await mine(a); if (no) return reply(no); }
       await noteGame(env, db, now, { ...me, ...a });
       const cf = await mnp.post("/v1/game_pay/confirm", { order_ref: a.eid, order_id: oid, ...resp });
       if (cf.status !== 200 || !cf.body?.ok) return reply(softError(codeOf(cf)));
       if (!cf.body.paid) return reply(json(200, { ok: true, paid: false, pending: true, message: MSG.pending }));
-      const left = await settle(env, doFetch, now, db, a.game, a.eid);
+      const left = await settle(env, doFetch, now, db, a.game, a.eid, cf.body.item);
       return reply(left ?? json(200, { ok: true, paid: true }));
     }
 
     if (req.method === "POST" && path === "/pay/link") {
       const a = asks(body);
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
-      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
+      { const no = await mine(a); if (no) return reply(no); }
       await noteGame(env, db, now, { ...me, ...a }); // so the game is told even if the payee pays after this tab is closed
       const l = await mnp.post("/v1/game_pay/link", gp(a), { fresh: true }); // a new link each time (the old one stops); never an old answer without its token
       if (l.status !== 200 || !l.body?.ok || typeof l.body.token !== "string") return reply(softError(codeOf(l)));
@@ -277,10 +292,10 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     if (req.method === "POST" && path === "/pay/check") { // a closed tab, a missed notice: ask Moneypenny whether this game is paid
       const a = asks(body);
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
-      if (!(await mine(a))) return reply(fail(403, "not_yours", MSG.notYours));
+      { const no = await mine(a); if (no) return reply(no); }
       const s = await mnp.get(`/v1/game_pay/status?order_ref=${encodeURIComponent(a.eid)}`);
       if (s.status !== 200 || !s.body?.ok) return reply(softError(codeOf(s)));
-      if (s.body.paid === true || s.body.status === "paid") { const left = await settle(env, doFetch, now, db, a.game, a.eid); return reply(left ?? json(200, { ok: true, paid: true })); }
+      if (s.body.paid === true || s.body.status === "paid") { await noteGame(env, db, now, { ...me, ...a }, false); const left = await settle(env, doFetch, now, db, a.game, a.eid, s.body.item); return reply(left ?? json(200, { ok: true, paid: true })); } // a game Moneypenny calls paid is told even when the console's own note is gone (older than 90 days, another database): the signed-in organizer is the owner the game just confirmed
       return reply(json(200, { ok: true, paid: false, review: s.body.status === "review" }));
     }
     return reply(fail(404, "not_found", "There is nothing at this address."));
@@ -298,6 +313,6 @@ async function onEvent(env: Env, doFetch: typeof fetch, now: number, req: Reques
   if (want.length !== sig.length || [...want].reduce((d, ch, i) => d | (ch.charCodeAt(0) ^ sig.charCodeAt(i)), 0) !== 0) return fail(401, "bad_signature", "This notice could not be checked.");
   const d = body?.data;
   if (!body || body.type !== "game.paid" || !d || typeof d.product !== "string" || typeof d.game_ref !== "string" || !EID.test(d.game_ref) || !origins(env)[d.product]) return json(200, { ok: true, ignored: true }); // every notice reaches every endpoint: only a game of ours is for the pay step
-  const r = await settle(env, doFetch, now, tables(env), d.product, d.game_ref);
+  const r = await settle(env, doFetch, now, tables(env), d.product, d.game_ref, d.item);
   return r ?? json(200, { ok: true });
 }

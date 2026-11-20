@@ -1,0 +1,1 @@
+{"id": "smoke-pay-csrf-guard", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "if (req.headers.get(\"x-console\") !== \"1\" || (o && !pageOrigins(env).includes(o))) return reply(fail(403, \"csrf\", MSG.csrf));", "replace": "", "test": "tests/smoke-pay.test.ts", "note": "M-4: the x-console header and Origin guard on the signed-in pay routes is gone"}

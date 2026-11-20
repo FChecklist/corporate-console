@@ -1,0 +1,1 @@
+{"id": "smoke-pay-item-arg-quote", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "a.game, a.eid, Q.item);", "replace": "a.game, a.eid);", "test": "tests/smoke-pay.test.ts", "note": "MEDIUM-B: /pay/quote does not pass the paid item to settle"}

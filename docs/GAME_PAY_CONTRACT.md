@@ -5,6 +5,7 @@ The console (console.corporatetambola.com) shows the Pay step and talks to Money
 
 ## 1. Re-vendor
 - Copy the console's bridge and game pack again (`tools/vendor-bridge.mjs`, `tools/vendor-pack.mjs`), byte for byte. Do not edit the copies.
+- **Pack 0.2.0 or later is required**: the Pay step's calls to the console now carry the header `x-console: 1` (the console refuses signed-in pay calls without it, and from any page that is not the console or a game). Add the console address to the game's own `connect-src` (already required) and nothing else changes.
 
 ## 2. Two adapter functions (the game's own code)
 `payInfo(env, { eid, sub })` — read only, changes nothing.

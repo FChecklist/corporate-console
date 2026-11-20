@@ -1,0 +1,1 @@
+{"id": "smoke-mail-failure-rate-kept", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "UPDATE rate SET n=CASE WHEN n>0 THEN n-1 ELSE 0 END WHERE k=?", "replace": "UPDATE rate SET n=n WHERE k=?", "test": "tests/smoke-auth.test.ts", "note": "a failed send still uses up one of the eight tries an hour (F-02)"}

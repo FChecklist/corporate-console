@@ -1,0 +1,1 @@
+{"id": "smoke-pay-size-words", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "g.owner ? \"size_changed\" : \"not_yours\", g.owner ? MSG.sizeChanged : MSG.notYours", "replace": "\"not_yours\", MSG.notYours", "test": "tests/smoke-pay.test.ts", "note": "the organizer with an old size on screen is told the game is not theirs (F-08)"}

@@ -1,0 +1,1 @@
+{"id": "smoke-pay-cors-header", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "\"access-control-allow-headers\": \"content-type, x-console\"", "replace": "\"access-control-allow-headers\": \"content-type\"", "test": "tests/smoke-pay.test.ts", "note": "X-4: the preflight no longer allows x-console (a game's Pay step would break in browsers)"}

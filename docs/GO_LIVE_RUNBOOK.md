@@ -71,12 +71,13 @@ grep -n database_id wrangler.toml apps/cron/wrangler.toml     # both lines must 
 $W d1 execute corporate-console --remote --file=migrations/0001_console.sql
 ```
 
-**2.4 Tell the console its own address.** On pages.dev the browser's Origin is `https://corporate-console.pages.dev`; the sign-in service refuses anything else (that is the protection against forged requests). So for THIS step set that address in both files. Step 9 sets it back to `https://console.corporatetambola.com`.
+**2.4 Check the console's own address (do NOT change it).** `wrangler.toml` already says `CONSOLE_ORIGIN = "https://console.corporatetambola.com"` and `CONSOLE_ALT_ORIGINS = "https://corporate-console.pages.dev"`. The sign-in service accepts both (the browser's Origin must be one of them: that is the protection against forged requests). Mails and payment links use the live address. Never set `CONSOLE_ORIGIN` back to the pages.dev address: sign-in mails and links would point at the wrong site. Only look:
 
 ```bash
-sed -i 's#CONSOLE_ORIGIN = "https://console.corporatetambola.com"#CONSOLE_ORIGIN = "https://corporate-console.pages.dev"#' wrangler.toml apps/cron/wrangler.toml
-grep -n CONSOLE_ORIGIN wrangler.toml apps/cron/wrangler.toml
+grep -n "CONSOLE_ORIGIN\|CONSOLE_ALT_ORIGINS" wrangler.toml apps/cron/wrangler.toml
 ```
+
+Check that the live address is first, that the custom domain `console.corporatetambola.com` is attached to this Pages project (Step 9), and that no dashboard variable of the same name overrides the file.
 
 **2.5 Make the two secrets you can make** (copy each line when asked in 2.7; the window then closes and they are gone):
 
@@ -116,7 +117,7 @@ cd ../..
 
 **2.9 First sign-in on a COPY with `TEST_MODE=1`**: in the Pages project settings add the plain variable `TEST_MODE` = `1`, sign in with `demo1@demo-test.invalid`, code `123456` (no e-mail is sent), then delete `TEST_MODE` again and sign in with a real address.
 
-Verify: `https://corporate-console.pages.dev/` shows the sign-in screen, the Corporate Games bar and the version line ("Version 0.1.0, released ... IST"); `https://corporate-console.pages.dev/version.json` carries `version`, `releasedAt` and `releasedAtIST`; `/auth/me` answers `{"ok":true,"signedIn":false}`; the response headers carry the Content-Security-Policy and `frame-ancestors 'none'`; a real sign-in code arrives by e-mail. Rollback: unlink the project's domain, `$W pages project delete corporate-console` and `$W delete --name corporate-console-cron` if nothing else uses them, and put `CONSOLE_ORIGIN` back with `git checkout wrangler.toml apps/cron/wrangler.toml` (the database can stay: it holds only sign-in codes and sessions).
+Verify: `https://corporate-console.pages.dev/` shows the sign-in screen, the Corporate Games bar and the version line ("Version 0.2.1, released ... IST": the number of the release you are deploying, see `releases.json`); `https://corporate-console.pages.dev/version.json` carries `version`, `releasedAt` and `releasedAtIST`; `/auth/me` answers `{"ok":true,"signedIn":false}`; the response headers carry the Content-Security-Policy and `frame-ancestors 'none'`; a real sign-in code arrives by e-mail. The link inside that e-mail points to `https://console.corporatetambola.com`, which works only after the custom domain is attached (Step 9): until then type the code on the pages.dev screen and ignore the link. Rollback: unlink the project's domain, `$W pages project delete corporate-console` and `$W delete --name corporate-console-cron` if nothing else uses them, and put `CONSOLE_ORIGIN` back with `git checkout wrangler.toml apps/cron/wrangler.toml` (the database can stay: it holds only sign-in codes and sessions).
 
 ## Step 3. Each game's console work, merged locally and deployed with the bridge DARK (order: Bingo, Tic Tac Toe, Snakes and Ladders, Luck by Chance, Tambola last)
 

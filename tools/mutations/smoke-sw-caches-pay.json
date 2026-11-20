@@ -1,0 +1,1 @@
+{"id": "smoke-sw-caches-pay", "repo": ".", "file": "public/sw.js", "find": " && !/^\\/(pay|stats|report)\\//.test(url.pathname);", "replace": ";", "test": "tests/smoke-shell.test.ts", "note": "the installed app keeps and serves old pay answers (F-12)"}

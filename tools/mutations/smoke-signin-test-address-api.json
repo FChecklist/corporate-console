@@ -1,0 +1,1 @@
+{"id": "smoke-signin-test-address-api", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "...(!demo && isTestAddress(email) && !env.MAILER ? { testAddress: true } : {})", "replace": "...({})", "test": "tests/smoke-auth.test.ts", "note": "a test address looks exactly like a real one: 'a code is on its way' and nothing is sent (F-05)"}

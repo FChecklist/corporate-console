@@ -1,0 +1,1 @@
+{"id": "smoke-signin-test-address-screen", "repo": ".", "file": "public/screens/signin.js", "find": "if (r.json?.testAddress) {", "replace": "if (false) {", "test": "tests/smoke-flow.test.ts", "note": "the screen waits for a code that cannot come (F-05)"}

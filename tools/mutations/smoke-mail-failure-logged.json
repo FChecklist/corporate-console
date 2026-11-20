@@ -1,0 +1,1 @@
+{"id": "smoke-mail-failure-logged", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "console.error(\"sign-in mail not sent: \"", "replace": "void (\"sign-in mail not sent: \"", "test": "tests/smoke-auth.test.ts", "note": "a failed sign-in mail leaves no trace for the owner (F-04)"}
