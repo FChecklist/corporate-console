@@ -7,3 +7,6 @@ Full hand-overs: `C:\ct\test-sites\handover\2026-10-27\30-console-build-2026-10-
 3. Contract additions (all optional): hand-off `target: "new"`; `roleId` on an invitation row. The four game bridge worktrees still hold the OLD bridge copy: re-vendor (`node tools/vendor-bridge.mjs --game <worktree>`) in each game's own package.
 4. NOT in this repo's scope and still to do (spec 100 wave 2): each game's own console page and edge work (BE/BW, TE0/TE/TW, SE/SW, LK0/LK1/LE/LW, TB0), the shared game pack (C3), Lucky Draw, the cross-game simulations (X1, X3).
 5. Go-live is owner-gated: see `docs/GO_LIVE_RUNBOOK.md` (ten steps, each with Verify and Rollback) and the questions in its Step 0.
+
+
+suiteRulesVersion: 1.1 (20 Nov 2026). Owner rules copy: docs/SUITE_RULES.md. Source: marketing-ledger plans/SUITE-RULES-VERSION-2026-11-20.md.
