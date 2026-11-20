@@ -1,0 +1,1 @@
+{"id": "smoke-pay-item-arg-notice", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "d.product, d.game_ref, d.item);", "replace": "d.product, d.game_ref);", "test": "tests/smoke-pay.test.ts", "note": "MEDIUM-B: the signed notice does not pass its item to settle"}

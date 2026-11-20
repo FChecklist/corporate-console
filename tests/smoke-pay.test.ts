@@ -1,4 +1,4 @@
-// FALSIFIED BY: smoke-pay-item-stale, smoke-pay-paid-no-row-quote, smoke-pay-paid-no-row-check, smoke-pay-size-words, smoke-pay-payee-tells-game, smoke-pay-voice-we
+// FALSIFIED BY: smoke-pay-settle-fail-open, smoke-pay-note-follows-on-paid, smoke-pay-item-arg-quote, smoke-pay-item-arg-check, smoke-pay-item-arg-pay, smoke-pay-item-arg-confirm, smoke-pay-item-arg-payee-info, smoke-pay-item-arg-payee-confirm, smoke-pay-item-arg-notice, smoke-pay-csrf-guard, smoke-pay-cors-header, smoke-pay-item-stale, smoke-pay-paid-no-row-quote, smoke-pay-paid-no-row-check, smoke-pay-size-words, smoke-pay-payee-tells-game, smoke-pay-voice-we
 // (addresses with \u0040 are written that way on purpose: the repo rule keeps real-looking addresses out of test source; they are never sent anywhere, the mail service is a stand-in)
 // SMOKE 20 NOV 2026, owner steps 12 to 14 (Moneypenny credits, making payment, confirmation of payment) for all six games, all eight sizes and every way a payment can go.
 // The real console pay routes, the real bridge of each game (a fake game per game, behind its own address), a fake Moneypenny. No network, no money. One test = one cell of docs/SMOKE-20NOV-CONSOLE.md.
@@ -21,7 +21,7 @@ const MIGRATIONS = readdirSync(new URL("../migrations/", import.meta.url)).filte
 const SID = "a".repeat(64), EID = "WAIT001";
 const smallestPack = (short: number) => PACKS.filter((p) => p >= short).sort((a, b) => a - b)[0];
 
-async function world(o: { game?: string; size?: number; flag?: boolean; resize?: boolean } = {}) {
+async function world(o: { game?: string; size?: number; flag?: boolean; resize?: boolean; omitItem?: boolean } = {}) {
   const game = o.game ?? "bingo", size = o.size ?? 250;
   const ctx = await makeCtx();
   const hosts: Record<string, Awaited<ReturnType<typeof makeHost>>> = {};
@@ -33,17 +33,17 @@ async function world(o: { game?: string; size?: number; flag?: boolean; resize?:
     h.raw.run("UPDATE engagement SET cap=? WHERE id=?", [size, EID]);
     hosts[g] = h; origins[g] = h.origin;
   }
-  const sent = { notices: 0 };
+  const sent = { notices: 0, items: [] as string[] };
   const routed = (async (u: any, init: any) => {
     const url = new URL(String(u)), g = GAMES.find((x) => origins[x] === url.origin);
-    if (url.pathname === "/api/console/paid") sent.notices++; // how many signed "paid" notices the console really sent to a game
+    if (url.pathname === "/api/console/paid") { sent.notices++; try { sent.items.push(String(JSON.parse(String(init?.body)).item)); } catch { sent.items.push("?"); } } // how many signed "paid" notices the console really sent to a game, and the size each one named
     if (!g) throw new Error("the console called an address that is not a game: " + url.origin);
     return (await handleConsole(hosts[g].adapter, new Request(String(u), init), hosts[g].env)) ?? new Response("{}", { status: 404 });
   }) as typeof fetch;
   const { db, raw } = makeD1(MIGRATIONS);
   const pkcs8 = new Uint8Array(await crypto.subtle.exportKey("pkcs8", ctx.privateKey));
   const env: Env = { DB: db, SESSION_PEPPER: "pepper", CONSOLE_SIGNING_KEY: btoa(String.fromCharCode(...pkcs8)), CONSOLE_ORIGIN: CONSOLE, GAME_ORIGINS: JSON.stringify(origins), MNP_WEBHOOK_SECRET: "whsec", PAY_VIA_MONEYPENNY: o.flag === false ? "0" : "1" } as any;
-  const fake = makeFakeMoneypenny({ packs: PACKS, resize: o.resize, catalogue: GAMES.flatMap((g) => SIZES.map((s) => ({ product: g, item: String(s), credits: costOf(s) }))) });
+  const fake = makeFakeMoneypenny({ packs: PACKS, resize: o.resize, omitItem: o.omitItem, catalogue: GAMES.flatMap((g) => SIZES.map((s) => ({ product: g, item: String(s), credits: costOf(s) }))) });
   const host = hosts[game], now = () => host.clock.ms;
   const alice = ctx.people.alice;
   const sign = async (email: string, hash: string, sid = SID, expires = 86400_000) => {
@@ -363,12 +363,12 @@ test("M-4: every signed-in pay route refuses a call without the console header o
   expect((await w2.call("GET", "/pay/link/info?t=" + t, undefined, { sid: null, headers: { "x-console": "" } })).json.error).not.toBe("csrf"); // the payee has no cookie: nothing to forge
 });
 
-test("L-1 (audit): the payee page script has no 'we', 'our', 'us' in any sentence it shows (checked line by line, so one odd quote cannot hide a line)", async () => {
+test("L-1 / X-3 (audit): the payee page script and the shared pack have no 'we', 'our', 'us' (any letter case: 'We use it' too) in any sentence they show, checked line by line, with no lowercase-start exemption", async () => {
   const { readFileSync } = await import("node:fs");
   const hits: string[] = [], BS = String.fromCharCode(92), LIT = new RegExp('"((?:[^"' + BS + BS + ']|' + BS + BS + '.)*)"', "g"); // a whole string literal, quotes paired from the left
   for (const f of ["public/pay-link.js", "packages/game-pack/zc-flow.js"]) for (const line of readFileSync(new URL("../" + f, import.meta.url), "utf8").split(String.fromCharCode(10))) {
     if (!/pay|Pay|e-mail|payment/.test(line)) continue;
-    for (const m of line.matchAll(LIT)) if (m[0].length > 14 && / /.test(m[1]) && /\b(we|our|ours|us)\b/.test(m[1]) && !/^(https?:|[a-z-]+ )/.test(m[1])) hits.push(f + ": " + m[1]);
+    for (const m of line.matchAll(LIT)) if (m[0].length > 14 && / /.test(m[1]) && /\b(we|our|ours|us)\b/i.test(m[1]) && !/^https?:/.test(m[1])) hits.push(f + ": " + m[1]);
   }
   expect(hits).toEqual([]);
 });
@@ -381,4 +381,82 @@ test("N: once the game is told, every later look (check, quote, signed notice, p
   expect(w.sent.notices).toBe(1);
   for (let i = 0; i < 3; i++) { await w.call("POST", "/pay/check", w.ask()); await w.call("GET", w.Q()); await w.event(w.fake.complete ? { id: "e" + i, type: "game.paid", created_at: 1, data: { game_ref: EID, product: "bingo", item: "250" } } : {}); }
   expect(w.sent.notices).toBe(1);
+});
+
+// ---------- audit round 3 (HIGH-A, MEDIUM-B, X-1, X-4): the game is told ONLY the size Moneypenny says was paid; no `item` in the answer = nothing is told ----------
+// A Moneypenny stub that leaves `item` out of its answers is the case no earlier test could see (the contract documents `item` only on the signed notice).
+type Site = "quote" | "check" | "event" | "pay" | "buy" | "confirm" | "payee-info" | "payee-confirm";
+const SITES: Site[] = ["quote", "check", "event", "pay", "buy", "confirm", "payee-info", "payee-confirm"];
+const STUBBED: Site[] = ["pay", "buy", "confirm", "payee-confirm"]; // answers only the stub can give (the fake settles these by itself, with item)
+/** a Moneypenny whose start/confirm (and the payee link) say 'paid' with the given item, or with no item at all */
+function stubPaid(w: W, item: string | undefined, linkOpen: boolean) {
+  const post = w.fake.mnp.post, get = w.fake.mnp.get;
+  const paid = { ok: true, paid: true, status: "paid", order_ref: EID, ...(item ? { item } : {}) };
+  w.fake.mnp.post = (async (p: string, b: any, x: any) => (p === "/v1/game_pay/start" || p === "/v1/game_pay/confirm" ? { status: 200, body: paid } : post(p, b, x))) as any;
+  if (linkOpen) w.fake.mnp.get = (async (p: string) => (p.startsWith("/v1/game_pay/link") ? { status: 200, body: { ok: true, status: "open", order_ref: EID, product: w.game, ...(item ? { item } : {}), amount_minor: 70000, currency: "INR", expires_at: w.now() + 3600_000 } } : get(p))) as any;
+}
+async function atSite(site: Site, o: { present: boolean; edit: boolean; moveNote: boolean }) {
+  const stubbed = STUBBED.includes(site);
+  const w = await world({ game: "bingo", size: 100, omitItem: !o.present && !stubbed });
+  const lk = await w.call("POST", "/pay/link", w.ask("100", costOf(100))); expect(lk.json.ok).toBe(true);
+  const t = lk.json.url.split("/pay/")[1];
+  expect((await w.call("POST", "/pay/link/start", { t, email: "demo1@demo-test.invalid" }, { sid: null })).json.ok).toBe(true); // the payee opens the window; the money lands at Moneypenny; the console's notice is lost
+  const ev = w.fake.complete(EID);
+  if (stubbed) stubPaid(w, o.present ? "100" : undefined, site === "payee-confirm");
+  if (o.edit) w.host.raw.run("UPDATE engagement SET cap=? WHERE id=?", [10000, EID]); // the organizer edits the game to the biggest size
+  if (o.moveNote) { await w.call("POST", "/pay/link", w.ask("10000", costOf(10000))); expect(w.note()[0].item).toBe("10000"); } // an organizer call has already moved the console's note to the new size
+  const size = o.edit ? "10000" : "100", a = w.ask(size, costOf(Number(size))), win = { orderId: "x", resp: w.fake.windowAnswer("x") };
+  const r = site === "quote" ? await w.call("GET", w.Q(size)) : site === "check" ? await w.call("POST", "/pay/check", a) : site === "event" ? await w.event(ev)
+    : site === "pay" ? await w.call("POST", "/pay/pay", a) : site === "buy" ? await w.call("POST", "/pay/buy", a) : site === "confirm" ? await w.call("POST", "/pay/confirm", { ...a, ...win })
+    : site === "payee-info" ? await w.call("GET", "/pay/link/info?t=" + t, undefined, { sid: null }) : await w.call("POST", "/pay/link/confirm", { t, ...win }, { sid: null });
+  return { w, r };
+}
+for (const site of SITES) for (const moveNote of [false, true]) for (const present of [true, false]) {
+  test(`HIGH-A (${site}${moveNote ? ", note already moved" : ""}, Moneypenny's answer ${present ? "carries" : "has NO"} item): paid at 100, game edited to 10000: ${present ? "the game is told 100 and refuses" : "the game is told nothing"}, never paid at 10000`, async () => {
+    const { w, r } = await atSite(site, { present, edit: true, moveNote });
+    expect(w.state().pay_state).not.toBe("paid"); expect(w.paidRows().c).toBe(0); expect(w.state().cap).toBe(10000);
+    expect(w.note().every((n) => n.state !== "told")).toBe(true);
+    if (present) expect(w.sent.items).toEqual(["100"]); // exactly one notice per look, and it names the PAID size (a site that drops the item tells nothing and fails here)
+    else { expect(w.sent.notices).toBe(0); if (site !== "payee-info") expect([r.status, r.json?.error]).toEqual([409, "review"]); }
+    if (present && site !== "payee-info") expect([r.status, r.json?.error]).toEqual([409, "review"]);
+    if (!moveNote && (site === "quote" || site === "check")) expect(w.note()[0].item).toBe("100"); // a paid answer never moves an existing note to the size on a screen
+  });
+}
+for (const site of SITES) {
+  test(`HIGH-A control (${site}): not edited, item present: the game is paid once at 100; with no item in the answer nothing is told (fail closed, answer 'review')`, async () => {
+    const ok = await atSite(site, { present: true, edit: false, moveNote: false });
+    expect(ok.w.state().pay_state).toBe("paid"); expect(ok.w.sent.items).toEqual(["100"]);
+    const none = await atSite(site, { present: false, edit: false, moveNote: false });
+    expect(none.w.state().pay_state).not.toBe("paid"); expect(none.w.sent.notices).toBe(0);
+  });
+}
+test("HIGH-A (no note at all): a game Moneypenny calls paid with no console note is told its paid size; with no item in the answer it is not told", async () => {
+  for (const present of [true, false]) {
+    const w = await world({ game: "bingo", size: 250, omitItem: !present });
+    w.fake.give(w.alice.email, 100000);
+    await w.fake.mnp.post("/v1/game_pay/start", { order_ref: EID, product: "bingo", item: "250", email: w.alice.email }); // paid at Moneypenny without the console (no note here)
+    expect(w.note()).toEqual([]);
+    for (const r of [await w.call("POST", "/pay/check", w.ask()), await w.call("GET", w.Q())]) {
+      if (present) expect([r.status, r.json.paid]).toEqual([200, true]); else expect([r.status, r.json.error]).toEqual([409, "review"]);
+    }
+    expect(present ? w.sent.items : [w.sent.notices]).toEqual(present ? ["250"] : [0]);
+    expect(w.state().pay_state).toBe(present ? "paid" : "waiting");
+  }
+});
+
+// ---------- audit X-4: the preflight header and the console's other address ----------
+test("X-4 CORS: a game's preflight allows content-type and x-console with credentials; a sibling site gets nothing; the console's other address is a page only while it is configured", async () => {
+  const w = await world({ game: "bingo", size: 250 });
+  const pre = (origin: string) => handlePay(new Request(CONSOLE + "/pay/check", { method: "OPTIONS", headers: { origin } }), w.env, w.now(), {});
+  const g = await pre(w.host.origin);
+  expect([g.status, g.headers.get("access-control-allow-origin"), g.headers.get("access-control-allow-credentials")]).toEqual([204, w.host.origin, "true"]);
+  expect(g.headers.get("access-control-allow-headers")).toBe("content-type, x-console");
+  const sib = await pre("https://blog.corporatetambola.com");
+  expect([sib.status, sib.headers.get("access-control-allow-origin"), sib.headers.get("access-control-allow-headers")]).toEqual([204, null, null]);
+  const ALT = "https://corporate-console.pages.dev";
+  expect((await w.call("POST", "/pay/check", w.ask(), { headers: { origin: ALT } })).json.error).toBe("csrf"); // not configured: not a page of ours
+  (w.env as any).CONSOLE_ALT_ORIGINS = ALT;
+  expect((await w.call("POST", "/pay/check", w.ask(), { headers: { origin: ALT } })).json.error).not.toBe("csrf");
+  expect((await pre(ALT)).headers.get("access-control-allow-origin")).toBe(ALT);
+  expect((await w.call("POST", "/pay/check", w.ask(), { headers: { origin: "https://corporate-console.pages.dev.evil.com" } })).json.error).toBe("csrf");
 });

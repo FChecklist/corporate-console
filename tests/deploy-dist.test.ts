@@ -1,4 +1,4 @@
-// FALSIFIED BY: build-commit-dev, dist-commit-ignored, dist-deploy-age-ignored, dist-deploy-head-ignored, stamp-changes-version, dist-stale-passes, dist-version-ignored, secrets-pepper-short, secrets-key-unusable, runbook-step2-command-missing
+// FALSIFIED BY: smoke-runbook-sets-pages-dev, build-commit-dev, dist-commit-ignored, dist-deploy-age-ignored, dist-deploy-head-ignored, stamp-changes-version, dist-stale-passes, dist-version-ignored, secrets-pepper-short, secrets-key-unusable, runbook-step2-command-missing
 // The deploy-day guards (2026-10-30): dist/ must be fresh and carry the version (check-dist), the two secrets that can be made are made well (make-secrets), and step 2 of the runbook is a copy-paste list.
 import { test, expect, setDefaultTimeout } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, existsSync, readFileSync } from "node:fs";
@@ -73,6 +73,20 @@ test("make-secrets: a signing key the console can really sign with, a 64-hex pep
   expect(await crypto.subtle.verify({ name: "Ed25519" }, pub, sig, msg)).toBe(true);
 });
 
+/** every line that would set CONSOLE_ORIGIN to a pages.dev address: a sed/perl/echo/wrangler line that names CONSOLE_ORIGIN and a pages.dev address, or an assignment of one */
+function setsConsoleOriginToPagesDev(text: string): string[] {
+  return text.split("\n").filter((l) => /CONSOLE_ORIGIN/.test(l) && /pages\.dev/.test(l) && (/\b(sed|perl|echo|printf|awk|tee)\b/.test(l) || /CONSOLE_ORIGIN\s*=\s*["']?https?:\/\/[^"'\s]*pages\.dev/.test(l)));
+}
+test("M-3 guard bites (it is not hollow): the old runbook line (sed CONSOLE_ORIGIN back to pages.dev) and a plain assignment are both found; the live-address lines and the warning words are not", () => {
+  const old = 'sed -i \'s#CONSOLE_ORIGIN = "https://console.corporatetambola.com"#CONSOLE_ORIGIN = "https://corporate-console.pages.dev"#\' wrangler.toml apps/cron/wrangler.toml';
+  expect(setsConsoleOriginToPagesDev(old).length).toBe(1);
+  expect(setsConsoleOriginToPagesDev('CONSOLE_ORIGIN = "https://corporate-console.pages.dev"').length).toBe(1);
+  expect(setsConsoleOriginToPagesDev("echo CONSOLE_ORIGIN=https://corporate-console.pages.dev >> wrangler.toml").length).toBe(1);
+  expect(setsConsoleOriginToPagesDev('CONSOLE_ORIGIN = "https://console.corporatetambola.com"\nCONSOLE_ALT_ORIGINS = "https://corporate-console.pages.dev"\ngrep -n "CONSOLE_ORIGIN\\|CONSOLE_ALT_ORIGINS" wrangler.toml')).toEqual([]);
+  // and the whole runbook and every deploy script: no line anywhere sets it back
+  for (const f of ["docs/GO_LIVE_RUNBOOK.md", "docs/GO_LIVE_CHECKLIST.md", "README.md"]) { const t = join(import.meta.dir, "..", f); if (existsSync(t)) expect([f, setsConsoleOriginToPagesDev(readFileSync(t, "utf8"))]).toEqual([f, []]); }
+});
+
 test("runbook step 2 is a copy-paste list: every command, in order, with who gives which secret", () => {
   const doc = readFileSync(join(import.meta.dir, "../docs/GO_LIVE_RUNBOOK.md"), "utf8");
   const step = doc.slice(doc.indexOf("## Step 2."), doc.indexOf("## Step 3."));
@@ -80,8 +94,9 @@ test("runbook step 2 is a copy-paste list: every command, in order, with who giv
   let at = -1;
   for (const c of order) { const i = step.indexOf(c, at + 1); expect([c, i > at]).toEqual([c, true]); at = i; }
   expect(step).toContain("The owner gives ONE thing");
-  expect(step).not.toContain("sed -i 's#CONSOLE_ORIGIN\|CONSOLE_ALT_ORIGINS"); // MEDIUM-3: the runbook must never set the console address back to pages.dev
-  expect(step).not.toMatch(/CONSOLE_ORIGIN\|CONSOLE_ALT_ORIGINS = \"https:\/\/corporate-console\.pages\.dev\"/);
+  expect(setsConsoleOriginToPagesDev(step)).toEqual([]); // MEDIUM-3: the runbook must never set the console address back to pages.dev (the guard itself is proven to bite in the next test)
+  expect(step).toContain("Never set `CONSOLE_ORIGIN` back to the pages.dev address"); // the words that tell the person why
+  expect(step).toContain('CONSOLE_ORIGIN = "https://console.corporatetambola.com"'); // the live address is what the settings carry
   expect(step).toContain("`RESEND_API_KEY`");
   expect(/(re_[A-Za-z0-9]{20,}|[A-Fa-f0-9]{40,})/.test(step)).toBe(false); // no secret value
 });

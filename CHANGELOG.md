@@ -1,7 +1,19 @@
 # Changelog - corporate-console
 
 Newest first. Rule: every deploy bumps the version and adds an entry here (standard of 20 Nov 2026).
-Numbering: 0.1.1 = PR #4 (bridge tests, no code change). 0.2.0 = PR #2 (this entry). They deploy together; the build carries 0.2.0.
+Numbering: 0.1.1 = PR #4 (bridge tests, no code change). 0.2.0 and 0.2.1 = PR #2 (these entries). They deploy together; the build carries 0.2.1.
+
+## 0.2.1 - 20 Nov 2026 (not deployed yet; the release time is stamped at deploy)
+### Fixed
+- Audit HIGH-A / X-1 (fail closed): a game is told ONLY the size Moneypenny says was paid. When an answer (quote, status, start, confirm, payee link, signed notice) says paid but carries no `item`, the console tells the game nothing and answers "review". Before, it fell back to the console's own note, which an organizer's edit could have moved to a bigger size. Also, the paid branches of `/pay/quote` and `/pay/check` now only CREATE a note when none exists; they never move an existing one to the size on a screen. Where: `functions/_lib/pay-core.ts` (`settle`, `noteGame`).
+- Audit MEDIUM-B / X-4: tests now guard every place the paid size is passed (quote, check, pay, buy, confirm, payee info, payee confirm, signed notice), each with a Moneypenny that carries `item`, one that omits it, and a note already moved to the new size; plus the preflight header (`x-console`) and the console's other address in the pay routes' page list.
+- Audit M-3 (guard test): the runbook check was hollow (an escaped pipe never matched). It now looks at every line, and a second test proves it finds the old `sed ... pages.dev` line. Runbook: step 2 verify line no longer says "Version 0.1.0" and says the mail link works only after Step 9 (X-6).
+- Audit X-5 / L-2: after "the e-mail is taking longer than usual" the sign-in screen opens the code box (a late mail's code works) and keeps "Send a new code" locked for the wait. Where: `public/screens/signin.js`.
+- Audit X-3 / L-1: the "we, our, us" wording test is now case-insensitive and has no lowercase-start exemption (it shows red for "We use it ..."). The stored mutation for the payee page was brought up to date and 13 new ones added (settle fail-open, note moved on a paid answer, one per paid-size call site, csrf guard, preflight header, other address, slow-mail screen, runbook).
+- Docs: `docs/PAY_STEP.md` says `item` must be on every "paid" answer; confirm with the Moneypenny owner and in the O-11 test-mode payment before the flag goes on (still a deploy gate).
+### Not changed (open, for the owner)
+- The pay flag `PAY_VIA_MONEYPENNY` stays OFF. Games must re-vendor `zc-flow.js` (header `x-console`). The CORS list in `pay-core.ts` / `stats-core.ts` uses the console address plus the other address only for pay pages (X-8). Merge with PR #4 (0.1.1): CHANGELOG, releases.json and docs/GAME_PAY_CONTRACT.md conflict (docs only): keep 0.2.1 on top, add the 0.1.1 entry, re-run the suite on the result (X-2). The ID-upload branch needs its own audit.
+- Rollback id of the previous deploy: `706f8e60` (commit 9c57a81).
 
 ## 0.2.0 - 20 Nov 2026 (not deployed yet; the release time is stamped at deploy)
 ### Fixed

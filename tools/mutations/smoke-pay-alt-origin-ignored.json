@@ -1,0 +1,1 @@
+{"id": "smoke-pay-alt-origin-ignored", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "...String(env.CONSOLE_ALT_ORIGINS || \"\").split(\",\").map((x) => x.trim()).filter(Boolean), ", "replace": "", "test": "tests/smoke-pay.test.ts", "note": "X-4: the console's other address is no longer a page of ours for the pay routes"}

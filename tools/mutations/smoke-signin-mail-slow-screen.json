@@ -1,0 +1,1 @@
+{"id": "smoke-signin-mail-slow-screen", "repo": ".", "file": "public/screens/signin.js", "find": "r.json?.error === \"mail_slow\"", "replace": "r.json?.error === \"never\"", "test": "tests/smoke-flow.test.ts", "note": "X-5: after a slow mail the code box stays closed and the resend button opens at once"}

@@ -3,7 +3,7 @@
 // The game id is the order reference (order_ref). A shortfall buys the smallest listed pack that covers it.
 export type Fake = ReturnType<typeof makeFakeMoneypenny>;
 type Game = { ref: string; email: string; product: string; item: string; credits: number; status: "open" | "paid" | "review"; orderId: string | null; payer: string | null; paidSource: string | null };
-export function makeFakeMoneypenny(o: { packs?: number[]; catalogue?: Array<{ product: string; item: string; credits: number }>; resize?: boolean } = {}) {
+export function makeFakeMoneypenny(o: { packs?: number[]; catalogue?: Array<{ product: string; item: string; credits: number }>; resize?: boolean; omitItem?: boolean } = {}) {
   const accounts = new Map<string, number>();
   const games = new Map<string, Game>();
   const orders = new Map<string, { id: string; ref: string; credits: number; amountMinor: number; status: "awaiting_payment" | "paid" }>();
@@ -108,11 +108,13 @@ export function makeFakeMoneypenny(o: { packs?: number[]; catalogue?: Array<{ pr
       return bad(404, "no_route");
     },
   };
+  // test option: a Moneypenny whose answers and notices never carry `item` (the contract documents it only on the signed notice; a real answer may lack it). The console must then fail closed.
+  if (o.omitItem) for (const k of ["get", "post"] as const) { const f = (mnp as any)[k]; (mnp as any)[k] = async (...a: any[]) => { const r = await f(...a); if (r && r.body && typeof r.body === "object") delete r.body.item; return r; }; }
   return {
     mnp, state, accounts, games, orders, links,
     give: (email: string, credits: number) => accounts.set(em(email), (accounts.get(em(email)) ?? 0) + credits),
     /** the payer finished in the secure window and Moneypenny heard about it from the payment side (the push path): credits in, game paid, and the signed notice body the game's endpoint gets */
-    complete: (ref: string) => { const g = games.get(ref)!; const ord = orders.get(g.orderId!)!; ord.status = "paid"; accounts.set(g.email, (accounts.get(g.email) ?? 0) + ord.credits); trySettle(g, g.payer ? "paylink" : "console"); return event(g); },
+    complete: (ref: string) => { const g = games.get(ref)!; const ord = orders.get(g.orderId!)!; ord.status = "paid"; accounts.set(g.email, (accounts.get(g.email) ?? 0) + ord.credits); trySettle(g, g.payer ? "paylink" : "console"); const ev = event(g); if (o.omitItem) delete (ev.data as any).item; return ev; },
     /** what the secure window hands back to the page after a payment */
     windowAnswer: (orderId: string) => ({ razorpay_order_id: "order_" + orderId, razorpay_payment_id: "pay_" + orderId, razorpay_signature: "sig_ok" }),
   };

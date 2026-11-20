@@ -129,19 +129,22 @@ async function purgeOld(env: Env, now: number) {
 }
 
 /** The console's own note of a game being paid for: who (sealed e-mail), which game, and whether the game has been told. */
-async function noteGame(env: Env, db: D1, now: number, o: { email: string; emailHash: string; game: string; eid: string; item: string }) {
-  // The size follows the game while the order is still open: an organizer who edits the game's size and then pays must have the game told THAT size (the game checks it). A paid ('told') note never changes.
-  await db.prepare("INSERT INTO pay_order(order_ref,email_hash,email_sealed,game,eid,item,state,created_ms) VALUES(?,?,?,?,?,?,'open',?) ON CONFLICT(order_ref) DO UPDATE SET item=excluded.item WHERE pay_order.state='open' AND pay_order.email_hash=excluded.email_hash").bind(orderRefOf(o.game, o.eid), o.emailHash, await sealText(env, o.email), o.game, o.eid, o.item, now).run();
+async function noteGame(env: Env, db: D1, now: number, o: { email: string; emailHash: string; game: string; eid: string; item: string }, follow = true) {
+  // follow=true (start, link, confirm: nothing is known to be paid yet): the size follows the game while the order is still open, so an organizer who edits the game's size and then pays has the game told THAT size (the game checks it). A paid ('told') note never changes.
+  // follow=false (quote and check, where Moneypenny has just said the game IS paid): the note is only created when none exists; an existing note is never moved by a screen that may show a size edited after the payment.
+  const conflict = follow ? "DO UPDATE SET item=excluded.item WHERE pay_order.state='open' AND pay_order.email_hash=excluded.email_hash" : "DO NOTHING";
+  await db.prepare("INSERT INTO pay_order(order_ref,email_hash,email_sealed,game,eid,item,state,created_ms) VALUES(?,?,?,?,?,?,'open',?) ON CONFLICT(order_ref) " + conflict).bind(orderRefOf(o.game, o.eid), o.emailHash, await sealText(env, o.email), o.game, o.eid, o.item, now).run();
 }
 
-/** Moneypenny says this game is paid: tell the game (once per order id; repeated safely). Returns null when the game knows, or an answer to send when it does not yet. */
+/** Moneypenny says this game is paid: tell the game (once per order id; repeated safely). Returns null when the game knows, or an answer to send when it does not yet.
+ *  FAIL CLOSED: the game is told only the size Moneypenny says was PAID. When Moneypenny's answer carries no (valid) `item`, nothing is told and the answer is 'review': the console's own note (or the size on a screen) may have been edited after the payment, so it is never a stand-in. The signed notice (which carries `item`) or a later look settles it. */
 async function settle(env: Env, doFetch: typeof fetch, now: number, db: D1, game: string, eid: string, paidItem?: unknown): Promise<Response | null> {
   const ref = orderRefOf(game, eid);
   const o = await db.prepare("SELECT order_ref, email_hash, game, eid, item, state FROM pay_order WHERE order_ref=?").bind(ref).first<any>();
   if (!o) return null; // not a game this console is paying for: nothing to tell
   if (o.state === "told") return null;
-  try { await tellGamePaid(env, doFetch, now, { game: o.game, eid: o.eid, item: typeof paidItem === "string" && ITEM.test(paidItem) ? paidItem : o.item, // the size Moneypenny says it was PAID for wins over the console's note: a game edited to a bigger size after paying is refused by the game, never marked paid at the new size
- orderRef: o.order_ref, emailHash: o.email_hash }); }
+  if (typeof paidItem !== "string" || !ITEM.test(paidItem)) return fail(409, "review", MSG.review); // no paid size from Moneypenny: tell nothing
+  try { await tellGamePaid(env, doFetch, now, { game: o.game, eid: o.eid, item: paidItem, orderRef: o.order_ref, emailHash: o.email_hash }); } // the size Moneypenny says it was PAID for: a game edited to a bigger size after paying is refused by the game, never marked paid at the new size
   catch (e: any) { return e?.definite ? fail(409, "review", MSG.review) : json(202, { ok: true, paid: false, pending: true, message: MSG.pending }); } // the payment is safe at Moneypenny; the next look tells the game again
   await db.prepare("UPDATE pay_order SET state='told' WHERE order_ref=?").bind(ref).run();
   return null;
@@ -244,7 +247,7 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
       const q = await mnp.get(`/v1/game_pay/quote?order_ref=${encodeURIComponent(a.eid)}&product=${encodeURIComponent(a.game)}&item=${encodeURIComponent(a.item)}&email=${encodeURIComponent(me.email)}`);
       if (q.status !== 200 || !q.body?.ok) return reply(softError(codeOf(q)));
       const Q = q.body;
-      if (Q.paid === true || Q.status === "paid") { await noteGame(env, db, now, { ...me, ...a }); const left = await settle(env, doFetch, now, db, a.game, a.eid, Q.item); return reply(left ?? json(200, { ok: true, paid: true, game: a.game, eid: a.eid })); }
+      if (Q.paid === true || Q.status === "paid") { await noteGame(env, db, now, { ...me, ...a }, false); const left = await settle(env, doFetch, now, db, a.game, a.eid, Q.item); return reply(left ?? json(200, { ok: true, paid: true, game: a.game, eid: a.eid })); }
       const enough = Q.can_pay_now === true || Number(Q.short_by) <= 0;
       if (!enough && !(Q.to_buy && Number.isSafeInteger(Q.to_buy.credits))) return reply(fail(404, "no_item", MSG.noItem));
       return reply(json(200, { ok: true, paid: false, waiting: Q.status === "awaiting_payment", game: a.game, gameName: GAME_NAMES[a.game], eid: a.eid, item: a.item, label: "Moneypenny", price: { credits: Number(Q.cost_credits), usd: String(Q.cost_usd), inrMinor: Number(Q.cost_inr_minor) }, balance: await worth(mnp, Math.max(0, Number(Q.balance) || 0)), short: enough ? await worth(mnp, 0) : await worth(mnp, Q.to_buy.credits), enough }));
@@ -292,7 +295,7 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
       { const no = await mine(a); if (no) return reply(no); }
       const s = await mnp.get(`/v1/game_pay/status?order_ref=${encodeURIComponent(a.eid)}`);
       if (s.status !== 200 || !s.body?.ok) return reply(softError(codeOf(s)));
-      if (s.body.paid === true || s.body.status === "paid") { await noteGame(env, db, now, { ...me, ...a }); const left = await settle(env, doFetch, now, db, a.game, a.eid, s.body.item); return reply(left ?? json(200, { ok: true, paid: true })); } // a game Moneypenny calls paid is told even when the console's own note is gone (older than 90 days, another database): the signed-in organizer is the owner the game just confirmed
+      if (s.body.paid === true || s.body.status === "paid") { await noteGame(env, db, now, { ...me, ...a }, false); const left = await settle(env, doFetch, now, db, a.game, a.eid, s.body.item); return reply(left ?? json(200, { ok: true, paid: true })); } // a game Moneypenny calls paid is told even when the console's own note is gone (older than 90 days, another database): the signed-in organizer is the owner the game just confirmed
       return reply(json(200, { ok: true, paid: false, review: s.body.status === "review" }));
     }
     return reply(fail(404, "not_found", "There is nothing at this address."));

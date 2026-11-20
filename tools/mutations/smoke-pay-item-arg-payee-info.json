@@ -1,0 +1,1 @@
+{"id": "smoke-pay-item-arg-payee-info", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "String(L.order_ref), L.item);", "replace": "String(L.order_ref));", "test": "tests/smoke-pay.test.ts", "note": "MEDIUM-B: the payee page (info) does not pass the paid item to settle"}

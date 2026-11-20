@@ -1,4 +1,4 @@
-// FALSIFIED BY: smoke-signin-test-address-screen, smoke-pack-fallback-price
+// FALSIFIED BY: smoke-signin-mail-slow-screen, smoke-signin-test-address-screen, smoke-pack-fallback-price
 // (addresses with \u0040 are written that way on purpose: the repo rule keeps real-looking addresses out of test source; they are never sent anywhere, the mail service is a stand-in)
 // SMOKE 20 NOV 2026, owner steps 5 to 10 as far as they live in this repo: the shared flow's own rules (date and time, size, prizes, brand, contact, status words), the one ID rule, and the sign-in screen's answer to a test address.
 // One test = one cell of the matrix in docs/SMOKE-20NOV-CONSOLE.md. Pure rules run as they are; nothing is mocked except time.
@@ -255,4 +255,21 @@ test("S-signin-test-address the sign-in screen does not wait for a code that can
   expect(o.querySelector(".signmsg")!.textContent).toMatch(/test address/);
   expect(o.querySelectorAll("form")[1].classList.contains("hide")).toBe(true); // the code box did not open
   expect(o.querySelector("#si-sent")!.textContent).not.toMatch(/on its way/);
+});
+
+// ---------- audit X-5 / L-2: a slow mail may still arrive: the screen opens the code box and holds the "send again" button ----------
+test("S-signin-mail-slow after 'the e-mail is taking longer than usual' the code box opens (the mail may still arrive and its code works) and 'Send a new code' stays locked for the wait", async () => {
+  const win: any = new Window({ url: "http://localhost/" });
+  Object.assign(globalThis, { window: win, document: win.document, Event: win.Event, location: win.location });
+  const { renderSignIn } = await import("../public/screens/signin.js");
+  const o = win.document.createElement("div"); win.document.body.replaceChildren(o);
+  const api = { auth: { request: async () => ({ ok: false, status: 502, json: { ok: false, error: "mail_slow", message: "The e-mail is taking longer than usual and may still arrive. Please wait a minute before asking for another one." } }), verify: async () => ({ ok: false }) } };
+  renderSignIn(o, { api, onSignedIn: async () => {}, resendAfterMs: 60_000 } as any);
+  (o.querySelector("#si-email") as any).value = "demo7@demo-test.invalid"; (o.querySelector("#si-consent") as any).checked = true;
+  o.querySelectorAll("form")[0].dispatchEvent(new win.Event("submit", { cancelable: true, bubbles: true }));
+  await new Promise((r) => setTimeout(r, 30));
+  expect(o.querySelectorAll("form")[1].classList.contains("hide")).toBe(false); // the code box is open: a late code can be typed
+  expect(o.querySelector("#si-sent")!.textContent).toMatch(/may still arrive/);
+  const again = [...o.querySelectorAll("button")].find((b: any) => /Send a new code/.test(b.textContent)) as any;
+  expect(again.disabled).toBe(true); // a second mail would replace the code in the first
 });

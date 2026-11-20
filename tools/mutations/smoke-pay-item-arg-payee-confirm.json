@@ -1,0 +1,1 @@
+{"id": "smoke-pay-item-arg-payee-confirm", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "String(L.order_ref), cf.body.item ?? L.item);", "replace": "String(L.order_ref));", "test": "tests/smoke-pay.test.ts", "note": "MEDIUM-B: the payee confirm does not pass the paid item to settle"}

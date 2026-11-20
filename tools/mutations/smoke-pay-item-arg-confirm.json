@@ -1,0 +1,1 @@
+{"id": "smoke-pay-item-arg-confirm", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "a.game, a.eid, cf.body.item);", "replace": "a.game, a.eid);", "test": "tests/smoke-pay.test.ts", "note": "MEDIUM-B: /pay/confirm does not pass the paid item to settle"}

@@ -307,7 +307,7 @@ test("A-94 a mail that TIMES OUT may still arrive: the new code stays valid, the
   const timeout = Object.assign(new Error("The operation timed out."), { name: "TimeoutError" });
   await withResend((n) => timeout, async (calls) => {
     const r = await s.ask("asha\u0040acme-corp.in");
-    expect(r.status).toBe(502); expect(JSON.stringify(r.json ?? r.body ?? "")).toContain("may still arrive");
+    expect(r.status).toBe(502); expect(JSON.stringify(r.json ?? r.text ?? "")).toContain("may still arrive");
     code = /code is (\d{6})/.exec(calls[0].body.text)![1];
   });
   expect((s.raw.query("SELECT COUNT(*) c FROM login_code").get() as any).c).toBe(1);
