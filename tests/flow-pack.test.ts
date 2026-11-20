@@ -241,3 +241,13 @@ test("the pack never gives a native append() a null: the Ready check no longer p
   const bad = src.split("\n").filter((l) => /(^|[^a-zA-Z])(li|row|card|frame|bar|ul|box)\.append\(/.test(l) && /\) : null\)/.test(l) && !/bar\.append\(el\("li"/.test(l)); // el(...) skips a null child, a native append does not
   expect(bad).toEqual([]);
 });
+
+// 20 Nov 2026 (owner): "Invite people with just an ID". Step 2 carries the owner's text word for word, a visible Paste a list button, one ID per line, and a family number 1 to 10 (default 4).
+test("step 2: the owner's ID-invite text, Paste a list, family 1 to 10 (4 by default)", () => {
+  for (const line of ["Invite people with just an ID", "No names or personal details are needed.", "Just upload or paste the IDs of the people you want to invite: employee ID, associate ID, vendor ID or customer ID, whichever you use.", "Your invitee opens the game link and enters their ID. If it is on your list, they join and play. If it is not, you get a request to approve or decline.", "The list and all IDs are deleted within 24 hours after the game ends."]) expect(src.includes(line)).toBe(true);
+  expect(src.includes('"Paste a list"')).toBe(true); expect(src.includes("zf-invitelog")).toBe(true);
+  const win: any = page();
+  const F = win.ZFLOW;
+  expect(F.audienceSettings("family", 100, undefined, 10).invites.per).toBe(10); expect(F.audienceSettings("family", 100, undefined, 0).invites.per).toBe(4); expect(F.audienceSettings("family", 100, undefined, 11).invites.per).toBe(10);
+  expect(F.badWords("Invite people with just an ID").length).toBe(0);
+});

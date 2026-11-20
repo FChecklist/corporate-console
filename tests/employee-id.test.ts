@@ -49,7 +49,7 @@ test("the table in the new screens shows an ID only in the cleaned form (the wai
   win.document.body.innerHTML = '<main id="app"></main>';
   new Function("window", "document", "location", "fetch", read("packages/game-pack/zc-flow.js"))(win, win.document, win.location, async () => ({ ok: true, json: async () => ({}) }));
   const F = win.ZFLOW;
-  const col = F.waitColumns([{ id: "1", empId: "1b-678" }, { id: "2", employeeId: "1B/678" }]).find((c: any) => c.label === "Employee ID");
+  const col = F.waitColumns([{ id: "1", empId: "1b-678" }, { id: "2", employeeId: "1B/678" }]).find((c: any) => c.label === "ID"); // 20 Nov 2026: the column says ID (an ID-only game)
   expect([col.get({ empId: "1b-678" }), col.get({ employeeId: "1B 678" })]).toEqual(["1B678", "1B678"]);
   expect(F.winnerDetails({ empId: "1b-678" })).toBe("Employee ID: 1B678");
   expect(F.waitLabel({ id: "1", empId: "1b-678" })).toContain("1B678");
