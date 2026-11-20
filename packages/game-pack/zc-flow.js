@@ -5,7 +5,7 @@
 (function () {
   "use strict";
   /** What this game says about itself (zc-flow-game.js). Nothing here is a game rule: the prize list comes from the game's own table (ZG.PRIZE_HOUSES). */
-  const G = Object.assign({ brand: "Corporate Games", tickets: [1, 2], bumper: false, boardMax: 90, boardCols: 10, boardTitle: "GAME", sample: true, board: true, claims: true, handover: true, presence: false, feed: false, rehearsal: false, control: false, lucky: false, idKind: false, callSeconds: 12, popular: [], recommended: [] }, (typeof window !== "undefined" && window.ZFLOW_GAME) || {});
+  const G = Object.assign({ brand: "Corporate Games", tickets: [1, 2], bumper: false, boardMax: 90, boardCols: 10, boardTitle: "GAME", sample: true, board: true, claims: true, handover: true, presence: false, feed: false, rehearsal: false, control: false, lucky: false, idKind: false, callSeconds: 12, popular: [], recommended: [], payGame: "", consoleOrigin: "" }, (typeof window !== "undefined" && window.ZFLOW_GAME) || {});
   const COPY = {
     top: "No personal details needed. All participant information is deleted within 24 hours of the game.",
     dash: "Game dashboard",
@@ -18,6 +18,7 @@
     { n: 3, id: "prizes", name: "Tickets and prizes" },
     { n: 4, id: "brand", name: "Brand & Breaks", optional: true },
     { n: 5, id: "publish", name: "Check and publish" },
+    { n: 6, id: "pay", name: "Pay" },
   ];
   /** A step can be opened when every earlier required step is done. Brand & Breaks is optional, so it never blocks step 5. */
   function canOpen(n, done) {
@@ -210,10 +211,38 @@
     ? { kind: "paid", text: "Congratulations, your game is on! It will begin at " + startText + ". You can postpone or change it up to 5 minutes before the game begins." }
     : { kind: "unpaid", text: BANNER_UNPAID });
   const gameLink = (origin, eid) => origin + "/z.html?e=" + eid;
-  const payLink = (origin, eid) => origin + "/pay.html?e=" + eid;
   const boardLink = (origin, eid) => origin + "/board.html?e=" + eid;
   const shareMessage = (name, link, eid) => "You are welcome to join our " + name + " game." + (eid ? " Game ID: " + eid + "." : "") + " Open this game link on your phone: " + link;
-  const PAY_PRINT = "The payment is small, so many organizers pay it themselves and claim it back (recommended). You can also copy the payment link and share it with the person who will pay. The payment link works for 7 days.";
+  const PAY_PRINT = "The payment is small, so many organizers pay it themselves and claim it back (recommended). You can also copy the payment link and share it with the person who will pay. The payment link works for 7 days. The money goes into your own credits for this game.";
+  /* ---- Step 6: Pay (pure). Every number is given by the console from Moneypenny; nothing here knows a price. ---- */
+  const PAY = {
+    title: "Game only starts when you pay",
+    notes: "You don't have to buy software or a subscription or download anything. You only pay per game. Simple and easy.",
+    privacy: "Our games are designed to follow US privacy laws, the EU GDPR and India's DPDP. All participant information, including IDs, is deleted within 24 hours after the game ends.",
+    busy: "Credits are refreshing. Nothing has been taken from you. Please try again in a few minutes.",
+    link: "Payment link copied. The person who pays adds credits to your account for this game, and your game is marked paid by itself.",
+    waiting: "Waiting for your payment. This page updates by itself when it arrives. You do not need to do anything else.",
+    paid: "Thank you. Your game is paid and ready.",
+  };
+  const fmtN = (n) => Number(n).toLocaleString("en-US");
+  const fmtInr = (minor) => { const r = Number(minor) / 100; return "₹" + r.toLocaleString("en-IN", { minimumFractionDigits: r % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
+  const worthText = (w) => "(= US$ " + w.usd + " / " + fmtInr(w.inrMinor) + ")";
+  const creditsText = (w, label) => fmtN(w.credits) + " " + (label || "Moneypenny") + " credits " + worthText(w);
+  /** The lines of the pay screen from the console's quote ({price, balance, short, enough, label}). The first button is 'Pay with your credits' when the credits already cover the game. */
+  function payLines(q) {
+    const out = { cost: "Cost of this game: " + creditsText(q.price, q.label), have: "Your existing credits: " + creditsText(q.balance, q.label), need: "", primary: q.enough ? "Pay with your credits" : "Buy now" };
+    if (!q.enough) out.need = "You only need to buy " + fmtN(q.short.credits) + " credits " + worthText(q.short) + " to start the game";
+    return out;
+  }
+  /** The console's address for the pay step: the real one, or (only on this computer) the ?console= address of a local test. */
+  function consoleBase(g, search, host) {
+    const o = String((g && g.consoleOrigin) || "").replace(/\/$/, "");
+    const local = host === "localhost" || host === "127.0.0.1";
+    const over = local ? new URLSearchParams(search || "").get("console") : null;
+    return (over && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(over)) ? over : o;
+  }
+  /** The size the game was made for, as Moneypenny's price list names it (the size's 'up to' number). */
+  const payItem = (upTo, raw) => String(Number(upTo) || Number(raw && raw.cap) || "");
   /* employee ID: the same function as employee-id.js (a test keeps the two identical). An employee ID is always shown in this one cleaned form. */
   function cleanEmployeeId(raw) { return String(raw == null ? "" : raw).normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
   /** The waiting table: Ticket number always; Name, Employee ID, Email ID, Mobile and Referred by only when somebody gave them. */
@@ -349,7 +378,7 @@
   const luckyBreaks = () => (G.lucky && prizes.lucky.on ? [{ kind: "lucky", title: prizeLine(prizes.lucky.gift, prizes.lucky.other, prizes.lucky.worth, prizes.cur) || "Lucky draw", winners: Number(prizes.lucky.n) || 1 }] : []);
   const registry = {}; // step number -> function(el, ctx) that draws the step body (each step adds its own)
 
-  const api = { COPY, STEPS, canOpen, nextAfter, dashboardOpen, badWords, registry, OCC, ZONES, wallToMs, todayIn, timeOptions, elsewhere, gameName, whenProblems, clockIn, CARDS, money, packChoices, audienceSettings, idKindOf, idWords, whoProblems, housesOf, tagsOf, GIFTS, prizeLine, defaultPrizes, defaultBumper, buildRewards, prizeProblems, breakMax, brandNameClean, linkKind, brandProblems, breakProblems, buildBrandPatch, contactProblems, readBack, readyItems, readyAll, prizesNamed, startWarning, winnerDetails, prizeKey, prizeCounts, feedLines, nextControlText, rehearsalCards, NEXT_LOCK_MS, NEXT_TOAST, REHEARSAL_LOCKED, luckyBreaks, bannerOf, gameLink, payLink, boardLink, shareMessage, claimedCount, BANNER_UNPAID, PAY_PRINT, waitColumns, waitLabel, STATUSES, statusOf, statusBanner, claimLine, CLAIM_OK_MS, sampleTickets };
+  const api = { COPY, STEPS, canOpen, nextAfter, dashboardOpen, badWords, registry, OCC, ZONES, wallToMs, todayIn, timeOptions, elsewhere, gameName, whenProblems, clockIn, CARDS, money, packChoices, audienceSettings, idKindOf, idWords, whoProblems, housesOf, tagsOf, GIFTS, prizeLine, defaultPrizes, defaultBumper, buildRewards, prizeProblems, breakMax, brandNameClean, linkKind, brandProblems, breakProblems, buildBrandPatch, contactProblems, readBack, readyItems, readyAll, prizesNamed, startWarning, winnerDetails, prizeKey, prizeCounts, feedLines, nextControlText, rehearsalCards, NEXT_LOCK_MS, NEXT_TOAST, REHEARSAL_LOCKED, luckyBreaks, bannerOf, gameLink, boardLink, PAY, payLines, creditsText, worthText, fmtInr, consoleBase, payItem, shareMessage, claimedCount, BANNER_UNPAID, PAY_PRINT, waitColumns, waitLabel, STATUSES, statusOf, statusBanner, claimLine, CLAIM_OK_MS, sampleTickets };
   if (typeof window !== "undefined") window.ZFLOW = api;
   if (typeof module !== "undefined") module.exports = api;
   if (typeof document === "undefined") return;
@@ -393,7 +422,8 @@
   /** Called by a step when it has saved: mark it done and move on to the next step, scrolling to it. */
   function done(n) {
     state.done[n] = true;
-    if (n === 5 && dashboardOpen(state.info)) { state.view = "dash"; draw(); refreshDash(); return; }
+    if (n === 5 && dashboardOpen(state.info) && state.info.paid) { state.view = "dash"; draw(); refreshDash(); return; } // a free or paid game goes to the dashboard; an unpaid one goes on to Pay
+    if (n === 6) { state.view = "dash"; draw(); refreshDash(); return; }
     const nx = nextAfter(n, state.done);
     if (nx) state.open = nx;
     draw();
@@ -685,12 +715,100 @@
       try {
         const pr = await call("POST", `/api/z/${state.eid}/publish`, { email: pub.email.trim(), phone: pub.phone, consent: ctl ? ctl.payload() || undefined : undefined });
         try { if (window.CTK) window.CTK.set("ctz-email", pub.email.trim()); else sessionStorage.setItem("ctz-email", pub.email.trim()); } catch { /* optional */ }
-        state.info = { published: true, paid: !!(pr && pr.paid), payUrl: pr && pr.payUrl, shareUrl: pr && pr.shareUrl };
+        state.info = { published: true, paid: !!(pr && pr.paid), payPage: pr && pr.payPage, shareUrl: pr && pr.shareUrl };
         done(5);
       } catch (e) { go.disabled = false; msg.textContent = e.message; }
     } }, "Publish");
     box.append(msg, go);
     ctl = mountConsent(consent, go); // Publish waits for the ticks
+  };
+
+  /* ---- Step 6: Pay. The page asks the console; the console asks Moneypenny. This page never talks to a payment company. ---- */
+  const pay = { q: null, loading: false, loaded: false, err: "", signIn: "", note: "", waiting: false, payPage: "", link: "", busyBtn: "", timer: null };
+  api.pay = pay;
+  const payBase = () => consoleBase(G, location.search, location.hostname);
+  async function payCall(method, path, body) {
+    try {
+      const r = await fetch(payBase() + path, { method, credentials: "include", headers: { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+      return { status: r.status, j: (await r.json().catch(() => ({}))) || {} };
+    } catch { return { status: 503, j: { ok: false, error: "busy", message: PAY.busy } }; }
+  }
+  const payAsk = () => ({ game: G.payGame, eid: state.eid, item: payItem(who.upTo, state.raw) });
+  const payRedraw = () => { if (state.view === "steps" && state.open === 6) draw(); };
+  async function payLoad() {
+    if (pay.loading) return;
+    pay.loading = true; pay.err = ""; pay.signIn = "";
+    const a = payAsk();
+    const r = await payCall("GET", "/pay/quote?game=" + encodeURIComponent(a.game) + "&eid=" + encodeURIComponent(a.eid) + "&item=" + encodeURIComponent(a.item));
+    pay.loading = false; pay.loaded = true;
+    if (r.status === 200 && r.j.ok) pay.q = r.j; else { pay.q = null; pay.err = r.j.message || PAY.busy; pay.signIn = r.status === 401 ? (r.j.signIn || payBase()) : ""; }
+    payRedraw();
+  }
+  function payStop() { if (pay.timer) { clearInterval(pay.timer); pay.timer = null; } pay.waiting = false; }
+  /** After Buy now: look at the game every 5 seconds (and ask the console every 15) until it is paid. */
+  function payWatch() {
+    payStop(); pay.waiting = true; let n = 0;
+    pay.timer = setInterval(async () => {
+      if (++n > 240) { payStop(); payRedraw(); return; }
+      try { const i = await call("GET", `/api/z/${state.eid}/info`); if (i && i.unpaid === false) return payPaid(); } catch { /* the next look tries again */ }
+      if (n % 3 === 0) { const r = await payCall("POST", "/pay/check", payAsk()); if (r.j && r.j.paid) return payPaid(); }
+    }, 5000);
+  }
+  async function payPaid() { payStop(); await refreshDash(); state.info = { ...(state.info || {}), published: true, paid: true }; state.done[6] = true; state.view = "steps"; state.open = 6; draw(); }
+  async function payClick(which) {
+    if (pay.busyBtn) return;
+    pay.busyBtn = which; pay.note = ""; payRedraw();
+    const a = payAsk();
+    let win = null;
+    if (which === "buy") { try { win = window.open("about:blank", "_blank"); } catch { win = null; } }
+    const r = await payCall("POST", which === "pay" ? "/pay/pay" : which === "buy" ? "/pay/buy" : "/pay/link", a);
+    pay.busyBtn = "";
+    if (which === "pay") {
+      if (r.j && r.j.paid) return payPaid();
+      pay.note = r.j.message || PAY.busy;
+      if (r.j && r.j.pending) payWatch();
+      if (r.status === 402) pay.loaded = false;
+    } else if (which === "buy") {
+      if (r.j && r.j.ok && r.j.payPage) { pay.payPage = r.j.payPage; if (win) { try { win.location.href = r.j.payPage; } catch { /* the link below does it */ } } payWatch(); }
+      else { if (win) { try { win.close(); } catch { /* ignore */ } } pay.note = r.j.message || PAY.busy; }
+    } else {
+      if (r.j && r.j.ok && r.j.url) { pay.link = r.j.url; try { await navigator.clipboard.writeText(r.j.url); pay.note = PAY.link; } catch { pay.note = "Please copy the payment link by hand."; } }
+      else pay.note = r.j.message || PAY.busy;
+    }
+    payRedraw();
+  }
+  registry[6] = (box) => {
+    box.append(el("h3", { id: "zf-payh", text: PAY.title }));
+    if (!G.payGame) { box.append(el("p", { class: "zf-msg", id: "zf-paynone", text: "Payment is not set up for this game yet." })); return; }
+    const foot = () => box.append(el("p", { class: "zf-small", id: "zf-paynotes", text: PAY.notes }), el("p", { class: "zf-small", id: "zf-payprivacy", text: PAY.privacy }));
+    if (state.info && state.info.paid) {
+      box.append(el("div", { class: "zf-banner paid", id: "zf-paid", role: "status" }, PAY.paid), el("p", {}, el("button", { type: "button", class: "zf-go", id: "zf-paydash", onclick: () => done(6) }, "Open your Game dashboard")));
+      foot(); return;
+    }
+    if (!pay.loaded && !pay.loading) payLoad();
+    if (!pay.q) {
+      if (pay.err) {
+        box.append(el("div", { class: "zf-warn", id: "zf-payerr", role: "status" }, pay.err));
+        const row = el("p", { class: "zf-btnrow" });
+        if (pay.signIn) row.append(el("a", { class: "zf-go", id: "zf-paysignin", href: pay.signIn, target: "_blank", rel: "noopener" }, "Sign in to your console"), " ");
+        row.append(el("button", { type: "button", class: "zf-add", id: "zf-payagain", onclick: () => { pay.loaded = false; pay.err = ""; draw(); } }, "Check again"));
+        box.append(row);
+      } else box.append(el("p", { class: "zf-small", id: "zf-payload", role: "status", text: "Checking your credits…" }));
+      foot(); return;
+    }
+    const L = payLines(pay.q);
+    box.append(el("dl", { class: "zf-read", id: "zf-payfigures" }, el("dt", { text: "Cost of this game" }), el("dd", { id: "zf-paycost", text: L.cost.replace("Cost of this game: ", "") }), el("dt", { text: "Your existing credits" }), el("dd", { id: "zf-payhave", text: L.have.replace("Your existing credits: ", "") })));
+    if (L.need) box.append(el("p", { class: "zf-lead", id: "zf-payneed", text: L.need }));
+    const row = el("p", { class: "zf-btnrow" });
+    const dis = pay.busyBtn || pay.waiting ? { disabled: "" } : {};
+    if (pay.q.enough) row.append(el("button", { type: "button", class: "zf-go", id: "zf-payprimary", ...dis, onclick: () => payClick("pay") }, L.primary));
+    else row.append(el("button", { type: "button", class: "zf-go", id: "zf-buynow", ...dis, onclick: () => payClick("buy") }, L.primary), " ", el("button", { type: "button", class: "zf-add", id: "zf-copypay", ...(pay.busyBtn ? { disabled: "" } : {}), onclick: () => payClick("link") }, "Copy payment link"));
+    box.append(row);
+    if (pay.waiting) box.append(el("div", { class: "zf-warn", id: "zf-paywait", role: "status" }, PAY.waiting, pay.payPage ? [" ", el("a", { id: "zf-payopen", href: pay.payPage, target: "_blank", rel: "noopener" }, "Open the payment page again")] : null));
+    if (pay.link) box.append(el("label", { for: "zf-paylink", text: "Payment link" }), el("input", { type: "text", readonly: "", id: "zf-paylink", value: pay.link }));
+    box.append(el("p", { class: "zf-msg", id: "zf-paynote", role: "status", text: pay.note }));
+    if (!pay.q.enough) box.append(el("p", { class: "zf-small", id: "zf-payprint", text: PAY_PRINT }));
+    foot();
   };
 
   /* ---- Game dashboard, Game ID bar, Host / Co-host pages ---- */
@@ -815,7 +933,7 @@ el("span", { class: "zf-pillstatus " + S.tone, id: "zf-status", "data-status": s
       card.append(el("p", { class: "zf-small", text: "Practice only, not your real game" }));
       sec.append(card);
     }
-    if (!paid && dash.rehPay) sec.append(el("div", { class: "zf-warn", id: "zf-rehpay" }, REH_PENDING, " ", el("a", { class: "zf-go", id: "zf-rehpaynow", href: payLink(o, state.eid), target: "_blank", rel: "noopener" }, "Pay now")));
+    if (!paid && dash.rehPay) sec.append(el("div", { class: "zf-warn", id: "zf-rehpay" }, REH_PENDING, " ", el("button", { type: "button", class: "zf-go", id: "zf-rehpaynow", onclick: () => openPay() }, "Pay now")));
     return sec;
   }
   async function startReh(n) {
@@ -856,13 +974,14 @@ el("span", { class: "zf-pillstatus " + S.tone, id: "zf-status", "data-status": s
       el("p", { class: "zf-msgbox", id: "zf-sharemsg", text: msg }),
       el("p", { class: "zf-small", text: "Hosts and Co-hosts use this same link." }));
   }
+  /** "Pay now" on the dashboard opens step 6 (the one pay step of every game). */
+  function openPay() { pay.loaded = false; pay.q = null; state.view = "steps"; state.open = 6; draw(); scrollTo("zf-sec6"); }
   /** Payment: a pill (Pending amber, Done green, Free game green), the buttons while it is pending, and the small print. */
   function paymentBlock(st, o, eid) {
     const pill = st === "free" ? ["Free game", "green"] : st === "pending" || st === "overdue" ? ["Pending", "amber"] : ["Done", "green"];
     const sec = el("section", { class: "zf-pay", id: "zf-pay" }, el("h3", {}, "Payment ", el("span", { class: "zf-pillstatus " + pill[1], id: "zf-paypill", text: pill[0] })));
     if (st === "pending" || st === "overdue") {
-      sec.append(el("a", { class: "zf-go", id: "zf-paynow", href: payLink(o, eid), target: "_blank", rel: "noopener" }, "Pay now"), " ", el("button", { type: "button", class: "zf-add", id: "zf-copypay", onclick: async () => { let u = ""; try { u = (await call("POST", `/api/z/${eid}/paylink`, {})).url || ""; } catch (e) { dash.note = e.message; return draw(); } copy(u || payLink(o, eid), "Payment link"); } }, "Copy payment link"),
-        el("p", { class: "zf-small", id: "zf-payprint", text: PAY_PRINT }));
+      sec.append(el("button", { type: "button", class: "zf-go", id: "zf-paynow", onclick: () => openPay() }, "Pay now"), el("p", { class: "zf-small", id: "zf-payprint", text: PAY_PRINT }));
       if (st === "overdue") sec.append(el("p", {}, el("a", { class: "zf-add", id: "zf-changedate", href: "/zc.html?e=" + encodeURIComponent(eid) }, "Change the date"), " ", el("a", { class: "zf-add", id: "zf-cancelgame", href: "/zc.html?e=" + encodeURIComponent(eid) }, "Cancel this game")));
     }
     return sec;

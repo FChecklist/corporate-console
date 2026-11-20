@@ -14,10 +14,10 @@ function page(descriptor = "", search = "?flow=new") {
   return win;
 }
 
-test("with no game descriptor the flow still draws its five steps, the top strip and a locked dashboard, and says the prizes are not available", () => {
+test("with no game descriptor the flow still draws its six steps, the top strip and a locked dashboard, and says the prizes are not available", () => {
   const win = page();
   const d = win.document;
-  expect(d.querySelectorAll(".zf-bar [data-step]").length).toBe(5);
+  expect(d.querySelectorAll(".zf-bar [data-step]").length).toBe(6);
   expect(d.querySelector(".zf-top").textContent).toContain("deleted within 24 hours of the game");
   expect(d.getElementById("zf-dash").hasAttribute("disabled")).toBe(true);
   expect(win.ZFLOW.housesOf(win)).toEqual([]);

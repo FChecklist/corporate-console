@@ -48,6 +48,8 @@ export interface Adapter<Env = any> {
   sendRoleInvite(env: Env, o: { to: string; eid: string; role: "host" | "cohost"; gameName: string }): Promise<void>;
   seal(env: Env, text: string): Promise<string>;
   unseal(env: Env, sealed: string): Promise<string>;
+  /** The console says a Moneypenny order for this game is paid (act 'paid'). The game checks, from its own tables, that the game exists, belongs to the organizer `sub`, is unpaid (or already paid by this order) and that `item` is its size; it then marks the game PAID and answers. To refuse it throws an Error with `definite = true` (nothing was changed). Without this method the route answers 404. */
+  markPaid?(env: Env, o: { eid: string; sub: string; item: string; orderRef: string; nowMs: number }): Promise<void>;
   previewUrl?(env: Env, o: { eid: string; nowMs: number }): Promise<{ url: string; expiresMs: number } | null>;
 }
 
@@ -247,6 +249,26 @@ export async function handleConsole<Env>(ad: Adapter<Env>, req: Request, env: En
     return ok({});
   }
 
+  if (req.method === "POST" && path === "/api/console/paid") { // the console tells the game: this game is paid. Once per order id; the game then unlocks its start.
+    if (!ad.markPaid) return err(404, "not_found", "This game does not take a paid notice yet.");
+    if (!body || typeof body.assertion !== "string" || typeof body.item !== "string" || !/^[A-Za-z0-9_.-]{1,40}$/.test(body.item) || typeof body.orderRef !== "string" || !/^[A-Za-z0-9_-]{4,100}$/.test(body.orderRef) || typeof body.eid !== "string" || !EID_RE.test(body.eid)) return err(400, "invalid", "The request is not complete.");
+    const r = await assertion(body.assertion, "paid", body.eid); if ("res" in r) return r.res;
+    const row = await db.prepare("SELECT eid, state FROM console_paid WHERE order_ref=?").bind(body.orderRef).first<any>();
+    if (row) {
+      if (row.eid !== body.eid) return err(409, "conflict", "That payment belongs to another game.");
+      return row.state === "paid" ? ok({ repeat: true, eid: body.eid }) : err(409, "in_progress", "This payment is being saved. Please try again in a moment.");
+    }
+    const ins = await db.prepare("INSERT OR IGNORE INTO console_paid(order_ref,eid,state,at_ms) VALUES(?,?,'marking',?)").bind(body.orderRef, body.eid, nowMs).run();
+    if (ins.meta.changes !== 1) return err(409, "in_progress", "This payment is being saved. Please try again in a moment.");
+    try { await ad.markPaid(env, { eid: body.eid, sub: r.pl.sub, item: body.item, orderRef: body.orderRef, nowMs }); }
+    catch (e: any) {
+      if (e && e.definite === true) { await db.prepare("DELETE FROM console_paid WHERE order_ref=? AND state='marking'").bind(body.orderRef).run(); return err(409, "game_refused", String(e.message || "This game cannot take that payment."), { definite: "true" }); }
+      return err(503, "unclear", "The game could not save the payment yet. It will be tried again."); // row stays 'marking'; the console repeats the same order id
+    }
+    await db.prepare("UPDATE console_paid SET state='paid', at_ms=? WHERE order_ref=?").bind(nowMs, body.orderRef).run();
+    return ok({ repeat: false, eid: body.eid });
+  }
+
   if (req.method === "POST" && path === "/api/console/preview") {
     if (!ad.previewUrl) return err(404, "not_found", "This game does not offer the player's screen view yet.");
     if (!body || typeof body.eid !== "string" || !EID_RE.test(body.eid)) return err(400, "invalid", "The request is not complete.");
@@ -272,4 +294,14 @@ export async function endRoles<Env>(ad: Adapter<Env>, env: Env, eid: string): Pr
   for (const r of rows) await revoke(ad, env, "r:" + r.role_id);
   await db.prepare("UPDATE game_role SET state='ended' WHERE eid=? AND state<>'ended'").bind(eid).run();
   return rows.length;
+}
+
+/** Go-live D3: the one payment screen is the console's. With the flag PAY_VIA_CONSOLE = "1" a game's own payment screen and its own pay / credit routes answer 302 to the console (nothing is deleted: the data stays, the old code stays behind the flag).
+ *  A game passes `extra` for any route of its own that starts a payment. Razorpay's own notice to the game is NOT in the list (money already paid must still be recorded). Returns null when the request is none of this business. */
+export const LEGACY_PAY_ROUTES: RegExp[] = [/^\/(pay|paylink|paytest)\.html$/, /^\/api\/z\/[^/]+\/(paylink|order|verify|pay|credit|apply-credit)(\/|$)/, /^\/api\/(order|verify|credit)(\/|$)/];
+export function legacyPayRedirect(req: Request, o: { flag: string | undefined; consoleOrigin: string; extra?: RegExp[] }): Response | null {
+  if (o.flag !== "1") return null;
+  const path = new URL(req.url).pathname.replace(/\/+$/, "") || "/";
+  if (![...LEGACY_PAY_ROUTES, ...(o.extra ?? [])].some((r) => r.test(path))) return null;
+  return new Response(null, { status: 302, headers: { location: o.consoleOrigin.replace(/\/$/, "") + "/", "cache-control": "no-store" } });
 }
