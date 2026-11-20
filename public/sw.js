@@ -14,7 +14,7 @@ self.addEventListener("activate", (e) => {
   })());
 });
 
-const cacheable = (url) => url.origin === self.location.origin && !url.pathname.startsWith("/auth/") && !url.pathname.startsWith("/api/") && url.pathname !== "/signin.html" && url.pathname !== "/version.json" && url.pathname !== "/sw-config.json" && url.pathname !== "/sw.js";
+const cacheable = (url) => url.origin === self.location.origin && !url.pathname.startsWith("/auth/") && !url.pathname.startsWith("/api/") && url.pathname !== "/signin.html" && url.pathname !== "/version.json" && url.pathname !== "/sw-config.json" && url.pathname !== "/sw.js" && !/^\/(pay|stats|report)\//.test(url.pathname); // the pay step, the statistics and the reports answer with the moment's own facts (a quote, an amount due, "paid"): never kept, never shown late
 
 self.addEventListener("fetch", (e) => {
   const req = e.request, url = new URL(req.url);

@@ -52,7 +52,7 @@ const openFrame = (frame) => {
   const go = $("go"); go.hidden = false; let last = null;
   const start = async () => {
     const email = $("mail").value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("msg").textContent = "Please type your e-mail address so we can match your payment."; $("mail").focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("msg").textContent = "Please type your e-mail address. The system uses it to match your payment to the right game."; $("mail").focus(); return; }
     go.disabled = true;
     const s = await call("POST", "/pay/link/start", { t, email });
     go.disabled = false;

@@ -1,0 +1,1 @@
+{"id": "smoke-mail-failure-keeps-old-code", "repo": ".", "file": "functions/_lib/auth-core.ts", "find": "if (prev) await tables(env).prepare(\"UPDATE login_code SET", "replace": "if (false) await tables(env).prepare(\"UPDATE login_code SET", "test": "tests/smoke-auth.test.ts", "note": "a failed send throws away the code the person already holds (F-02)"}

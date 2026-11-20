@@ -86,7 +86,7 @@
     { id: "family", name: "Your people and their families", line: "Each person can bring up to 4 family members. Every ticket is one participant.", invites: true, cats: ["family"] },
     { id: "extended", name: "Extended family", line: "Your people, their families and friends, wherever they are.", invites: true, cats: ["family", "colleagues"] },
   ];
-  const FALLBACK_PACKS = [{ upTo: 100, inr: 2399 }, { upTo: 250, inr: 3499 }, { upTo: 500, inr: 4699 }, { upTo: 1000, inr: 7099 }];
+  const FALLBACK_PACKS = [{ upTo: 100 }, { upTo: 250 }, { upTo: 500 }, { upTo: 1000 }]; // sizes only: when the game cannot say its sizes, no price number of our own is shown (every number comes from the game and Moneypenny)
   const money = (n) => "₹" + Number(n).toLocaleString("en-IN");
   /** The size choices, from the game's real pack ladder (smallest first). */
   const packChoices = (packs) => (Array.isArray(packs) && packs.length ? packs : FALLBACK_PACKS).filter((k) => Number(k.upTo) > 0).map((k) => ({ upTo: Number(k.upTo), inr: Number(k.inr) || 0, label: "Up to " + k.upTo + " participants" + (k.inr ? " · " + money(k.inr) : "") })).sort((a, b) => a.upTo - b.upTo);

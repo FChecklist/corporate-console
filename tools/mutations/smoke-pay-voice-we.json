@@ -1,0 +1,1 @@
+{"id": "smoke-pay-voice-we", "repo": ".", "file": "functions/_lib/pay-core.ts", "find": "The system uses it to match your payment to the right game.", "replace": "so we can match your payment.", "test": "tests/smoke-pay.test.ts", "note": "the console says 'we' (F-11)"}

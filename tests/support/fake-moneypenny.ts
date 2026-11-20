@@ -3,7 +3,7 @@
 // The game id is the order reference (order_ref). A shortfall buys the smallest listed pack that covers it.
 export type Fake = ReturnType<typeof makeFakeMoneypenny>;
 type Game = { ref: string; email: string; product: string; item: string; credits: number; status: "open" | "paid" | "review"; orderId: string | null; payer: string | null; paidSource: string | null };
-export function makeFakeMoneypenny(o: { packs?: number[]; catalogue?: Array<{ product: string; item: string; credits: number }> } = {}) {
+export function makeFakeMoneypenny(o: { packs?: number[]; catalogue?: Array<{ product: string; item: string; credits: number }>; resize?: boolean } = {}) {
   const accounts = new Map<string, number>();
   const games = new Map<string, Game>();
   const orders = new Map<string, { id: string; ref: string; credits: number; amountMinor: number; status: "awaiting_payment" | "paid" }>();
@@ -73,6 +73,7 @@ export function makeFakeMoneypenny(o: { packs?: number[]; catalogue?: Array<{ pr
         const cost = price(b.product, b.item); if (cost === undefined) return bad(404, "no_item");
         if (b.credits != null && b.credits !== cost) return bad(409, "price_changed", { price_credits: cost });
         let g = games.get(b.order_ref);
+        if (g && o.resize && g.email === em(b.email) && g.product === b.product && g.item !== b.item && g.status === "open") { g.item = b.item; g.credits = cost; g.orderId = null; } // a Moneypenny that lets an unpaid game change its size (test option)
         if (g && (g.email !== em(b.email) || g.product !== b.product || g.item !== b.item)) return bad(409, "game_ref_used");
         if (!g) { g = { ref: b.order_ref, email: em(b.email), product: b.product, item: b.item, credits: cost, status: "open", orderId: null, payer: null, paidSource: null }; games.set(g.ref, g); }
         if (g.status === "paid") return ok(view(g));
