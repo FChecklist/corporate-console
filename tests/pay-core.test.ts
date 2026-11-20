@@ -7,7 +7,7 @@ import { makeHost, seed } from "./support/fake-host";
 import { makeCtx } from "../packages/bridge/test-kit/kit.mjs";
 import { makeD1 } from "./support/d1-sqlite";
 import { makeFakeMoneypenny } from "./support/fake-moneypenny";
-import { handlePay, GAME_NAMES } from "../functions/_lib/pay-core";
+import { handlePay, GAME_NAMES, PAYEE_INFO_PER_HOUR } from "../functions/_lib/pay-core";
 import { sealText, sha256hex, type Env } from "../functions/_lib/auth-core";
 
 const CONSOLE = "https://console.test";
@@ -405,5 +405,25 @@ test("C-8: the payee page keeps the console's security headers (no framing, no r
     expect(r.headers.get("content-security-policy")).toBe("default-src 'self'"); expect(r.headers.get("x-frame-options")).toBe("DENY"); expect(r.headers.get("referrer-policy")).toBe("no-referrer");
     const bare = await handlePay(new Request(CONSOLE + "/pay/" + "a".repeat(43)), w.env, w.h.clock.ms, { mnp: w.fake.mnp, assets: async () => new Response("<html></html>") });
     expect(bare.headers.get("x-frame-options")).toBe("DENY"); expect(bare.headers.get("referrer-policy")).toBe("no-referrer");
+  } finally { w.stop(); }
+});
+
+test("N-1: an open payee tab (looks every POLL_MS) stays far under the per-address look limit for a whole hour, and a burst of looks is still refused", async () => {
+  const src = readFileSync(new URL("../public/pay-link.js", import.meta.url), "utf8");
+  const pollMs = Number((src.match(/const POLL_MS = (\d+)/) || [])[1]);
+  const cap = Number((src.match(/\+\+n > (\d+)/) || [])[1]);
+  expect(pollMs).toBeGreaterThanOrEqual(15000);
+  const perHour = 3600000 / pollMs;
+  expect(perHour * 2).toBeLessThan(PAYEE_INFO_PER_HOUR); // even two tabs behind one office address
+  expect(cap).toBeLessThanOrEqual(PAYEE_INFO_PER_HOUR / 2);
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 2000);
+    const t = (await w.call("POST", "/pay/link", ASK)).json.url.split("/pay/")[1];
+    let refused = 0;
+    for (let i = 0; i < Math.ceil(perHour * 2); i++) { const r = await w.call("GET", "/pay/link/info?t=" + t, undefined, { cookie: false }); if (r.status === 429) refused++; }
+    expect(refused).toBe(0);
+    for (let i = 0; i < PAYEE_INFO_PER_HOUR; i++) { const r = await w.call("GET", "/pay/link/info?t=" + t, undefined, { cookie: false }); if (r.status === 429) refused++; }
+    expect(refused).toBeGreaterThan(0);
   } finally { w.stop(); }
 });

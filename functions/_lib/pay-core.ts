@@ -20,7 +20,8 @@ export interface PayDeps { mnp?: Mnp; fetch?: typeof fetch; assets?: (path: stri
 
 /** the six games' names (labels only; no price anywhere). A test keeps this list equal to config/games.json. */
 export const GAME_NAMES: Record<string, string> = { tambola: "Corporate Tambola", bingo: "Corporate Bingo", tictactoe: "Corporate Tic Tac Toe", snakesladders: "Corporate Snakes and Ladders", luckbychance: "Corporate Luck by Chance", luckydraw: "Corporate Lucky Draw" };
-const PAYEE_CALLS_PER_HOUR = 200, PAYEE_STARTS_PER_HOUR = 12;
+/** limits per hour: the payee page looks (info) at most about every 20 s, so a tab left open for an hour needs 180 looks; starting and confirming are far rarer */
+export const PAYEE_INFO_PER_HOUR = 400, PAYEE_ACTIONS_PER_HOUR = 60, PAYEE_STARTS_PER_HOUR = 12;
 const EID = /^[A-Za-z0-9_-]{4,40}$/, ITEM = /^[A-Za-z0-9_.-]{1,40}$/, TOKEN = /^[A-Za-z0-9_-]{20,80}$/;
 
 const json = (status: number, body: unknown, extra: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...extra } });
@@ -190,7 +191,8 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
       const t = path.endsWith("info") ? url.searchParams.get("t") : body?.t;
       if (typeof t !== "string" || !TOKEN.test(t)) return reply(fail(404, "bad_link", MSG.link));
       const ip = req.headers.get("cf-connecting-ip") || "none"; // each call here makes a signed call to Moneypenny: nobody may use up its budget
-      if (!(await bump(env, "pay:ip:" + (await sha256hex("ip|" + ip)), PAYEE_CALLS_PER_HOUR, now)).ok) return reply(fail(429, "slow", MSG.slow));
+      const kind = path === "/pay/link/info" ? "info" : "act"; // looking is cheap and repeated by an open tab; acting is not
+      if (!(await bump(env, "pay:ip:" + kind + ":" + (await sha256hex("ip|" + ip)), kind === "info" ? PAYEE_INFO_PER_HOUR : PAYEE_ACTIONS_PER_HOUR, now)).ok) return reply(fail(429, "slow", MSG.slow));
       if (path !== "/pay/link/info" && !(await bump(env, "pay:link:" + (await sha256hex("pl|" + t)), PAYEE_STARTS_PER_HOUR, now)).ok) return reply(fail(429, "slow", MSG.slow));
       const li = await mnp.get(`/v1/game_pay/link?token=${encodeURIComponent(t)}`);
       if (li.status !== 200 || !li.body?.ok) return reply(softError(codeOf(li)));

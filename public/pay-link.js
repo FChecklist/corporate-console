@@ -14,9 +14,10 @@ const NOTDONE = "The payment did not go through. Nothing has been taken. You can
 let timer = null, listener = null;
 const closeFrame = () => { const o = $("overlay"); if (o) o.remove(); if (listener) { window.removeEventListener("message", listener); listener = null; } };
 const paidNow = () => { if (timer) clearInterval(timer); closeFrame(); $("go")?.remove(); $("mailrow")?.remove(); $("due").textContent = ""; $("title").textContent = "Paid"; $("msg").textContent = "Thank you. The game is paid and ready."; };
+const POLL_MS = 20000; // the console limits each address to a few hundred looks an hour: an open tab must stay far below that (a test checks)
 const watch = () => {
   if (timer) clearInterval(timer); let n = 0;
-  timer = setInterval(async () => { if (++n > 240) { clearInterval(timer); return; } const r = await call("GET", "/pay/link/info?t=" + encodeURIComponent(t)); if (r.j && r.j.ok && r.j.covered) paidNow(); }, 5000);
+  timer = setInterval(async () => { if (++n > 180) { clearInterval(timer); return; } const r = await call("GET", "/pay/link/info?t=" + encodeURIComponent(t)); if (r.j && r.j.ok && r.j.covered) paidNow(); }, POLL_MS);
 };
 const openFrame = (frame) => {
   closeFrame();
