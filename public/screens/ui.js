@@ -44,11 +44,19 @@ export function confirmPanel(host, text, yes = "Yes", no = "No") {
 }
 
 /** hand over to a game's own page: the console asks the game for a one-time address and goes there (the game checks it; the console never opens a game by itself) */
+const opening = new Set(); // hand-overs being made, one per game + page: a second press of the SAME button (double click) would ask the game for a second one-time address
 export async function openGame(ctx, g, target) {
-  const r = await ctx.api.handoff(g.game, { eid: g.eid, target: target || (g.role === "organizer" ? "organizer" : "host") });
-  if (!r.ok) { toast(openError(r, (ctx.names && ctx.names[g.game]) || "That game")); return false; }
-  (ctx.go || ((u) => location.assign(u)))(r.url);
-  return true;
+  const key = `${g.game}|${g.eid}|${target || ""}`;
+  if (opening.has(key)) return false;
+  opening.add(key);
+  let moved = false;
+  try {
+    const r = await ctx.api.handoff(g.game, { eid: g.eid, target: target || (g.role === "organizer" ? "organizer" : "host") });
+    if (!r.ok) { toast(openError(r, (ctx.names && ctx.names[g.game]) || "That game")); return false; }
+    (ctx.go || ((u) => location.assign(u)))(r.url);
+    moved = true;
+    return true;
+  } finally { if (moved) setTimeout(() => opening.delete(key), 1500); else opening.delete(key); } // after a hand-over the page is leaving; a failed one can be tried again at once
 }
 
 /** put a text on the clipboard; when the browser will not allow it, show it in a box the person can copy by hand. Returns true when copied. */

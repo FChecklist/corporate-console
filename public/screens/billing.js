@@ -14,11 +14,13 @@ const dayText = (ms) => new Date(ms).toLocaleDateString("en-GB", { timeZone: "As
 /** the number printed on an invoice link: the last 8 letters of its id */
 export const invoiceNo = (path) => "inv_" + String(path || "").slice(-8);
 
+/** a text that starts with = + - @ (or a tab / carriage return) is run as a formula by Excel and Sheets: a game name chosen by an organizer must not be able to do that on the finance team's screen, so such a text gets a leading ' */
+const safeText = (v) => { const s = String(v ?? ""); return /^[=+\-@\t\r]/.test(s) ? "'" + s : s; };
 const csvCell = (v) => { const s = String(v ?? ""); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 /** the paid list as a CSV text for the finance team (game, date, what, amount, currency, paid by, invoice number) */
 export function billingCsv(rows, names = {}) {
   const head = ["Game", "Game name", "Date", "What", "Amount", "Currency", "Status", "Paid by", "Invoice"];
-  const lines = rows.map((r) => [names[r.game] || r.game, r.gameName, new Date(r.tsMs).toISOString().slice(0, 10), r.what, (r.amountMinor / 100).toFixed(2), r.currency, r.status, PAYER[r.paidBy] || r.paidBy, r.invoice ? invoiceNo(r.invoice) : ""]);
+  const lines = rows.map((r) => [names[r.game] || r.game, safeText(r.gameName), new Date(r.tsMs).toISOString().slice(0, 10), safeText(r.what), (r.amountMinor / 100).toFixed(2), r.currency, r.status, PAYER[r.paidBy] || r.paidBy, r.invoice ? invoiceNo(r.invoice) : ""]);
   return [head, ...lines].map((l) => l.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
 export function downloadCsv(name, text) {

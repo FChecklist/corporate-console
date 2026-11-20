@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "bun test --isolate tests",
-    "falsify": "node tools/falsify-run.mjs"
+    "falsify": "node tools/falsify-run.mjs",
+    "e2e:part1": "bun test e2e/part1 && bun e2e/part1/report.ts"
   },
   "devDependencies": {
     "happy-dom": "20.14.6",
