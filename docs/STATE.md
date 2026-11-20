@@ -10,16 +10,19 @@ Full hand-overs: `C:\ct\test-sites\handover\2026-10-27\30-console-build-2026-10-
 
 ## Pay step (20 Nov 2026) - built locally, nothing deployed, no money moved
 Branch `claude/console-game-pay-step-91b60a`. Full description: `docs/PAY_STEP.md`.
-- **Exact commit to audit: `987ef21`** (code and tests; this STATE note is a later docs-only commit). Tests: 463 pass, 2 fail that are not from this work (a stale local `dist/`, and the shared Games bar hash against a newer canonical copy).
-- **Audits: 0 of 2 done.** Two independent PASS audits of `987ef21` are requested (auditors, not the builder). No self-certification.
-- Built: shared step 6 "Pay" (all six games, config-driven by `payGame`), console `/pay/*` routes over `console-wallet`, signed `paid` notice in the bridge (once per order id), payee link page, `legacyPayRedirect` (302 to the console behind `PAY_VIA_CONSOLE`), local demo, real-flow screenshots in `Corporate-Tambola-Console-Flow-Review\pay-step\`.
-- Runs only against a local fake Moneypenny. Moneypenny's per-game routes (`buy_credits` with exact credits and `game_id`, `game.paid` notice, `game_order`) are from the mp-gamepay session and were not there yet.
+- **Exact commit to audit: `b9e84bf`** (code, tests, demo, deploy note; this STATE edit is a later docs-only commit, `git log` shows it). Tests: 469 pass, 2 fail that are not from this work (a stale local `dist/`, and the shared Games bar hash against a newer canonical copy).
+- **Audits: 0 of 2 done.** Two independent PASS audits of `b9e84bf` are requested (auditors, not the builder). No self-certification. Owner approved (20 Nov, "Approve all") deploy to Cloudflare Pages only after two PASSes on the exact final commit: `docs/PAY_STEP_DEPLOY.md` (one-step deploy and rollback, nothing run).
+- Built: shared step 6 "Pay" (all six games, config-driven by `payGame`), console `/pay/*` routes over `console-wallet`, signed `paid` notice in the bridge (once per order id), `legacyPayRedirect` (302 to the console behind `PAY_VIA_CONSOLE`), local demo, real-flow screenshots in `Corporate-Tambola-Console-Flow-Review\pay-step\` (the address bar is drawn from the page's own address).
+- **Seamless (owner, 20 Nov):** the secure payment window opens on top of the page (a frame, never a new address); the payee link is a console page `/pay/<token>` (no sign-in, only the amount due, same frame); the screen flips itself to Paid (organizer polls the game and the console; payee page polls; a reopened tab shows Paid at once); soft words only (a test keeps "Moneypenny", "API", "IT Services", "Razorpay", "server", "error" out of every message). The e-mail is sealed in the wallet's order rows too.
+- **Privacy line (owner-approved 31 Oct, reused):** "No personal details needed. All participant information is deleted within 24 hours of the game." plus "Our games are designed to follow US privacy laws, the EU GDPR and India's DPDP." The e-mailed PDF is not claimed (not built).
+- Runs only against a local fake Moneypenny. Moneypenny's per-game routes (`buy_credits` with exact credits, `game_id` and a payframe address, `game.paid` notice, `game_order`) are agreed by message with mp-gamepay (branch `game-pay-chain`); not seen in code yet.
 
 ### Needs owner
-1. Wording approval for the pay screen, and the legal word: the privacy note says the games are "designed to follow" US privacy laws, the EU GDPR and India's DPDP (not "comply"). Nothing in code proves compliance. Please have your adviser choose.
-2. Go for PAY_VIA_MONEYPENNY=1 and for deploy; the Moneypenny spend key and webhook secret (names in `config/SECRETS_NAMES.md`); DNS check for home. / console. / moneypenny.
-3. The Rs 1 live test through IT Services (go-live F5) and the Moneypenny rate and pack decisions (A1 to A3).
-4. Decision: Snakes and Ladders has the older 10-step console with its own pay step. It moves onto the shared 6-step flow (game session work).
+1. The legal word: the privacy note says the games are "designed to follow" US privacy laws, the EU GDPR and India's DPDP (not "comply"). Nothing in code proves compliance. Please have your adviser confirm; also confirm "No personal details needed" is still true for every game (players join with an Employee ID in some).
+2. The secrets (names in `config/SECRETS_NAMES.md`): Moneypenny spend key and webhook secret, and the setting `PAY_VIA_MONEYPENNY=1` when you want paying opened (deploy and the allowed-sites change are already approved, after the audits).
+3. Snakes and Ladders has the older 10-step console with its own pay step. It moves onto the shared 6-step flow (game session work); your decision on timing.
+4. Check one address: the payment window is allowed from `https://itservices-rajat-agarwal.pages.dev` (from the go-live runbook, `payframeOrigins` in `config/games.json`). Change it there if it is served elsewhere.
+5. Money rate and pack decisions on the Moneypenny side (A1 to A3), unchanged.
 
 ### Not done here (game repos, separate sessions)
 Each game: re-vendor bridge and pack, adapter `markPaid` (unlock start only from it), descriptor `payGame` and `consoleOrigin`, call `legacyPayRedirect`, remove or confirm no own login / payment / chat. Not touched: the Tambola PR 26 files.
