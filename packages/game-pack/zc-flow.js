@@ -475,10 +475,10 @@
     box.append(el("p", { class: "zf-small", id: "zf-how", text: "Anybody who is not on your list waits for you. You let each person in from the Game dashboard." }));
     if (who.card !== "people") { const ps = el("select", { id: "zf-per", "aria-label": "How many people each person can invite", onchange: (e) => { who.per = Number(e.target.value); draw(); } }); for (let i = 1; i <= 10; i++) ps.append(el("option", { value: String(i), ...(who.per === i ? { selected: "" } : {}) }, String(i))); ps.value = String(who.per); box.append(el("label", { for: "zf-per", text: "How many people can each person invite? (1 to 10)" }), ps); }
     const pasteMsg = el("p", { class: "zf-small", id: "zf-paste-msg", role: "status" });
-    box.append(el("button", { type: "button", class: "zf-add", id: "zf-paste-open", onclick: () => { who.paste = !who.paste; draw(); } }, "Paste a list"));
+    box.append(el("button", { type: "button", class: "zf-add", id: "zf-paste-open", style: "display:block;width:fit-content;margin:8px 0;", onclick: () => { who.paste = !who.paste; draw(); } }, "Paste a list"));
     if (who.paste) {
-      const ta = el("textarea", { id: "zf-paste", rows: "6", "aria-label": "IDs, one on each line", placeholder: "One ID on each line" }); ta.value = who.pasted || ""; ta.oninput = (e) => { who.pasted = e.target.value; };
-      box.append(ta, el("button", { type: "button", class: "zf-add", id: "zf-paste-go", onclick: async () => {
+      const ta = el("textarea", { id: "zf-paste", style: "display:block;width:100%;max-width:32rem;margin:8px 0;", rows: "6", "aria-label": "IDs, one on each line", placeholder: "One ID on each line" }); ta.value = who.pasted || ""; ta.oninput = (e) => { who.pasted = e.target.value; };
+      box.append(ta, el("button", { type: "button", class: "zf-add", id: "zf-paste-go", style: "display:block;width:fit-content;margin:8px 0;", onclick: async () => {
         const ids = idsOf(who.pasted); if (!ids.length) { pasteMsg.textContent = "Please paste at least one ID."; return; }
         if (!state.eid) { pasteMsg.textContent = "Please save step 1 first."; return; }
         pasteMsg.textContent = "Adding…";
