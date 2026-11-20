@@ -21,7 +21,7 @@ export interface PayDeps { mnp?: Mnp; fetch?: typeof fetch; assets?: (path: stri
 /** the six games' names (labels only; no price anywhere). A test keeps this list equal to config/games.json. */
 export const GAME_NAMES: Record<string, string> = { tambola: "Corporate Tambola", bingo: "Corporate Bingo", tictactoe: "Corporate Tic Tac Toe", snakesladders: "Corporate Snakes and Ladders", luckbychance: "Corporate Luck by Chance", luckydraw: "Corporate Lucky Draw" };
 /** limits per hour: the payee page looks (info) at most about every 20 s, so a tab left open for an hour needs 180 looks; starting and confirming are far rarer */
-export const PAYEE_INFO_PER_HOUR = 99999999, PAYEE_ACTIONS_PER_HOUR = 60, PAYEE_STARTS_PER_HOUR = 12;
+export const PAYEE_INFO_PER_HOUR = 400, PAYEE_ACTIONS_PER_HOUR = 60, PAYEE_STARTS_PER_HOUR = 12;
 const EID = /^[A-Za-z0-9_-]{4,40}$/, ITEM = /^[A-Za-z0-9_.-]{1,40}$/, TOKEN = /^[A-Za-z0-9_-]{20,80}$/;
 
 const json = (status: number, body: unknown, extra: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...extra } });
