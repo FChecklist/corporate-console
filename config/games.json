@@ -251,6 +251,7 @@
    "roles": ["organizer", "host", "cohost", "participant", "family"]
   }
  ],
+ "payframeOrigins": { "_about": "Where the secure payment window comes from (its address is given by the payment side; added to the CSP frame-src so the window opens on top of the console page). Today: the IT Services pages.dev address from docs/GO_LIVE_RUNBOOK.md step 1 (check it before the deploy; change here if the payment window is served from another address).", "preview": ["https://itservices-rajat-agarwal.pages.dev"], "live": ["https://itservices-rajat-agarwal.pages.dev"] },
  "consoleOrigin": {
   "live": "https://console.corporatetambola.com",
   "preview": "https://corporate-console.pages.dev",

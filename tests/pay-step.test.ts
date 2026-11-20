@@ -73,22 +73,23 @@ test("credits already cover the game: ONE button, 'Pay with your credits'; press
   } finally { t.stop(); }
 });
 
-test("Buy now opens the payment page Moneypenny gave and waits; Copy payment link copies the payee link", async () => {
-  const opened: string[] = [];
-  const t = boot({ ...quoteOk(Q_SHORT), "POST /pay/buy": () => ({ status: 200, body: { ok: true, orderRef: "GAME-bingo-WAIT001-3000", payPage: "https://pay.invalid/stub/x" } }), "POST /pay/link": () => ({ status: 200, body: { ok: true, url: "https://console.example/pay-link.html?t=" + "a".repeat(48) } }), "GET /api/z/WAIT001/info": () => ({ status: 200, body: { startMs: 1, unpaid: true } }) });
-  t.win.open = () => ({ location: { set href(v: string) { opened.push(v); } }, close() {} });
+test("Buy now opens the secure payment window on top of the page and waits; Copy payment link copies the payee link", async () => {
+  const t = boot({ ...quoteOk(Q_SHORT), "POST /pay/buy": () => ({ status: 200, body: { ok: true, orderRef: "GAME-bingo-WAIT001-3000", payPage: "https://pay.invalid/stub/x" } }), "POST /pay/link": () => ({ status: 200, body: { ok: true, url: "https://console.example/pay/" + "a".repeat(48) } }), "GET /api/z/WAIT001/info": () => ({ status: 200, body: { startMs: 1, unpaid: true } }) });
+  t.win.open = () => { throw new Error("the payment window must not open as a new window or address"); };
   const copied: string[] = [];
   Object.defineProperty(globalThis.navigator, "clipboard", { value: { writeText: async (v: string) => { copied.push(v); } }, configurable: true });
   try {
     await tick();
     t.d.getElementById("zf-copypay").click(); await tick(); await tick();
-    expect(copied[0]).toMatch(/^https:\/\/console\.example\/pay-link\.html\?t=a{48}$/);
+    expect(copied[0]).toMatch(/^https:\/\/console\.example\/pay\/a{48}$/);
     expect(t.d.getElementById("zf-paynote").textContent).toContain("Payment link copied");
     expect((t.d.getElementById("zf-paylink") as any).value).toBe(copied[0]);
     t.d.getElementById("zf-buynow").click(); await tick(); await tick();
-    expect(opened).toEqual(["https://pay.invalid/stub/x"]);
+    const fr = t.d.getElementById("zf-payiframe") as any; // the secure window sits ON this page, in a frame
+    expect(fr.getAttribute("src")).toBe("https://pay.invalid/stub/x"); expect(t.d.getElementById("zf-payoverlay").getAttribute("aria-modal")).toBe("true");
+    t.d.getElementById("zf-payclose").click(); expect(t.d.getElementById("zf-payoverlay")).toBe(null);
     expect(t.d.getElementById("zf-paywait").textContent).toContain("Waiting for your payment");
-    expect(t.d.getElementById("zf-payopen").getAttribute("href")).toBe("https://pay.invalid/stub/x");
+    t.d.getElementById("zf-payopen").click(); expect((t.d.getElementById("zf-payiframe") as any).getAttribute("src")).toBe("https://pay.invalid/stub/x");
     expect(t.d.getElementById("zf-buynow").hasAttribute("disabled")).toBe(true); // no second purchase while waiting
   } finally { t.stop(); }
 });
@@ -108,7 +109,7 @@ test("not signed in to the console: a polite sign-in button", async () => {
 });
 
 test("the pay step talks to the console only, with the console's sign-in cookie, never to a payment company or another address", async () => {
-  const t = boot({ ...quoteOk(Q_SHORT), "POST /pay/link": () => ({ status: 200, body: { ok: true, url: "https://console.example/pay-link.html?t=" + "b".repeat(48) } }) });
+  const t = boot({ ...quoteOk(Q_SHORT), "POST /pay/link": () => ({ status: 200, body: { ok: true, url: "https://console.example/pay/" + "b".repeat(48) } }) });
   try {
     await tick(); t.d.getElementById("zf-copypay").click(); await tick();
     const hosts = new Set(t.log.map((x) => new URL(x.url).origin));
@@ -146,6 +147,6 @@ test("CONSOLE VOICE: every sentence of the pay step is 'you', polite, simple; no
 test("PRIVACY NOTE says only what is true today: designed to follow the laws, IDs deleted within 24 hours; it does NOT promise a PDF e-mail", () => {
   const F: any = bare();
   const p = F.ZFLOW.PAY.privacy;
-  expect(p).toBe("Our games are designed to follow US privacy laws, the EU GDPR and India's DPDP. All participant information, including IDs, is deleted within 24 hours after the game ends.");
+  expect(p).toBe("No personal details needed. All participant information is deleted within 24 hours of the game. Our games are designed to follow US privacy laws, the EU GDPR and India's DPDP.");
   expect(p).not.toMatch(/pdf|e-?mail|comply|complies|compliant|guarantee/i);
 });

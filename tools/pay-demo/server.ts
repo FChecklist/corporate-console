@@ -22,7 +22,7 @@ const migrations = readdirSync(join(ROOT, "migrations")).filter((f) => f.endsWit
 const { db, raw } = makeD1(migrations);
 const pkcs8 = new Uint8Array(await crypto.subtle.exportKey("pkcs8", ctx.privateKey));
 const env: any = { DB: db, SESSION_PEPPER: "demo", CONSOLE_SIGNING_KEY: btoa(String.fromCharCode(...pkcs8)), CONSOLE_ORIGIN: `http://localhost:${CON}`, GAME_ORIGINS: JSON.stringify({ bingo: h.origin }), MNP_WEBHOOK_SECRET: "demo", PAY_VIA_MONEYPENNY: "1" };
-const fake = makeFakeMoneypenny({ catalogue: [{ product: "bingo", item: "250", credits: 5000 }] });
+const fake = makeFakeMoneypenny({ payBase: `http://localhost:${CON}/stub/`, catalogue: [{ product: "bingo", item: "250", credits: 5000 }] });
 const alice = ctx.people.alice;
 let signedIn = true;
 raw.query("INSERT INTO console_email(email_hash,email_sealed,created_ms,last_seen_ms,consent_ms) VALUES(?,?,?,?,?)").run(alice.sub, await sealText(env, alice.email), Date.now(), Date.now(), Date.now());
@@ -65,12 +65,12 @@ Bun.serve({ port: CON, hostname: "127.0.0.1", async fetch(req) {
     const sig = [...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(ts + "." + text)))].map((x) => x.toString(16).padStart(2, "0")).join("");
     return handlePay(new Request(`http://localhost:${CON}/pay/event`, { method: "POST", headers: { "x-mnp-timestamp": ts, "x-mnp-signature": sig }, body: text }), env, Date.now(), { mnp: fake.mnp });
   }
-  if (u.pathname.startsWith("/pay/")) {
+  if (/^\/pay\/[0-9a-f]{48}$/.test(u.pathname) || u.pathname.startsWith("/pay/")) {
     const headers = new Headers(req.headers); if (signedIn) headers.set("cookie", "cbsess=" + SID); else headers.delete("cookie");
-    return handlePay(new Request(req.url, { method: req.method, headers, body: req.method === "POST" ? await req.text() : undefined }), env, Date.now(), { mnp: fake.mnp });
+    return handlePay(new Request(req.url, { method: req.method, headers, body: req.method === "POST" ? await req.text() : undefined }), env, Date.now(), { mnp: fake.mnp, assets: async (p) => file("public" + p, "text/html") });
   }
-  if (u.pathname.startsWith("/stub/")) return new Response("<!doctype html><title>Payment page (stand-in)</title><p style='font:18px system-ui;margin:40px'>This stands in for the payment page Moneypenny gives. Local demo only.</p>", { headers: { "content-type": "text/html" } });
-  const map: Record<string, [string, string]> = { "/pay-link.html": ["public/pay-link.html", "text/html"], "/pay-link.js": ["public/pay-link.js", "text/javascript"] };
+  if (u.pathname.startsWith("/stub/")) return new Response("<!doctype html><title>Payment page (stand-in)</title><p style='font:18px system-ui;margin:40px'>This stands in for the secure payment window (card or UPI). Local demo only.</p>", { headers: { "content-type": "text/html" } });
+  const map: Record<string, [string, string]> = { "/pay-link.html": ["public/pay-link.html", "text/html"], "/pay-link.js": ["public/pay-link.js", "text/javascript"], "/pay-link.css": ["public/pay-link.css", "text/css"] };
   if (map[u.pathname]) return file(map[u.pathname][0], map[u.pathname][1]);
   if (u.pathname.startsWith("/core/") && /\.(css|js)$/.test(u.pathname)) return file("public" + u.pathname, u.pathname.endsWith("css") ? "text/css" : "text/javascript");
   return new Response("not found", { status: 404 });

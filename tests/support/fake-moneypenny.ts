@@ -1,7 +1,7 @@
 // A local stand-in for Moneypenny's routes that the console's pay step uses (contract/v1/openapi.json shapes). NO money, NO network.
 // Rate here is a test number only: 1 credit = 1 US cent = 70 paise. The console must never know it: every figure it shows comes from these answers.
 export type Fake = ReturnType<typeof makeFakeMoneypenny>;
-export function makeFakeMoneypenny(o: { catalogue?: Array<{ product: string; item: string; credits: number }> } = {}) {
+export function makeFakeMoneypenny(o: { payBase?: string; catalogue?: Array<{ product: string; item: string; credits: number }> } = {}) {
   const accounts = new Map<string, number>();
   const holds = new Map<string, { id: string; email: string; credits: number; ref: string; state: "open" | "captured" | "returned" }>();
   const orders = new Map<string, { ref: string; email: string; credits: number; product: string; item: string; gameId: string; status: "awaiting_payment" | "paid" }>();
@@ -43,7 +43,7 @@ export function makeFakeMoneypenny(o: { catalogue?: Array<{ product: string; ite
         const ex = orders.get(b.order_ref);
         if (!ex) orders.set(b.order_ref, { ref: b.order_ref, email: String(b.email).toLowerCase(), credits: b.credits, product: b.product, item: b.item, gameId: b.game_id, status: "awaiting_payment" });
         const r = orders.get(b.order_ref)!;
-        return ok({ order_id: "ord_" + b.order_ref, order_ref: b.order_ref, status: r.status, credits: r.credits, currency: "INR", amount_minor: r.credits * 70, pay_url: "https://pay.invalid/stub/" + b.order_ref });
+        return ok({ order_id: "ord_" + b.order_ref, order_ref: b.order_ref, status: r.status, credits: r.credits, currency: "INR", amount_minor: r.credits * 70, pay_url: "" + (o.payBase ?? "https://pay.invalid/stub/") + "" + b.order_ref });
       }
       return bad(404, "no_route");
     },

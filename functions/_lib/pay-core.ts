@@ -16,7 +16,7 @@ import { signAssertion, b64uEncode, type Payload } from "../../packages/bridge/s
 import { createWallet } from "../../packages/console-wallet/index.js";
 
 export type Mnp = { get(path: string): Promise<{ status: number; body: any }>; post(path: string, body: unknown): Promise<{ status: number; body: any }> };
-export interface PayDeps { mnp?: Mnp; fetch?: typeof fetch }
+export interface PayDeps { mnp?: Mnp; fetch?: typeof fetch; assets?: (path: string) => Promise<Response> }
 
 /** the six games' names (labels only; no price anywhere). A test keeps this list equal to config/games.json. */
 export const GAME_NAMES: Record<string, string> = { tambola: "Corporate Tambola", bingo: "Corporate Bingo", tictactoe: "Corporate Tic Tac Toe", snakesladders: "Corporate Snakes and Ladders", luckbychance: "Corporate Luck by Chance", luckydraw: "Corporate Lucky Draw" };
@@ -67,21 +67,24 @@ export function mnpClient(env: Env, doFetch: typeof fetch = fetch): Mnp {
 /** console-wallet's order store on the console's own database (it must pass storeContract). */
 export function d1WalletStore(env: Env) {
   const db: D1 = tables(env);
-  const parse = (r: any) => (r ? JSON.parse(r.row_json) : null);
+  // the organizer's e-mail is kept sealed (encrypted) inside each order row
+  const open = async (r: any) => { if (!r) return null; const o = JSON.parse(r.row_json); if (typeof o.email === "string" && o.email) o.email = await unsealText(env, o.email); return o; };
+  const seal = async (o: any) => JSON.stringify(typeof o.email === "string" && o.email ? { ...o, email: await sealText(env, o.email) } : o);
   return {
-    get: async (id: string) => parse(await db.prepare("SELECT row_json FROM wallet_order WHERE id=?").bind(id).first()),
-    all: async () => (await db.prepare("SELECT row_json FROM wallet_order WHERE status NOT IN ('granted','refused','refunded') OR at_ms>? ").bind(Date.now() - 3 * 86400_000).all<any>()).results.map(parse),
+    get: async (id: string) => open(await db.prepare("SELECT row_json FROM wallet_order WHERE id=?").bind(id).first()),
+    all: async () => Promise.all((await db.prepare("SELECT row_json FROM wallet_order WHERE status NOT IN ('granted','refused','refunded') OR at_ms>? ").bind(Date.now() - 3 * 86400_000).all<any>()).results.map(open)),
     putNew: async (id: string, row: any) => {
-      const r = await db.prepare("INSERT OR IGNORE INTO wallet_order(id,spend_key,order_ref,status,row_json,at_ms) VALUES(?,?,?,?,?,?)").bind(id, row.spendKey, row.orderRef ?? "", row.status, JSON.stringify(row), row.at ?? 0).run();
+      const r = await db.prepare("INSERT OR IGNORE INTO wallet_order(id,spend_key,order_ref,status,row_json,at_ms) VALUES(?,?,?,?,?,?)").bind(id, row.spendKey, row.orderRef ?? "", row.status, await seal(row), row.at ?? 0).run();
       if (r.meta.changes === 1) return null;
-      return parse(await db.prepare("SELECT row_json FROM wallet_order WHERE spend_key=?").bind(row.spendKey).first());
+      return open(await db.prepare("SELECT row_json FROM wallet_order WHERE spend_key=?").bind(row.spendKey).first());
     },
     cas: async (id: string, from: string[], patch: any) => {
-      const cur = parse(await db.prepare("SELECT row_json FROM wallet_order WHERE id=?").bind(id).first());
+      const raw = await db.prepare("SELECT row_json FROM wallet_order WHERE id=?").bind(id).first<{ row_json: string }>();
+      const cur = await open(raw);
       if (!cur || !from.includes(cur.status)) return false;
       const next = { ...cur, ...patch };
       const marks = from.map(() => "?").join(",");
-      const r = await db.prepare(`UPDATE wallet_order SET row_json=?, status=?, at_ms=? WHERE id=? AND status IN (${marks}) AND row_json=?`).bind(JSON.stringify(next), next.status, next.at ?? Date.now(), id, ...from, JSON.stringify(cur)).run();
+      const r = await db.prepare(`UPDATE wallet_order SET row_json=?, status=?, at_ms=? WHERE id=? AND status IN (${marks}) AND row_json=?`).bind(await seal(next), next.status, next.at ?? Date.now(), id, ...from, raw!.row_json).run();
       return r.meta.changes === 1;
     },
   };
@@ -117,6 +120,12 @@ async function figures(mnp: Mnp, email: string, product: string, item: string) {
   if (b.status !== 200) throw new Error("balance_failed");
   const have = Math.max(0, Number(b.body.balance) || 0), short = Math.max(0, price - have);
   return { price, have, short, label: String(b.body?.display?.label || "Moneypenny") };
+}
+
+/** has this game been paid (the console told the game, once per order)? Looks at the console's own order list. */
+async function toldPaid(db: D1, game: string, eid: string, emailHash?: string) {
+  const r = await db.prepare("SELECT 1 AS x FROM pay_order WHERE game=? AND eid=? AND state='told'" + (emailHash ? " AND email_hash=?" : "")).bind(...(emailHash ? [game, eid, emailHash] : [game, eid])).first();
+  return !!r;
 }
 
 const asks = (b: any): { game: string; eid: string; item: string } | null => (b && typeof b.game === "string" && typeof b.eid === "string" && typeof b.item === "string" && EID.test(b.eid) && ITEM.test(b.item) ? { game: b.game, eid: b.eid, item: b.item } : null);
@@ -181,12 +190,19 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
       return reply(await onEvent(env, doFetch, now, req, body, rawText));
     }
 
+    // ---- the payee's page is a console page: /pay/<token> (the same page for every token; it asks /pay/link/info) ----
+    if (req.method === "GET" && /^\/pay\/[0-9a-f]{48}$/.test(path) && deps.assets) {
+      const r = await deps.assets("/pay-link.html");
+      return new Response(r.body, { status: r.status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } });
+    }
+
     // ---- the payee's page: no sign-in ----
     if (path === "/pay/link/info" || path === "/pay/link/start") {
       const t = path.endsWith("info") ? url.searchParams.get("t") : body?.t;
       if (typeof t !== "string" || !TOKEN.test(t)) return reply(fail(404, "bad_link", MSG.link));
       const row = await db.prepare("SELECT email_hash, email_sealed, game, eid, item, expires_ms FROM pay_link WHERE token_hash=?").bind(await sha256hex("paylink|" + t)).first<any>();
       if (!row || row.expires_ms < now) return reply(fail(404, "bad_link", MSG.link));
+      if (await toldPaid(db, row.game, row.eid, row.email_hash)) return reply(json(200, { ok: true, covered: true, paid: true, game: row.game, gameName: GAME_NAMES[row.game] }));
       const email = await unsealText(env, row.email_sealed);
       const f = await figures(mnp, email, row.game, row.item);
       if (!f) return reply(fail(404, "no_item", MSG.noItem));
@@ -200,12 +216,16 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     const me = await whoIs(req, env, now);
     if (!me) return reply(fail(401, "sign_in", MSG.signIn, { signIn: env.CONSOLE_ORIGIN }));
 
+    // anything the wallet left half done is finished whenever somebody looks at the pay screen (no separate timer is needed to start)
+    if (path === "/pay/quote" || path === "/pay/check") { try { await walletOf(env, mnp, doFetch, now).retryStuck(); } catch { /* the next look tries again */ } }
     if (req.method === "GET" && path === "/pay/quote") {
       const a = asks({ game: url.searchParams.get("game"), eid: url.searchParams.get("eid"), item: url.searchParams.get("item") });
       if (!a || !origins(env)[a.game]) return reply(fail(400, "invalid", MSG.bad));
+      if (await toldPaid(db, a.game, a.eid, me.emailHash)) return reply(json(200, { ok: true, paid: true, game: a.game, eid: a.eid }));
       const f = await figures(mnp, me.email, a.game, a.item);
       if (!f) return reply(fail(404, "no_item", MSG.noItem));
-      return reply(json(200, { ok: true, game: a.game, gameName: GAME_NAMES[a.game], eid: a.eid, item: a.item, label: f.label, price: await worth(mnp, f.price), balance: await worth(mnp, f.have), short: await worth(mnp, f.short), enough: f.short === 0 }));
+      const open = await db.prepare("SELECT 1 AS x FROM pay_order WHERE game=? AND eid=? AND email_hash=? AND state='open' AND created_ms>?").bind(a.game, a.eid, me.emailHash, now - 2 * 3600_000).first();
+      return reply(json(200, { ok: true, paid: false, waiting: !!open, game: a.game, gameName: GAME_NAMES[a.game], eid: a.eid, item: a.item, label: f.label, price: await worth(mnp, f.price), balance: await worth(mnp, f.have), short: await worth(mnp, f.short), enough: f.short === 0 }));
     }
 
     if (req.method === "POST" && path === "/pay/pay") {
@@ -230,7 +250,7 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
       if (path === "/pay/buy") return reply(await startBuy(env, mnp, db, now, { email: me.email, emailHash: me.emailHash, game: a.game, eid: a.eid, item: a.item, short: f.short }));
       const t = [...crypto.getRandomValues(new Uint8Array(24))].map((x) => x.toString(16).padStart(2, "0")).join("");
       await db.prepare("INSERT INTO pay_link(token_hash,email_hash,email_sealed,game,eid,item,expires_ms) VALUES(?,?,?,?,?,?,?)").bind(await sha256hex("paylink|" + t), me.emailHash, await sealText(env, me.email), a.game, a.eid, a.item, now + LINK_MS).run();
-      return reply(json(200, { ok: true, url: `${env.CONSOLE_ORIGIN}/pay-link.html?t=${t}`, expiresMs: now + LINK_MS }));
+      return reply(json(200, { ok: true, url: `${env.CONSOLE_ORIGIN}/pay/${t}`, expiresMs: now + LINK_MS }));
     }
 
     if (req.method === "POST" && path === "/pay/check") { // backup for the notice: ask Moneypenny, and tell the game if the buy is paid

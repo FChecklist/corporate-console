@@ -1,0 +1,5 @@
+/* the secure payment window, on top of the payee page */
+.overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(15, 20, 30, .55); display: flex; align-items: center; justify-content: center; padding: 12px; }
+.frame { background: var(--surface, #fff); border-radius: 14px; width: min(520px, 100%); height: min(720px, 100%); display: flex; flex-direction: column; gap: 8px; padding: 10px; box-sizing: border-box; }
+.frame iframe { flex: 1; width: 100%; border: 0; border-radius: 8px; background: #fff; }
+.frame button { align-self: flex-end; }

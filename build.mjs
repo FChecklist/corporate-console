@@ -57,7 +57,7 @@ export function headersFile(cfg, env) {
     "font-src 'self'",
     "img-src 'self' data:",
     `connect-src 'self' ${origins.join(" ")}`,
-    `frame-src ${origins.map((o) => o + "/screenview/").join(" ")}`,
+    `frame-src ${[...origins.map((o) => o + "/screenview/"), ...(((cfg.payframeOrigins || {})[env]) || [])].join(" ")}`, // plus the secure payment window (the payframe of the payment company), shown on top of the console page
     "frame-ancestors 'none'",
     "base-uri 'none'",
     "form-action 'self'",

@@ -178,8 +178,8 @@ test("payment link: the payee sees only an amount due (no credits balance, no e-
   try {
     w.fake.give(w.alice.email, 2000);
     const l = await w.call("POST", "/pay/link", ASK);
-    expect(l.json.url).toMatch(/^https:\/\/console\.test\/pay-link\.html\?t=[0-9a-f]{48}$/);
-    const t = new URL(l.json.url).searchParams.get("t")!;
+    expect(l.json.url).toMatch(/^https:\/\/console\.test\/pay\/[0-9a-f]{48}$/);
+    const t = l.json.url.split("/pay/")[1];
     const info = await w.call("GET", "/pay/link/info?t=" + t, undefined, { cookie: false });
     expect(info.json.due).toEqual({ credits: 3000, usd: "30.00", inrMinor: 210000 }); expect(info.json.gameName).toBe("Corporate Bingo");
     const text = JSON.stringify(info.json); expect(text).not.toContain(w.alice.email); expect(info.json.balance).toBeUndefined(); expect(text).not.toContain('"credits":2000');
@@ -216,4 +216,56 @@ test("the 2-minute job exists and does nothing while the step is dark", async ()
 test("game names here are the names in config/games.json", () => {
   const cfg = JSON.parse(readFileSync(new URL("../config/games.json", import.meta.url), "utf8")).games;
   expect(Object.fromEntries(cfg.map((g: any) => [g.id, g.name]))).toEqual(GAME_NAMES);
+});
+
+// ---- seamless: everything the organizer, host and payee see is a console screen ----
+test("the screen flips to Paid by itself: while the buy is open the quote says 'waiting'; after the notice (even on a reopened tab) it says 'paid'; the payee's page says paid too", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 2000);
+    const l = await w.call("POST", "/pay/link", ASK); const t = l.json.url.split("/pay/")[1];
+    await w.call("POST", "/pay/buy", ASK);
+    const q1 = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250"); expect(q1.json.paid).toBe(false); expect(q1.json.waiting).toBe(true);
+    await w.event(w.fake.complete("GAME-bingo-WAIT001-3000"));
+    const q2 = await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250"); expect(q2.json).toMatchObject({ ok: true, paid: true });
+    const i = await w.call("GET", "/pay/link/info?t=" + t, undefined, { cookie: false }); expect(i.json).toMatchObject({ ok: true, covered: true, paid: true });
+  } finally { w.stop(); }
+});
+
+test("the payee's link is a console page: /pay/<token> serves the one payee page (no redirect, no other site)", async () => {
+  const w = await world();
+  try {
+    const asked: string[] = [];
+    const assets = async (p: string) => { asked.push(p); return new Response("<html>payee page</html>", { status: 200 }); };
+    const r = await handlePay(new Request(CONSOLE + "/pay/" + "a".repeat(48)), w.env, w.h.clock.ms, { mnp: w.fake.mnp, assets });
+    expect(r.status).toBe(200); expect(await r.text()).toContain("payee page"); expect(asked).toEqual(["/pay-link.html"]); expect(r.headers.get("location")).toBe(null);
+  } finally { w.stop(); }
+});
+
+test("the organizer's e-mail is not kept in plain words in the wallet's order rows", async () => {
+  const w = await world();
+  try {
+    w.fake.give(w.alice.email, 6000); await w.call("POST", "/pay/pay", ASK);
+    const rows = w.raw.query("SELECT row_json FROM wallet_order").all() as any[];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows) expect(r.row_json.toLowerCase()).not.toContain(w.alice.email.toLowerCase());
+  } finally { w.stop(); }
+});
+
+test("error words: nothing the organizer or payee reads names the backend (no 'Moneypenny site', 'API', 'IT Services', 'Razorpay', 'server', 'error')", async () => {
+  const w = await world();
+  try {
+    const seen: string[] = [];
+    const note = (r: any) => { if (r?.json?.message) seen.push(r.json.message); };
+    w.fake.state.down = true;
+    note(await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250")); note(await w.call("POST", "/pay/pay", ASK)); note(await w.call("POST", "/pay/buy", ASK)); note(await w.call("POST", "/pay/link", ASK));
+    w.fake.state.down = false;
+    note(await w.call("GET", "/pay/quote?game=bingo&eid=WAIT001&item=250", undefined, { cookie: false })); note(await w.call("GET", "/pay/link/info?t=" + "0".repeat(48), undefined, { cookie: false }));
+    note(await w.call("POST", "/pay/pay", { game: "x" })); note(await w.call("POST", "/pay/pay", ASK)); // short of credits
+    w.fake.give(w.alice.email, 6000); note(await w.call("POST", "/pay/buy", ASK)); note(await w.call("GET", "/pay/nothing"));
+    const src = readFileSync(new URL("../functions/_lib/pay-core.ts", import.meta.url), "utf8");
+    for (const m of src.match(/^  [a-zA-Z]+: "[^"]+",$/gm) || []) seen.push(m);
+    expect(seen.length).toBeGreaterThan(8);
+    for (const s of seen) expect(s).not.toMatch(/moneypenny|\bapi\b|it services|razorpay|payu|server|exception|\berror\b|failed|invalid|undefined/i);
+  } finally { w.stop(); }
 });
