@@ -28,6 +28,7 @@ const json = (status: number, body: unknown, extra: Record<string, string> = {})
 const MSG = {
   busy: "Credits are refreshing. Nothing has been taken from you. Please try again in a few minutes.",
   notOpen: "Paying for games is not open yet. Please check again soon.",
+  csrf: "This request did not come from a Corporate Games page. Please open the game from the console and try again.",
   signIn: "Please sign in to your console to pay for your game.",
   noItem: "This game size is not on the price list yet. Please try again later.",
   enough: "You already have enough credits for this game.",
@@ -49,10 +50,12 @@ const fail = (status: number, error: string, message: string, extra: Record<stri
 const busy = () => fail(503, "busy", MSG.busy);
 
 function origins(env: Env): Record<string, string> { try { return JSON.parse(env.GAME_ORIGINS); } catch { return {}; } }
+/** the pages that may call the signed-in pay routes: the console (also its other addresses) and the games */
+function pageOrigins(env: Env): string[] { return [env.CONSOLE_ORIGIN, ...String(env.CONSOLE_ALT_ORIGINS || "").split(",").map((x) => x.trim()).filter(Boolean), ...Object.values(origins(env))] as string[]; }
 function cors(env: Env, req: Request): Record<string, string> {
   const o = req.headers.get("origin") || "";
-  const ok = !!o && ([env.CONSOLE_ORIGIN, ...Object.values(origins(env))] as string[]).includes(o);
-  return ok ? { "access-control-allow-origin": o, "access-control-allow-credentials": "true", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-allow-headers": "content-type", vary: "origin" } : { vary: "origin" };
+  const ok = !!o && pageOrigins(env).includes(o);
+  return ok ? { "access-control-allow-origin": o, "access-control-allow-credentials": "true", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-allow-headers": "content-type, x-console", vary: "origin" } : { vary: "origin" };
 }
 
 /** The signed client to Moneypenny (API.md "Signing"). Three seconds at most per call. */
@@ -227,6 +230,8 @@ export async function handlePay(req: Request, env: Env, now: number, deps: PayDe
     }
 
     // ---- everything below is the signed-in organizer ----
+    // The cookie is sent on same-site calls from any corporatetambola.com page, so a page that is not ours must not be able to act as the organizer: a custom header (it cannot be sent cross-site without a permission check that only our pages pass) and, when the browser says where the call comes from, that place must be the console or a game.
+    { const o = req.headers.get("origin"); if (req.headers.get("x-console") !== "1" || (o && !pageOrigins(env).includes(o))) return reply(fail(403, "csrf", MSG.csrf)); }
     const me = await whoIs(req, env, now);
     if (!me) return reply(fail(401, "sign_in", MSG.signIn, { signIn: env.CONSOLE_ORIGIN }));
     const gp = (a: { game: string; eid: string; item: string; price?: number }) => ({ order_ref: a.eid, product: a.game, item: a.item, email: me.email, ...(a.price ? { credits: a.price } : {}) }); // credits = the price the screen showed: if the list moved since, Moneypenny says so instead of charging a price nobody saw

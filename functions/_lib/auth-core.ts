@@ -178,8 +178,9 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
     if (!demo) {
       try { await sendMail(env, email, `Your sign-in code is ${code}`, `Your code is ${code}. It works for ${CODE_MINUTES} minutes.\n\nOr open this link and press the button:\n${env.CONSOLE_ORIGIN}/signin.html?t=${link}\n\nIf you did not ask for this, you can ignore this e-mail.`); }
       catch (e: any) {
-        // The e-mail did not leave. The new code is useless (nobody has it): put back what the person held before, so an earlier e-mail still works, and give back the try, so a bad hour at the mail service never locks the person out.
+        // A definite refusal: the e-mail did not leave. The new code is useless (nobody has it): put back what the person held before, so an earlier e-mail still works, and give back the try, so a bad hour at the mail service never locks the person out.
         console.error("sign-in mail not sent: " + String(e?.name === "TimeoutError" || e?.name === "AbortError" ? "mail timeout" : e?.message || "mail failed").slice(0, 80)); // no address, no code: only why
+        if (e?.name === "TimeoutError" || e?.name === "AbortError") return fail(502, "mail_slow", "The e-mail is taking longer than usual and may still arrive. Please wait a minute before asking for another one."); // the mail service may have taken the mail: the code in it must still work, so nothing is put back or taken away
         if (prev) await tables(env).prepare("UPDATE login_code SET email_sealed=?, code_hash=?, link_hash=?, expires_ms=?, attempts=?, sent_ms=?, consent_ms=? WHERE email_hash=? AND code_hash=?").bind(prev.email_sealed, prev.code_hash, prev.link_hash, prev.expires_ms, prev.attempts, prev.sent_ms, prev.consent_ms, eh, codeHash).run();
         else await tables(env).prepare("DELETE FROM login_code WHERE email_hash=? AND code_hash=?").bind(eh, codeHash).run();
         await tables(env).prepare("UPDATE rate SET n=CASE WHEN n>0 THEN n-1 ELSE 0 END WHERE k=?").bind("mail:" + eh).run();

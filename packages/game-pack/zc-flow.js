@@ -734,7 +734,7 @@
   const payBase = () => consoleBase(G, location.search, location.hostname);
   async function payCall(method, path, body) {
     try {
-      const r = await fetch(payBase() + path, { method, credentials: "include", headers: { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+      const r = await fetch(payBase() + path, { method, credentials: "include", headers: { "content-type": "application/json", "x-console": "1" }, body: body === undefined ? undefined : JSON.stringify(body) });
       return { status: r.status, j: (await r.json().catch(() => ({}))) || {} };
     } catch { return { status: 503, j: { ok: false, error: "busy", message: PAY.busy } }; }
   }

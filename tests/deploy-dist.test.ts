@@ -76,10 +76,12 @@ test("make-secrets: a signing key the console can really sign with, a 64-hex pep
 test("runbook step 2 is a copy-paste list: every command, in order, with who gives which secret", () => {
   const doc = readFileSync(join(import.meta.dir, "../docs/GO_LIVE_RUNBOOK.md"), "utf8");
   const step = doc.slice(doc.indexOf("## Step 2."), doc.indexOf("## Step 3."));
-  const order = ["$W d1 create corporate-console", "sed -i \"s/REPLACE_AFTER_THE_DATABASE_EXISTS/$ID/\" wrangler.toml apps/cron/wrangler.toml", "$W d1 execute corporate-console --remote --file=migrations/0001_console.sql", "CONSOLE_ORIGIN = \"https://corporate-console.pages.dev\"", "node tools/deploy/make-secrets.mjs", "node build.mjs --env preview", "node tools/deploy/check-dist.mjs", "$W pages project create corporate-console", "$W pages secret put CONSOLE_SIGNING_KEY --project-name corporate-console", "$W pages secret put SESSION_PEPPER --project-name corporate-console", "$W pages secret put RESEND_API_KEY --project-name corporate-console", "$W pages deploy dist --project-name corporate-console --branch main --commit-dirty=true", "cd apps/cron", "$W deploy", "$W secret put CONSOLE_SIGNING_KEY", "$W secret put SESSION_PEPPER", "TEST_MODE"];
+  const order = ["$W d1 create corporate-console", "sed -i \"s/REPLACE_AFTER_THE_DATABASE_EXISTS/$ID/\" wrangler.toml apps/cron/wrangler.toml", "$W d1 execute corporate-console --remote --file=migrations/0001_console.sql", "grep -n \"CONSOLE_ORIGIN", "node tools/deploy/make-secrets.mjs", "node build.mjs --env preview", "node tools/deploy/check-dist.mjs", "$W pages project create corporate-console", "$W pages secret put CONSOLE_SIGNING_KEY --project-name corporate-console", "$W pages secret put SESSION_PEPPER --project-name corporate-console", "$W pages secret put RESEND_API_KEY --project-name corporate-console", "$W pages deploy dist --project-name corporate-console --branch main --commit-dirty=true", "cd apps/cron", "$W deploy", "$W secret put CONSOLE_SIGNING_KEY", "$W secret put SESSION_PEPPER", "TEST_MODE"];
   let at = -1;
   for (const c of order) { const i = step.indexOf(c, at + 1); expect([c, i > at]).toEqual([c, true]); at = i; }
   expect(step).toContain("The owner gives ONE thing");
+  expect(step).not.toContain("sed -i 's#CONSOLE_ORIGIN\|CONSOLE_ALT_ORIGINS"); // MEDIUM-3: the runbook must never set the console address back to pages.dev
+  expect(step).not.toMatch(/CONSOLE_ORIGIN\|CONSOLE_ALT_ORIGINS = \"https:\/\/corporate-console\.pages\.dev\"/);
   expect(step).toContain("`RESEND_API_KEY`");
   expect(/(re_[A-Za-z0-9]{20,}|[A-Fa-f0-9]{40,})/.test(step)).toBe(false); // no secret value
 });

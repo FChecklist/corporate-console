@@ -1,5 +1,10 @@
 [
  {
+  "version": "0.2.0",
+  "releasedAt": "2026-11-20T00:00:00.000Z",
+  "note": "smoke-test fixes (sign-in mail, payee page, pay note) and audit fixes: paid size, pay-route guard, slow mail, runbook"
+ },
+ {
   "version": "0.1.0",
   "releasedAt": "2026-11-20T12:33:04.830Z",
   "note": "first complete master console (local build, not live)"

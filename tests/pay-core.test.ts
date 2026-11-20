@@ -34,7 +34,7 @@ async function world(o: { flag?: boolean; catalogue?: any[] } = {}) {
   };
   await sign(alice.email, alice.sub);
   const call = (method: string, path: string, body?: unknown, o2: { cookie?: boolean; headers?: Record<string, string>; raw?: string } = {}) =>
-    handlePay(new Request(CONSOLE + path, { method, headers: { "content-type": "application/json", origin: h.origin, ...(o2.cookie === false ? {} : { cookie: "cbsess=" + SID }), ...(o2.headers || {}) }, body: o2.raw ?? (body === undefined ? undefined : JSON.stringify(body)) }), env, h.clock.ms, { mnp: fake.mnp, fetch: doFetch }).then(async (r) => ({ status: r.status, json: await r.json().catch(() => null) as any, headers: r.headers }));
+    handlePay(new Request(CONSOLE + path, { method, headers: { "content-type": "application/json", "x-console": "1", origin: h.origin, ...(o2.cookie === false ? {} : { cookie: "cbsess=" + SID }), ...(o2.headers || {}) }, body: o2.raw ?? (body === undefined ? undefined : JSON.stringify(body)) }), env, h.clock.ms, { mnp: fake.mnp, fetch: doFetch }).then(async (r) => ({ status: r.status, json: await r.json().catch(() => null) as any, headers: r.headers }));
   const state = (eid: string) => h.raw.query("SELECT status, pay_state FROM engagement WHERE id=?").get(eid) as any;
   const event = async (payload: any, secret = "whsec", ts = h.clock.ms) => {
     const text = JSON.stringify(payload);
@@ -46,7 +46,7 @@ async function world(o: { flag?: boolean; catalogue?: any[] } = {}) {
     raw.query("INSERT OR REPLACE INTO console_email(email_hash,email_sealed,created_ms,last_seen_ms,consent_ms) VALUES(?,?,?,?,?)").run(hash, await sealText(env, email), h.clock.ms, h.clock.ms, h.clock.ms);
     raw.query("INSERT OR REPLACE INTO session(sid_hash,email_hash,created_ms,last_seen_ms,expires_ms) VALUES(?,?,?,?,?)").run(await sha256hex("sid|" + "b".repeat(64)), hash, h.clock.ms, h.clock.ms, h.clock.ms + 86400_000);
   };
-  const callAs = (sid: string, method: string, path: string, body?: unknown) => handlePay(new Request(CONSOLE + path, { method, headers: { "content-type": "application/json", origin: h.origin, cookie: "cbsess=" + sid }, body: body === undefined ? undefined : JSON.stringify(body) }), env, h.clock.ms, { mnp: fake.mnp, fetch: doFetch }).then(async (r) => ({ status: r.status, json: await r.clone().json().catch(() => ({})) as any }));
+  const callAs = (sid: string, method: string, path: string, body?: unknown) => handlePay(new Request(CONSOLE + path, { method, headers: { "content-type": "application/json", "x-console": "1", origin: h.origin, cookie: "cbsess=" + sid }, body: body === undefined ? undefined : JSON.stringify(body) }), env, h.clock.ms, { mnp: fake.mnp, fetch: doFetch }).then(async (r) => ({ status: r.status, json: await r.clone().json().catch(() => ({})) as any }));
   return { ctx, h, env, fake, call, signAs, callAs, state, event, hosts, alice, raw, stop: () => server.stop(true) };
 }
 const ASK = { game: "bingo", eid: "WAIT001", item: "250", price: 5000 };

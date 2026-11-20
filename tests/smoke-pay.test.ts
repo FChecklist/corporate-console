@@ -33,8 +33,10 @@ async function world(o: { game?: string; size?: number; flag?: boolean; resize?:
     h.raw.run("UPDATE engagement SET cap=? WHERE id=?", [size, EID]);
     hosts[g] = h; origins[g] = h.origin;
   }
+  const sent = { notices: 0 };
   const routed = (async (u: any, init: any) => {
     const url = new URL(String(u)), g = GAMES.find((x) => origins[x] === url.origin);
+    if (url.pathname === "/api/console/paid") sent.notices++; // how many signed "paid" notices the console really sent to a game
     if (!g) throw new Error("the console called an address that is not a game: " + url.origin);
     return (await handleConsole(hosts[g].adapter, new Request(String(u), init), hosts[g].env)) ?? new Response("{}", { status: 404 });
   }) as typeof fetch;
@@ -50,7 +52,7 @@ async function world(o: { game?: string; size?: number; flag?: boolean; resize?:
   };
   await sign(alice.email, alice.sub);
   const call = (method: string, path: string, body?: unknown, o2: { sid?: string | null; headers?: Record<string, string>; raw?: string; at?: number } = {}) =>
-    handlePay(new Request(CONSOLE + path, { method, headers: { "content-type": "application/json", origin: CONSOLE, ...(o2.sid === null ? {} : { cookie: "cbsess=" + (o2.sid ?? SID) }), ...(o2.headers || {}) }, body: o2.raw ?? (body === undefined ? undefined : JSON.stringify(body)) }), env, o2.at ?? now(), { mnp: fake.mnp, fetch: routed, assets: async () => new Response("<html></html>", { headers: { "content-security-policy": "default-src 'none'" } }) }).then(async (r) => ({ status: r.status, json: (await r.clone().json().catch(() => null)) as any, text: await r.text(), headers: r.headers }));
+    handlePay(new Request(CONSOLE + path, { method, headers: { "content-type": "application/json", "x-console": "1", origin: CONSOLE, ...(o2.sid === null ? {} : { cookie: "cbsess=" + (o2.sid ?? SID) }), ...(o2.headers || {}) }, body: o2.raw ?? (body === undefined ? undefined : JSON.stringify(body)) }), env, o2.at ?? now(), { mnp: fake.mnp, fetch: routed, assets: async () => new Response("<html></html>", { headers: { "content-security-policy": "default-src 'none'" } }) }).then(async (r) => ({ status: r.status, json: (await r.clone().json().catch(() => null)) as any, text: await r.text(), headers: r.headers }));
   const event = async (payload: any, o2: { secret?: string; ts?: number; tamper?: boolean } = {}) => {
     const ts = o2.ts ?? now(), text = JSON.stringify(payload);
     const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(o2.secret ?? "whsec"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -64,7 +66,7 @@ async function world(o: { game?: string; size?: number; flag?: boolean; resize?:
   const paidRows = () => host.raw.query("SELECT COUNT(*) c FROM console_paid WHERE state='paid'").get() as any;
   const note = () => raw.query("SELECT order_ref, item, state FROM pay_order").all() as any[];
   const buyAndPay = async (a = ask()) => { const b = await call("POST", "/pay/buy", a); if (!b.json?.frame) return { b }; const oid = b.json.frame.orderId; const c = await call("POST", "/pay/confirm", { ...a, orderId: oid, resp: fake.windowAnswer(oid) }); return { b, c, oid }; };
-  return { ctx, host, hosts, env, raw, fake, call, event, state, bal, ask, Q, sign, now, game, size, alice, paidRows, note, buyAndPay, routed };
+  return { ctx, host, hosts, env, raw, fake, call, event, state, bal, ask, Q, sign, now, game, size, alice, paidRows, note, buyAndPay, routed, sent };
 }
 type W = Awaited<ReturnType<typeof world>>;
 
@@ -340,3 +342,43 @@ for (const route of ["quote", "check", "event"] as const) {
     expect([200, 202, 409]).toContain(r.status);
   });
 }
+
+// ---------- audit MEDIUM-4: a page that is not ours cannot act as the signed-in organizer ----------
+test("M-4: every signed-in pay route refuses a call without the console header or from a page that is not the console or a game; ours still work; payee routes and the signed notice are unaffected", async () => {
+  const w = await world({ game: "bingo", size: 250 });
+  w.fake.give(w.alice.email, 100000);
+  const routes: Array<[string, string, unknown]> = [["GET", w.Q(), undefined], ["POST", "/pay/pay", w.ask()], ["POST", "/pay/buy", w.ask()], ["POST", "/pay/confirm", { ...w.ask(), orderId: "x", resp: {} }], ["POST", "/pay/link", w.ask()], ["POST", "/pay/check", w.ask()]];
+  for (const [m, p, b] of routes) {
+    const noHeader = await w.call(m, p, b, { headers: { "x-console": "" } });
+    expect([p, noHeader.status, noHeader.json?.error]).toEqual([p, 403, "csrf"]);
+    const foreign = await w.call(m, p, b, { headers: { origin: "https://blog.corporatetambola.com" } });
+    expect([p, foreign.status, foreign.json?.error]).toEqual([p, 403, "csrf"]);
+    const ours = await w.call(m, p, b); // the console page, header present
+    expect([p, ours.json?.error === "csrf"]).toEqual([p, false]);
+    const game = await w.call(m, p, b, { headers: { origin: w.host.origin } }); // the game's own page
+    expect([p, game.json?.error === "csrf"]).toEqual([p, false]);
+  }
+  const w2 = await world({ game: "bingo", size: 250 });
+  const lk = await w2.call("POST", "/pay/link", w2.ask()); const t = lk.json.url.split("/pay/")[1];
+  expect((await w2.call("GET", "/pay/link/info?t=" + t, undefined, { sid: null, headers: { "x-console": "" } })).json.error).not.toBe("csrf"); // the payee has no cookie: nothing to forge
+});
+
+test("L-1 (audit): the payee page script has no 'we', 'our', 'us' in any sentence it shows (checked line by line, so one odd quote cannot hide a line)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const hits: string[] = [], BS = String.fromCharCode(92), LIT = new RegExp('"((?:[^"' + BS + BS + ']|' + BS + BS + '.)*)"', "g"); // a whole string literal, quotes paired from the left
+  for (const f of ["public/pay-link.js", "packages/game-pack/zc-flow.js"]) for (const line of readFileSync(new URL("../" + f, import.meta.url), "utf8").split(String.fromCharCode(10))) {
+    if (!/pay|Pay|e-mail|payment/.test(line)) continue;
+    for (const m of line.matchAll(LIT)) if (m[0].length > 14 && / /.test(m[1]) && /\b(we|our|ours|us)\b/.test(m[1]) && !/^(https?:|[a-z-]+ )/.test(m[1])) hits.push(f + ": " + m[1]);
+  }
+  expect(hits).toEqual([]);
+});
+
+// ---------- audit (1 of 2) MEDIUM-2: "the game is told once" is pinned by counting the notices actually sent ----------
+test("N: once the game is told, every later look (check, quote, signed notice, payee page) sends it no second notice", async () => {
+  const w = await world({ game: "bingo", size: 250 });
+  w.fake.give(w.alice.email, 100000);
+  expect((await w.call("POST", "/pay/pay", w.ask())).json.paid).toBe(true);
+  expect(w.sent.notices).toBe(1);
+  for (let i = 0; i < 3; i++) { await w.call("POST", "/pay/check", w.ask()); await w.call("GET", w.Q()); await w.event(w.fake.complete ? { id: "e" + i, type: "game.paid", created_at: 1, data: { game_ref: EID, product: "bingo", item: "250" } } : {}); }
+  expect(w.sent.notices).toBe(1);
+});

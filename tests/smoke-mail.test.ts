@@ -3,6 +3,7 @@
 // SMOKE 20 NOV 2026, owner steps 18 and 19 (e-mails to the organizer, the data sent to the organizer): the end-of-game report for all six games, every recipient shape, the wording of every mail the console sends, and what happens when the mail service fails.
 // Resend is a stand-in; the database is the real schema. One test = one cell of docs/SMOKE-20NOV-CONSOLE.md.
 import { test, expect, setDefaultTimeout } from "bun:test";
+import { fileURLToPath } from "node:url";
 import { makeD1 } from "./support/d1-sqlite";
 import { handleReport, retryHeldReports, resetEnsured, RETRY_AFTER_MS } from "../functions/_lib/report-core";
 import { handleAuth, recordedMail, type Env } from "../functions/_lib/auth-core";
@@ -116,7 +117,7 @@ test("M-report-fail-status the failure notice names the mail service's own error
 test("M-inventory the console sends exactly three kinds of mail to a person: the sign-in code, the end-of-game report (and its resend), and a no-names notice to the owner; none after create, publish or pay", async () => {
   const { readFileSync, readdirSync } = await import("node:fs");
   const files: string[] = []; const walk = (d: string) => { for (const e of readdirSync(d, { withFileTypes: true })) { const p = d + "/" + e.name; if (e.isDirectory()) { if (!/node_modules/.test(e.name)) walk(p); } else if (/\.(ts|js|mjs)$/.test(e.name)) files.push(p); } };
-  for (const d of ["functions", "public", "packages/bridge/src", "packages/game-pack", "apps"]) walk(new URL("../" + d, import.meta.url).pathname);
+  for (const d of ["functions", "public", "packages/bridge/src", "packages/game-pack", "apps"]) walk(fileURLToPath(new URL("../" + d, import.meta.url)));
   const senders = files.filter((f) => /sendMail\(|sendMailEx\(|api\.resend\.com/.test(readFileSync(f, "utf8"))).map((f) => f.split("/").slice(-2).join("/")).sort();
   expect(senders).toEqual(["_lib/auth-core.ts", "_lib/report-core.ts"]);
 });

@@ -301,6 +301,18 @@ test("A-91 a mail service that never answers cannot hang the sign-in: the call h
     expect(calls[0].signal).toBeTruthy(); // an AbortSignal with a time limit was handed to the mail call
   });
 });
+test("A-94 a mail that TIMES OUT may still arrive: the new code stays valid, the answer says so, and the try is not given back", async () => {
+  const s = await setup(live());
+  let code = "";
+  const timeout = Object.assign(new Error("The operation timed out."), { name: "TimeoutError" });
+  await withResend((n) => timeout, async (calls) => {
+    const r = await s.ask("asha\u0040acme-corp.in");
+    expect(r.status).toBe(502); expect(JSON.stringify(r.json ?? r.body ?? "")).toContain("may still arrive");
+    code = /code is (\d{6})/.exec(calls[0].body.text)![1];
+  });
+  expect((s.raw.query("SELECT COUNT(*) c FROM login_code").get() as any).c).toBe(1);
+  expect((await s.call("POST", "/auth/verify", { email: "asha\u0040acme-corp.in", code })).status).toBe(200); // the mail arrived late; its code works
+});
 test("A-92 a failed send leaves a trace for the owner: the status the mail service answered is logged (no address, no code)", async () => {
   const s = await setup(live()), logged: string[] = [], saved = console.error, savedWarn = console.warn, savedLog = console.log;
   console.error = console.warn = console.log = (...a: any[]) => { logged.push(a.join(" ")); };
@@ -310,7 +322,7 @@ test("A-92 a failed send leaves a trace for the owner: the status the mail servi
   expect(line).toMatch(/mail/i); expect(line).toMatch(/403/);
   expect(line).not.toMatch(/asha@|acme-corp/); expect(line).not.toMatch(/\b\d{6}\b/);
 });
-test("A-93 a failed send still counts against the hourly limit of that address (8), so five bad minutes cannot lock the person out for an hour", async () => {
+test("A-93 a failed send gives the try back, so five bad minutes at the mail service cannot lock the person out for an hour", async () => {
   const s = await setup(live());
   await withResend(() => new Response("{}", { status: 500 }), async () => {
     for (let i = 0; i < 8; i++) await s.ask("asha\u0040acme-corp.in", { ip: "7.7.7." + i });

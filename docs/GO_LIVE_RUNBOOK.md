@@ -71,12 +71,13 @@ grep -n database_id wrangler.toml apps/cron/wrangler.toml     # both lines must 
 $W d1 execute corporate-console --remote --file=migrations/0001_console.sql
 ```
 
-**2.4 Tell the console its own address.** On pages.dev the browser's Origin is `https://corporate-console.pages.dev`; the sign-in service refuses anything else (that is the protection against forged requests). So for THIS step set that address in both files. Step 9 sets it back to `https://console.corporatetambola.com`.
+**2.4 Check the console's own address (do NOT change it).** `wrangler.toml` already says `CONSOLE_ORIGIN = "https://console.corporatetambola.com"` and `CONSOLE_ALT_ORIGINS = "https://corporate-console.pages.dev"`. The sign-in service accepts both (the browser's Origin must be one of them: that is the protection against forged requests). Mails and payment links use the live address. Never set `CONSOLE_ORIGIN` back to the pages.dev address: sign-in mails and links would point at the wrong site. Only look:
 
 ```bash
-sed -i 's#CONSOLE_ORIGIN = "https://console.corporatetambola.com"#CONSOLE_ORIGIN = "https://corporate-console.pages.dev"#' wrangler.toml apps/cron/wrangler.toml
-grep -n CONSOLE_ORIGIN wrangler.toml apps/cron/wrangler.toml
+grep -n "CONSOLE_ORIGIN\|CONSOLE_ALT_ORIGINS" wrangler.toml apps/cron/wrangler.toml
 ```
+
+Check that the live address is first, that the custom domain `console.corporatetambola.com` is attached to this Pages project (Step 9), and that no dashboard variable of the same name overrides the file.
 
 **2.5 Make the two secrets you can make** (copy each line when asked in 2.7; the window then closes and they are gone):
 
