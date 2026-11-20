@@ -11,6 +11,7 @@ Full hand-overs: `C:\ct\test-sites\handover\2026-10-27\30-console-build-2026-10-
 ## Pay step (20 Nov 2026) - built locally, nothing deployed, no money moved
 Branch `claude/console-game-pay-step-91b60a`. Full description: `docs/PAY_STEP.md`.
 - **Exact commit to audit: `eceb9ce`** (Audit B fixes C-1 to C-11 on top of `1015205`, which FAILED audit B; the later STATE edit is docs only). Tests: 482 pass, 2 fail that are not from this work and fail identically on base `9ae7f55` (stale local `dist/`; Games bar hash). `tests/payframe-csp.test.ts` now parses and runs.
+- **DEPLOYED DARK 20 Nov 2026 (owner's own go in chat): Cloudflare Pages deployment `706f8e60` (commit 9c57a81, code = audited 3173ba7). Previous / rollback id `7489a57e-72a7-4a35-b7b5-3e4b824cf23c` (commit 51f8d3c). Migration 0004 applied. PAY_VIA_MONEYPENNY not set (off): all /pay routes answer 503 not open. No secrets issued, no money.**
 - suiteRulesVersion 1.1
 - **Audits on the pay step: both PASS on `3173ba7` (A and B, 20 Nov 2026). Branch head `1a949d1` differs only in a timing-proof test.**
 - **N-1 fix (Audit B): commit `3173ba7`** on top of `eceb9ce`: payee page looks every 20 s, per-address look limit 400/hour, actions 60/hour; a test fails if the poll rate or limit is wrong. Quick re-audit requested. Also adds `docs/GAME_PAY_CONTRACT.md`. **Deploy NOT done**: the go reached this session only through peer messages, so it waits for the owner's own go.
