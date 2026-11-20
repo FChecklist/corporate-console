@@ -57,13 +57,13 @@ export function headersFile(cfg, env) {
     "font-src 'self'",
     "img-src 'self' data:",
     `connect-src 'self' ${origins.join(" ")}`,
-    `frame-src ${origins.map((o) => o + "/screenview/").join(" ")}`,
+    `frame-src ${[...origins.map((o) => o + "/screenview/"), ...(((cfg.payframeOrigins || {})[env]) || [])].join(" ")}`, // plus the secure payment window (the payframe of the payment company), shown on top of the console page
     "frame-ancestors 'none'",
     "base-uri 'none'",
     "form-action 'self'",
     "object-src 'none'",
   ].join("; ");
-  const common = ["  X-Content-Type-Options: nosniff", "  Referrer-Policy: no-referrer", "  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()", "  X-Frame-Options: DENY", `  Content-Security-Policy: ${csp}`];
+  const common = ["  X-Content-Type-Options: nosniff", "  Referrer-Policy: no-referrer", `  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(${["self", ...(((cfg.payframeOrigins || {})[env]) || []).map((o) => JSON.stringify(o))].join(" ")})`, "  X-Frame-Options: DENY", `  Content-Security-Policy: ${csp}`];
   return [
     "/*", ...common, "",
     "/auth/*", "  Cache-Control: no-store", "",

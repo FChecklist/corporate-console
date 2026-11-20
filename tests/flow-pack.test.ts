@@ -14,10 +14,10 @@ function page(descriptor = "", search = "?flow=new") {
   return win;
 }
 
-test("with no game descriptor the flow still draws its five steps, the top strip and a locked dashboard, and says the prizes are not available", () => {
+test("with no game descriptor the flow still draws its six steps, the top strip and a locked dashboard, and says the prizes are not available", () => {
   const win = page();
   const d = win.document;
-  expect(d.querySelectorAll(".zf-bar [data-step]").length).toBe(5);
+  expect(d.querySelectorAll(".zf-bar [data-step]").length).toBe(6);
   expect(d.querySelector(".zf-top").textContent).toContain("deleted within 24 hours of the game");
   expect(d.getElementById("zf-dash").hasAttribute("disabled")).toBe(true);
   expect(win.ZFLOW.housesOf(win)).toEqual([]);
@@ -59,7 +59,7 @@ test("Dashboard v2 pure parts: the waiting table shows a column only when somebo
   const m = F.shareMessage("Team party", "http://x/z?e=E1", "E1");
   expect(m).toContain("Game ID: E1"); expect(m).toContain("http://x/z?e=E1");
   expect(F.PAY_PRINT).toContain("claim it back (recommended)");
-  expect(F.PAY_PRINT).toContain("works for 7 days");
+  expect(F.PAY_PRINT).not.toMatch(/7 days/); // the real expiry comes from the link itself
 });
 
 test("the retro board uses the game's own title and size from its descriptor", () => {

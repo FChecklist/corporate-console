@@ -131,7 +131,7 @@ test("version.json has version, releasedAt and releasedAtIST from releases.json,
   const { istText } = await import("../build.mjs");
   build({ env: "preview", out: dir, version: rel.version, releasedAt: rel.releasedAt });
   const v = JSON.parse(readFileSync(join(dir, "version.json"), "utf8"));
-  expect(v.version).toBe("0.1.0");
+  expect(v.version).toBe(rel.version);
   expect(v.releasedAt).toBe(rel.releasedAt);
   expect(v.releasedAtIST).toMatch(/^\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}, \d{2}:\d{2} IST$/);
   expect(istText("2026-10-29T10:45:00.000Z")).toBe("29 Oct 2026, 16:15 IST");

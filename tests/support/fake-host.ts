@@ -55,6 +55,22 @@ export async function makeHost(o: { origin?: string; nowMs?: number; pubkeys?: "
       return r ? { org: r.org, kind: r.kind, eid: r.eid, createdBy: r.created_by } : null;
     },
     engagement: async (e, eid) => { const r = await db.prepare("SELECT org, name, ended FROM engagement WHERE id=?").bind(eid).first<any>(); return r ? { org: r.org, name: r.name, ended: !!r.ended } : null; },
+    // the reference of what every game's markPaid must do (docs/PAY_STEP.md): own tables decide, definite refusal changes nothing
+    payInfo: async (e, o) => { // read-only: the organizer's own game only (a host or a stranger is not the owner)
+      const g = await db.prepare("SELECT org, cap, status, pay_state FROM engagement WHERE id=?").bind(o.eid).first<any>();
+      const who = await db.prepare("SELECT org FROM organizer_email WHERE email_hash=?").bind(o.sub).first<any>();
+      const owner = !!(g && who && who.org === g.org);
+      return { owner, item: owner ? String(g.cap) : null, paid: owner && g.pay_state === "paid" };
+    },
+    markPaid: async (e, o) => {
+      const refuse = (m: string) => Object.assign(new Error(m), { definite: true });
+      const g = await db.prepare("SELECT org, cap, status FROM engagement WHERE id=?").bind(o.eid).first<any>();
+      const who = await db.prepare("SELECT org FROM organizer_email WHERE email_hash=?").bind(o.sub).first<any>();
+      if (!g || !who || who.org !== g.org) throw refuse("This game does not belong to the person who paid.");
+      if (String(g.cap) !== o.item) throw refuse("The size paid for is not the size of this game.");
+      if (g.status !== "waiting_payment") { if ((await db.prepare("SELECT pay_state FROM engagement WHERE id=?").bind(o.eid).first<any>())?.pay_state === "paid") return; throw refuse("This game is not waiting for payment."); } // already marked paid: success again (markPaid must be repeatable)
+      await db.prepare("UPDATE engagement SET status='ready', pay_state='paid' WHERE id=? AND status='waiting_payment'").bind(o.eid).run();
+    },
     listGames: async (e, a) => {
       const rows: any[] = [];
       const row = (g: any, role: string, nextAction: string) => ({ game: "bingo", eid: g.id, role, status: g.status, startMs: g.start_ms, cap: g.cap, pack: g.pack, name: g.name, payment: role === "cohost" ? { state: g.pay_state } : g.pay_minor ? { state: g.pay_state, amountMinor: g.pay_minor, currency: "INR" } : { state: g.pay_state }, invitedBy: role === "organizer" ? null : g.org_label, liveNow: g.status === "playing", nextAction, createdMs: g.created_ms });

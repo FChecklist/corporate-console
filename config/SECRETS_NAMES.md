@@ -12,3 +12,7 @@
 | `TABLE_PREFIX` | `""` = own database; `"con_"` = same four tables inside an existing database | `wrangler.toml` and `apps/cron/wrangler.toml` | plain variable |
 | `TEST_MODE` | `1` only on a test copy: demo logins demo1/2/3@xyz.in with code 123456, no mail | test copy only | plain variable |
 | `DB` | the console's D1 database `corporate-console` | `wrangler.toml` binding | binding |
+| `MNP_URL` | Moneypenny's address. The console calls ONLY Moneypenny for payment (never IT Services, never Razorpay) | `wrangler.toml` | plain variable |
+| `MNP_KEY`, `MNP_SECRET` | the console's spend key at Moneypenny (made by the owner's signed setup call; one product only) | `wrangler pages secret put` | secret |
+| `MNP_WEBHOOK_SECRET` | checks the signed "game paid" notice Moneypenny sends to `/pay/event` | `wrangler pages secret put` | secret |
+| `PAY_VIA_MONEYPENNY` | `1` opens the pay step (owner go only); anything else keeps `/pay/*` answering "not open yet" | `wrangler.toml` | plain variable |

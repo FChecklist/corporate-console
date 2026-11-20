@@ -24,6 +24,12 @@ export interface Env {
   STATS_OWNER_KEY?: string; // the owner key that reads /stats/summary and /stats/csv (Pages settings, never in the repo)
   FUNNEL_KEYS?: string; // JSON {"tambola":"<that game owner key>"}: lets the console read each game owner funnel route (Pages settings, never in the repo)
   HOME_ORIGIN?: string; // the home page that may report funnel steps, default https://home.corporatetambola.com
+  MNP_URL?: string; // Moneypenny's address (the ONLY payment system the console talks to)
+  MNP_KEY?: string; // the console's spend key id at Moneypenny (secret)
+  MNP_SECRET?: string; // its signing secret (secret)
+  MNP_WEBHOOK_SECRET?: string; // checks the 'game paid' notices Moneypenny sends (secret)
+  PAYFRAME_ORIGIN?: string; // where the secure payment window comes from (default: the IT Services pages address)
+  PAY_VIA_MONEYPENNY?: string; // "1" opens the pay step; anything else keeps it dark
   BOUNCE_ADDRESS?: string; // return-path / notice address, default hello@corporatetambola.com
 }
 
@@ -70,7 +76,7 @@ export async function unsealText(env: Env, sealed: string) {
 
 // ---- rate limits: fixed one-hour windows ----
 type Bumped = { ok: boolean; waitMin: number };
-async function bump(env: Env, key: string, limit: number, now: number): Promise<Bumped> {
+export async function bump(env: Env, key: string, limit: number, now: number): Promise<Bumped> {
   // ONE atomic statement: parallel requests cannot all read "not yet at the limit"
   const r = await tables(env).prepare("INSERT INTO rate(k,n,win_start_ms) VALUES(?,1,?) ON CONFLICT(k) DO UPDATE SET n=CASE WHEN ?-win_start_ms>=? THEN 1 ELSE n+1 END, win_start_ms=CASE WHEN ?-win_start_ms>=? THEN ? ELSE win_start_ms END RETURNING n, win_start_ms").bind(key, now, now, HOUR, now, HOUR, now).first<{ n: number; win_start_ms: number }>();
   return { ok: !!r && r.n <= limit, waitMin: r ? Math.max(1, Math.ceil((r.win_start_ms + HOUR - now) / 60_000)) : 60 };

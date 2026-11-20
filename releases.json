@@ -1,7 +1,12 @@
 [
  {
+  "version": "0.1.1",
+  "releasedAt": "2026-11-20T00:00:00.000Z",
+  "note": "bridge fix: a paid notice that failed once is finished by the next try after 30 s (re-vendor the bridge into each game)"
+ },
+ {
   "version": "0.1.0",
-  "releasedAt": "2026-10-30T03:22:26.390Z",
+  "releasedAt": "2026-11-20T12:33:04.830Z",
   "note": "first complete master console (local build, not live)"
  }
 ]
