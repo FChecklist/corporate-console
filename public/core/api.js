@@ -39,10 +39,14 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
   }
   const noteFor = (notes, game) => notes.find((n) => n.game === game && n.assertion)?.assertion || null;
 
+  const keyTrouble = {}; // game id -> "unreachable" when the last attempt to get a key failed only because the game did not answer
+  /** why headersFor gave nothing: the game did not answer (say so: signing in again would not help) or the person has no key (sign in again) */
+  const noKey = (game) => (keyTrouble[game] === "unreachable" ? "unreachable" : "no-key");
   /** header values for a game call: the key, plus a fresh one-time confirmation when the action is a high-impact one */
   async function headersFor(game, eid, stepAction) {
     let k = vault.keyFor(game, eid, now());
-    if (!k) { await connect({ only: [game] }); k = vault.keyFor(game, eid, now()); } // keys last 2 hours: ask for new ones once
+    keyTrouble[game] = null;
+    if (!k) { const c = await connect({ only: [game] }); k = vault.keyFor(game, eid, now()); keyTrouble[game] = c.results?.[0]?.error === "unreachable" ? "unreachable" : null; } // keys last 2 hours: ask for new ones once
     if (!k) return null;
     const h = { "content-type": "application/json", "x-organizer": k.key };
     if (stepAction) {
@@ -117,7 +121,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     async handoff(game, { eid = null, target = "organizer", free = false } = {}) {
       const g = byId[game]; if (!g) return { ok: false, error: "unknown-game" };
       const h = await headersFor(game, eid);
-      if (!h) return { ok: false, error: "no-key" };
+      if (!h) return { ok: false, error: noKey(game) };
       const r = await call(g.origin + "/api/console/handoff", { method: "POST", headers: h, body: JSON.stringify(target === "new" ? (free ? { target, free: true } : { target }) : { eid, target }) });
       if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused", message: r.json?.message };
       const url = String(r.json?.url || "");
@@ -136,7 +140,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     async control(game, eid, op) {
       const g = byId[game]; if (!g || !["start", "pause", "resume"].includes(op)) return { ok: false, error: "invalid" };
       const h = await headersFor(game, eid);
-      if (!h) return { ok: false, error: "no-key" };
+      if (!h) return { ok: false, error: noKey(game) };
       const r = await call(g.origin + "/api/console/control", { method: "POST", headers: h, body: JSON.stringify({ eid, op }) });
       if (!r.ok) return { ok: false, error: r.status === 403 ? "role" : r.status === 409 ? "state" : r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
       return { ok: true, paused: r.json?.paused === true, state: String(r.json?.state || "") };
@@ -145,7 +149,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     async earlier(game, eid) {
       const g = byId[game]; if (!g) return { ok: false, error: "unknown-game" };
       const h = await headersFor(game, eid);
-      if (!h) return { ok: false, error: "no-key" };
+      if (!h) return { ok: false, error: noKey(game) };
       const r = await call(g.origin + "/api/console/earlier", { method: "POST", headers: h, body: JSON.stringify({ eid }) });
       if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
       return { ok: true, old: r.json };
@@ -157,7 +161,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
         if (!c.ok || !c.results[0]?.ok) return { ok: false, error: c.results?.[0]?.error || "no-account" };
       }
       const g = byId[game]; const h = await headersFor(game, null);
-      if (!g || !h) return { ok: false, error: "no-key" };
+      if (!g || !h) return { ok: false, error: noKey(game) };
       const r = await call(g.origin + "/api/console/handoff", { method: "POST", headers: h, body: JSON.stringify({ target: "new", prefill: copy, from: String(fromName || "").slice(0, 80) }) });
       if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
       const url = String(r.json?.url || ""), eid = String(r.json?.eid || "");
@@ -167,7 +171,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     /** a pay link anyone can open (the game's own route; works for 7 days): for the finance team */
     async payLink(game, eid) {
       const g = byId[game]; const h = await headersFor(game, eid);
-      if (!g || !h) return { ok: false, error: "no-key" };
+      if (!g || !h) return { ok: false, error: noKey(game) };
       const r = await call(g.origin + "/api/z/" + eid + "/paylink", { method: "POST", headers: h, body: "{}" });
       if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
       const url = String(r.json?.url || "");
@@ -177,7 +181,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     /** the Player's screen view address of one game (the game checks the key; the console only frames it) */
     async preview(game, eid) {
       const g = byId[game]; const h = await headersFor(game, eid);
-      if (!g || !h) return { ok: false, error: "no-key" };
+      if (!g || !h) return { ok: false, error: noKey(game) };
       const r = await call(g.origin + "/api/console/preview", { method: "POST", headers: h, body: JSON.stringify({ eid }) });
       if (!r.ok) return { ok: false, error: r.status === 404 ? "not-on-console" : r.unreachable ? "unreachable" : r.json?.error || "refused" };
       const url = String(r.json?.url || "");

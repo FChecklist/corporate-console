@@ -7,3 +7,5 @@ dist/
 .env*
 data-local/
 .tmp-*
+e2e/part1/.results/
+bun.lock
