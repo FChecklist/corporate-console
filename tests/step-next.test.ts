@@ -13,10 +13,14 @@ const root = join(import.meta.dir, "..");
 test("the summary says 'Step N of M' for where you are, and 'Next:' for what comes after, for every stage", () => {
   const say = (st: string) => S.stepSummary(st);
   expect(say("create")).toEqual({ now: "Step 1 of 6: Date and time. It starts when you choose a game below.", next: "Next: Step 2 of 6: Who is this game for." });
-  expect(say("draft")).toEqual({ now: "Step 5 of 6: Check and publish.", next: "Next: Step 6 of 6: Pay." });
+  expect(say("draft")).toEqual({ now: "Step 5 of 6: Check and publish. You may be at an earlier step: open the game to see how far you are.", next: "Next: Step 6 of 6: Pay." });
   expect(say("pending")).toEqual({ now: "Step 6 of 6: Pay.", next: "Next: nothing more to do here. The game starts after you pay." });
   expect(say("overdue").now).toBe("Step 6 of 6: Pay.");
   expect(say("paid")).toEqual({ now: "All 6 steps are done.", next: "Next: your game runs at its time. Open My games to see it." });
+  expect(say("free").next).toBe("Next: your game runs at its time. Open My games to see it.");
+  expect(say("live").next).toMatch(/running now/); // a game that is playing is not "going to run at its time"
+  expect(say("completed").next).toMatch(/has finished/);
+  expect(say("completed").next).not.toMatch(/runs at its time/);
   for (const st of ["cancelled", "deleted", "whatever"]) expect([st, say(st)]).toEqual([st, { now: "", next: "" }]); // nothing is claimed for a game that is not on a step
 });
 
@@ -37,7 +41,7 @@ test("the banner shows the two lines above the list of six steps, as one named g
   const sum = nav.querySelector(".stepsum");
   expect(sum.getAttribute("role")).toBe("group");
   expect(sum.getAttribute("aria-label")).toMatch(/place in the six steps/i);
-  expect(sum.querySelector(".stepnow").textContent).toBe("Step 5 of 6: Check and publish.");
+  expect(sum.querySelector(".stepnow").textContent).toBe("Step 5 of 6: Check and publish. You may be at an earlier step: open the game to see how far you are.");
   expect(sum.querySelector(".stepnext").textContent).toBe("Next: Step 6 of 6: Pay.");
   expect(nav.compareDocumentPosition(sum) & 16).toBeTruthy();
   expect(sum.compareDocumentPosition(nav.querySelector("ol")) & 4).toBeTruthy(); // the summary comes first
@@ -65,7 +69,7 @@ test("Create shows 'Step 1 of 6' with what is next above the game tiles; 'Start 
 });
 
 test("a game row says where the game is and what is next, in one sentence; the banner styles fit 360 px (one column, wraps, no fixed width)", () => {
-  expect(S.stepLine("draft")).toBe("You are at step 5 of 6: Check and publish. Next: step 6, Pay.");
+  expect(S.stepLine("draft")).toBe("This draft may still be at an earlier step. Step 5 of 6 is Check and publish, and then step 6, Pay.");
   expect(S.stepLine("cancelled")).toBe("");
   const css = readFileSync(join(root, "public/core/app.css"), "utf8");
   const sum = /\.stepsum \{[^}]*\}/.exec(css)![0];

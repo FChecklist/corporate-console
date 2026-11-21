@@ -56,7 +56,7 @@ export async function renderMyGames(outlet, ctx) {
     for (const a of rowActions(g, caps[g.game], st)) {
       if (a.id === "copy" && desc && Array.isArray(desc.features) && !has(desc, "clone")) continue; // a game that does not declare copying shows no copy button
       if (a.id === "accept") btns.push(button("Accept", { main: true, sm: true, label: `Accept the invitation to ${g.name}`, onclick: () => answer(g, "accept") }));
-      else if (a.id === "decline") btns.push(button("Decline", { sm: true, label: `Decline the invitation to ${g.name}`, onclick: async () => { if (await confirmPanel(c, "Say no to this invitation? You can join only if the organizer invites you again.", "Yes, say no", "No, go back")) answer(g, "decline"); } })); // declining cannot be taken back by the person, so it is asked once more
+      else if (a.id === "decline") btns.push(button("Decline", { sm: true, label: `Decline the invitation to ${g.name}`, onclick: async () => { if (c.querySelector(".confirm")) return; if (await confirmPanel(c, "Say no to this invitation? You can join only if the organizer invites you again.", "Yes, say no", "No, go back")) answer(g, "decline"); } })); // declining cannot be taken back by the person, so it is asked once more
       else if (a.id === "open-in-game") btns.push(el("span", { class: "hintline", text: "Open the game itself to answer this invitation." }));
       else if (a.id === "open") btns.push(button(a.label, { main: true, sm: true, label: `Open ${g.name}`, onclick: () => openGame(ctx, g) }));
       else if (a.id === "publish" || a.id === "pay") btns.push(button(a.label, { sm: true, label: `${a.label}: ${g.name}`, onclick: () => openGame(ctx, g, a.target) }));

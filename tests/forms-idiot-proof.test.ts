@@ -1,4 +1,4 @@
-// FALSIFIED BY: forms3-create-double-start, forms3-signin-double-send, forms3-decline-no-confirm, forms3-pay-mail-no-inline, forms3-funnel-no-inline, forms3-once-not-once, forms3-signin-code-shape, forms3-phone-fields
+// FALSIFIED BY: forms3-mygames-double-decline, forms3-create-double-start, forms3-signin-double-send, forms3-decline-no-confirm, forms3-pay-mail-no-inline, forms3-funnel-no-inline, forms3-once-not-once, forms3-signin-code-shape, forms3-phone-fields
 // Idiot-proofing (0.3.0): examples and plain inline errors on every field, one press does one job, a confirm before what cannot be undone, and a phone at 360 px can use every field.
 import { test, expect } from "bun:test";
 import { Window } from "happy-dom";
@@ -100,6 +100,21 @@ test("Home: saying no to an invitation asks first (Yes / No), says nothing to th
   expect(calls).toEqual(["decline"]);
   expect(document.querySelector(".toast")!.textContent).toMatch(/did not work.*try again/i); // the answer failed: the person is told, not left guessing
   expect(document.body.contains(inv)).toBe(true);
+});
+
+test("My games: two quick taps on Decline open ONE Yes / No question, and nothing is sent before Yes", async () => {
+  const { renderMyGames } = await import("../public/screens/mygames.js");
+  const calls: string[] = [];
+  const row = { game: "bingo", eid: "INV0002", name: "Friday quiz", role: "host", roleId: "r1", status: "ready", nextAction: "accept", startMs: Date.now() + 86_400_000, cap: 50, payment: { state: "paid" } };
+  const api: any = { listGames: async (o: any) => { o && o.onGame && o.onGame({ game: "bingo", ok: true, rows: [row] }); return { rows: [row], failed: [], off: [] }; }, capabilities: async () => [], byId: {}, answerInvitation: async (_g: string, _e: string, _r: string, op: string) => { calls.push(op); return { ok: true }; }, billing: async () => ({ rows: [], credits: [] }) };
+  const o: any = document.createElement("div"); document.body.replaceChildren(o);
+  await renderMyGames(o, { api, names: { bingo: "Bingo" }, colors: {}, games: [{ id: "bingo", name: "Bingo", status: "live", ready: true }], email: "demo1@demo-test.invalid" });
+  await wait(20);
+  const card = o.querySelector(".gcard") as any;
+  const decline = [...card.querySelectorAll("button")].find((b: any) => b.textContent.trim() === "Decline");
+  decline.click(); decline.click(); await wait(10);
+  expect(card.querySelectorAll(".confirm").length).toBe(1);
+  expect(calls).toEqual([]);
 });
 
 test("the payee page and the owner page: example under the field, error under the field, one press at a time", () => {

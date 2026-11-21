@@ -1,0 +1,1 @@
+{"id": "consent31-worker-ignores-cookie", "repo": ".", "file": "public/sw.js", "find": "return !!c && c.value === PREFS;", "replace": "return true;", "test": "tests/consent-decline-everywhere.test.ts", "note": "the worker keeps pages even when the cookie says decline"}

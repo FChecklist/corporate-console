@@ -1,0 +1,1 @@
+{"id": "consent31-install-keeps-after-decline", "repo": ".", "file": "public/sw.js", "find": "if (await mayKeep(true)) await (await caches.open(CACHE)).addAll(SHELL);", "replace": "await (await caches.open(CACHE)).addAll(SHELL);", "test": "tests/consent-decline-everywhere.test.ts", "note": "a new worker copies the pages even without a remember answer"}

@@ -25,6 +25,8 @@
     "tests/sitemap-content.test.ts",
     "tests/step-next.test.ts",
     "tests/forms-idiot-proof.test.ts",
-    "tests/release-0-3-0.test.ts"
+    "tests/release-0-3-0.test.ts",
+    "tests/release-0-3-1.test.ts",
+    "tests/consent-decline-everywhere.test.ts"
   ]
 }

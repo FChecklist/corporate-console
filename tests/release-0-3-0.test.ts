@@ -1,5 +1,5 @@
 // FALSIFIED BY: release3-version-not-bumped, release3-changelog-missing, release3-knowledge-stale, release3-footer-no-version, release3-version-json-old
-// Release 0.3.0: the version is bumped everywhere the owner's rule names (the release list that makes version.json, CHANGELOG.md, docs/KNOWLEDGE.md), and every page's footer shows it.
+// Release 0.3.0 (still in the list below 0.3.1; the newest release is checked in release-0-3-1.test.ts): the version is bumped everywhere the owner's rule names (the release list that makes version.json, CHANGELOG.md, docs/KNOWLEDGE.md), and every page's footer shows it.
 import { test, expect } from "bun:test";
 import { Window } from "happy-dom";
 import { readFileSync, mkdtempSync } from "node:fs";
@@ -11,15 +11,15 @@ const root = join(import.meta.dir, "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 const releases = JSON.parse(read("releases.json"));
 
-test("the newest release is 0.3.0, with a time, a technical note and a plain sentence that holds no internal word", () => {
-  const r = releases[0];
+test("0.3.0 is in the release list (0.3.1 sits above it), with a time, a technical note and a plain sentence that holds no internal word", () => {
+  const r = releases[1];
   expect(r.version).toBe("0.3.0");
   expect(/^\d{4}-\d{2}-\d{2}T/.test(r.releasedAt)).toBe(true);
   expect(r.note.length).toBeGreaterThan(40);
   expect(r.userNote.length).toBeGreaterThan(40);
   expect(/audit|commit|rollback|bridge|re-vendor|token|secret|worker|cache/i.test(r.userNote)).toBe(false); // what the public reads says it plainly
   expect(/\b(we|our|us)\b/i.test(r.userNote)).toBe(false);
-  expect(releases[1].version).toBe("0.2.2");
+  expect(releases[2].version).toBe("0.2.2");
 });
 
 test("CHANGELOG.md has the 0.3.0 entry on top, in plain words, with what changed, where, the tests, what is not changed, and the rollback line", () => {
@@ -31,19 +31,18 @@ test("CHANGELOG.md has the 0.3.0 entry on top, in plain words, with what changed
   expect(entry).toMatch(/not touched|untouched|byte for byte/i); // the audited pay contract, bridge and pack
 });
 
-test("docs/KNOWLEDGE.md says 0.3.0 and names the files that make it", () => {
+test("docs/KNOWLEDGE.md keeps the 0.3.0 part and names the files that make it", () => {
   const k = read("docs/KNOWLEDGE.md");
-  expect(k).toContain("for version 0.3.0,");
   expect(k).toContain("## 2b. What 0.3.0 added");
   for (const w of ["offline.js", "forms.js", "page-seo.js", "404.html", "X-Robots-Tag", "cg-consent-changed", "Step N of"]) expect([w, k.includes(w)]).toEqual([w, true]);
 });
 
 test("a build carries 0.3.0 in version.json, and every page's footer shows it with the what's-new link", async () => {
   const out = mkdtempSync(join(tmpdir(), "rel3-"));
-  build({ env: "live", out, version: releases[0].version, commit: "0123456789ab", releasedAt: releases[0].releasedAt });
+  build({ env: "live", out, version: releases[1].version, commit: "0123456789ab", releasedAt: releases[1].releasedAt }); // the 0.3.0 build
   const v = JSON.parse(readFileSync(join(out, "version.json"), "utf8"));
   expect([v.version, v.consoleVersion, v.product]).toEqual(["0.3.0", "0.3.0", "corporate-console"]);
-  expect(v.changes[0]).toMatchObject({ version: "0.3.0" });
+  expect(v.changes.map((c: any) => c.version).slice(0, 2)).toEqual(["0.3.1", "0.3.0"]);
   expect(v.releasedAtIST).toMatch(/^\d{2} \w{3} \d{4}, \d{2}:\d{2} IST$/);
   const { showVersion } = await import("../public/core/version.js");
   const doc: any = new Window({ url: "https://console.corporatetambola.com/" }).document;

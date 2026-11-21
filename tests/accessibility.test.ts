@@ -77,7 +77,7 @@ test("the 404 page is a way out, not a dead end: it says what happened in plain 
 
 test("pages that must not be searched say so twice: a robots meta in the page AND an X-Robots-Tag header on the path (headers cover non-html answers too)", () => {
   const headers = readFileSync(join(out, "_headers"), "utf8");
-  for (const path of ["/auth/*", "/pay/*", "/pay-link.html", "/signin.html", "/report/*", "/stats/*", "/owner-funnel/*", "/404.html"]) {
+  for (const path of ["/auth/*", "/pay/*", "/pay-link.html", "/signin.html", "/report/*", "/stats/*", "/owner-funnel/*", "/404.html", "/signin", "/pay-link", "/owner-funnel", "/404"]) {
     const block = headers.split(/\n\n/).find((b) => b.split("\n")[0].trim() === path) || "";
     expect([path, /X-Robots-Tag:\s*noindex, nofollow/.test(block)]).toEqual([path, true]);
   }

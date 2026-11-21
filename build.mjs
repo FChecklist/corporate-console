@@ -71,6 +71,10 @@ export function headersFile(cfg, env) {
     "/pay/*", "  X-Robots-Tag: noindex, nofollow", "",
     "/pay-link.html", "  X-Robots-Tag: noindex, nofollow", "",
     "/signin.html", "  X-Robots-Tag: noindex, nofollow", "",
+    "/signin", "  X-Robots-Tag: noindex, nofollow", "", // Pages also answers these pages at the address without ".html"
+    "/pay-link", "  X-Robots-Tag: noindex, nofollow", "",
+    "/owner-funnel", "  X-Robots-Tag: noindex, nofollow", "",
+    "/404", "  X-Robots-Tag: noindex, nofollow", "",
     "/report/*", "  X-Robots-Tag: noindex, nofollow", "",
     "/stats/*", "  X-Robots-Tag: noindex, nofollow", "",
     "/owner-funnel/*", "  X-Robots-Tag: noindex, nofollow", "",

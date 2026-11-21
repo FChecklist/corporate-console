@@ -1,7 +1,35 @@
 # Changelog - corporate-console
 
 Newest first. Rule: every deploy bumps the version and adds an entry here (standard of 20 Nov 2026).
-Numbering: 0.3.0 = this branch (consent order, step banner text, forms, 404). 0.2.2 = banners, SEO, plain errors (live). 0.1.1 = PR #4 (bridge tests, no code change). 0.2.0 and 0.2.1 = PR #2 (these entries). They deploy together; the build carries 0.2.1.
+Numbering: 0.3.1 = this branch (audit fixes for 0.3.0: a decline ends the worker and cache on every page). 0.3.0 = consent order, step banner text, forms, 404 (the same branch; it was audited FAIL on its first head and is not deployed). 0.2.2 = banners, SEO, plain errors (live). 0.1.1 = PR #4 (bridge tests, no code change). 0.2.0 and 0.2.1 = PR #2 (these entries). They deploy together; the build carries 0.2.1.
+
+## 0.3.1 - 21 Nov 2026 (not deployed; the release time is stamped at deploy)
+Branch `claude/console-0-3-0` (PR #7), on top of 0.3.0 (head 25dca5c), which both independent audits marked FAIL. This release fixes everything they found. No money flag, no pay contract, no bridge, no pack, no function, no secret touched: `functions/`, `packages/bridge/`, `packages/game-pack/`, `docs/GAME_PAY_CONTRACT.md`, `vendor/`, `contract/` and `config/` are byte for byte as in 0.3.0. The pay flag `PAY_VIA_MONEYPENNY` stays OFF.
+In plain words: when you choose "Only what is needed", the saved copy of the console's pages is now really gone on every page, and nothing is put back afterwards.
+### Fixed: the cookie decline (both audit Mediums)
+- **M1, the old worker put the cache back after a decline.** An unregistered worker keeps holding the page that is open, and `public/sw.js` kept writing the cache for every later request. Now: (1) `public/sw.js` re-reads the cookie answer (`cookieStore`, where the browser has it) before every write and before it copies the shell; with a privacy signal or any answer except "Also remember your choices" it writes nothing, and on start it clears its cache and removes itself. Where the browser cannot show a worker the cookie, it writes only after the page has said `go`, never after `stop`, and a restarted worker starts from "no". (2) `public/core/offline.js` (`removeWorker`) tells every worker it can reach `stop` before removing the registration; the worker stops writing, clears its cache and answers `stopped`. (3) A page held by an older worker that does not answer (the 0.2.2 and 0.3.0 workers) is loaded once more, which frees it; it is done once only (a mark in the page's history state, nothing is stored) and only in that case. Then the console cache is deleted.
+- **M2, a decline on the pay link page, the sign-in link page, the owner page and the 404 page left the worker and cache.** `public/core/page-consent.js` now follows the answer on every page (`cg-consent-changed`, and once on load to clear leftovers), through the same `syncOffline`. The words "Anything else was erased from this device" are now true on every page.
+### Fixed: the cheap Lows
+- Tapping Decline twice in My games opened two Yes / No questions; now one (`public/screens/mygames.js`, as on Home).
+- "Next" for a game that is playing or has finished no longer says "your game runs at its time" (`stepSummary` in `public/core/steps.js`).
+- A draft no longer claims a place it cannot know: "You may be at an earlier step: open the game to see how far you are" (banner) and "This draft may still be at an earlier step. Step 5 of 6 is ..." (game row).
+- `X-Robots-Tag: noindex, nofollow` now also covers `/signin`, `/pay-link`, `/owner-funnel` and `/404`, the addresses without `.html` (`headersFile` in `build.mjs`).
+- The public note of 0.3.0 and 0.3.1 says the double-press rule is for the console's own screens (the pack's setup screens are not part of it).
+- `tools/serve-dist.mjs` (test server) serves a folder's index page for an address ending in "/", like Pages does.
+- `once` and `lockAll` in `public/core/forms.js` are tested helpers for new screens; the screens guard themselves with a flag each (tests in `forms-idiot-proof.test.ts`). `docs/KNOWLEDGE.md` now says so instead of presenting them as what the screens use.
+### Not changed on purpose (with the reason)
+- `robots.txt` and `llms.txt` still name the private paths (`/auth/`, `/pay/`, `/report/`, `/stats/`, `/owner-funnel/`). These were audited in 0.2.2 and are locked by tests; the owner page still needs the owner key; every private page has `noindex` in its head and in the header. Whether to drop the names is a wording decision for the owner.
+- "All participant information is deleted within 24 hours of the game" (llms.txt, from `PRIVACY_LINE`, inherited from 0.2.2) differs from the game pack's own text (winners' and organizer records are kept 365 days). Not edited here: it is the owner's legal wording to settle.
+- On Cloudflare Pages an unknown address answers with the 404 page at that address, so the header rule for `/404.html` cannot apply to it; the page's own `noindex` and the 404 status cover it. Check with `curl -I` after deploy.
+### Deploy note (people who visited 0.2.2)
+- The live 0.2.2 worker serves the cached `/` and `boot.js` first, so the new clean-up reaches such a visitor on the second visit after deploy, not the first. Anyone who answered "e-mail and layout" under the 0.2.2 wording (`cg_consent=v1.prefs`) now gets the saved copy of the pages under that same answer, without being asked again. This is still stricter than live 0.2.2, which set the worker up for everyone before any answer.
+### Tests
+- New: `tests/consent-decline-everywhere.test.ts` (runs the real `public/sw.js` in a fake worker, and `offline.js` / `page-consent.js` in a fake browser: 12 tests), `tests/release-0-3-1.test.ts`, a My games double-Decline test, and tests for the "Next" line and the draft wording. Mutations in `tools/mutations/` (ids `consent31-*`, `forms3-mygames-double-decline`, `release31-*`).
+- Real browser: `node tools/browser-tests/decline-everywhere.mjs` (20 checks in Chromium: accept, reload, decline from the footer, keep using the page, nothing comes back; the same on `/pay-link.html`, `/signin.html`, `/owner-funnel/`, `/404.html`; and a page held by the 0.3.0 worker). Run on the 0.3.0 files it goes red (8 of 18 then); on 0.3.1 it passes.
+- Updated: `release-0-3-0` (0.3.0 now sits under 0.3.1), `release-0-2-2`, `sitemap-content`, `step-next`, `step-banner`.
+### Not changed / open
+- Audit: pending (two independent audits on the exact head SHA gate every deploy). Rollback id of the previous deploy (live 0.2.2): unknown to this branch, BOSS records it at deploy; before it `706f8e60` (commit 9c57a81).
+- Same open items as 0.3.0 (default branch is 0.1.1; pack setup screens have their own fields).
 
 ## 0.3.0 - 21 Nov 2026 (not deployed; the release time is stamped at deploy)
 Branch `claude/console-0-3-0`, cut from 0.2.2 (`claude/console-banners-seo-v0-2-2`, commit 32e1603, the version that is live). No money flag, no pay contract, no bridge, no pack, no function, no secret touched: `functions/`, `packages/bridge/`, `packages/game-pack/`, `docs/GAME_PAY_CONTRACT.md` are byte for byte as in 0.2.2. The pay flag `PAY_VIA_MONEYPENNY` stays OFF.

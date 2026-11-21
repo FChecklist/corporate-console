@@ -1,9 +1,15 @@
 [
  {
+  "version": "0.3.1",
+  "releasedAt": "2026-11-21T00:00:00.000Z",
+  "note": "audit fixes for 0.3.0: a decline on ANY page ends the offline worker and clears its cache, and a worker that still holds an open page cannot write again (the worker re-reads the cookie answer before every write, obeys a stop message, and an older worker that cannot be told frees the page with one reload); pages other than the console app (pay link, sign-in link, owner page, 404) follow the answer; one Yes / No question when Decline is tapped twice in My games; the Next line is true for a game that is playing or finished; a draft says it may be at an earlier step; the robots header also covers the addresses without .html; the release note says the double-press rule is for the console screens",
+  "userNote": "Choosing Only what is needed in the cookie box now clears the saved copy of the pages on every page, and nothing is put back afterwards. A game you are still setting up says you may be at an earlier step. Tapping Decline twice asks only once. Pressing a button twice on the console's own screens no longer does the job twice."
+ },
+ {
   "version": "0.3.0",
   "releasedAt": "2026-11-21T00:00:00.000Z",
   "note": "cookie consent order (no offline worker or cached file before the answer; decline removes them), step banner says Step N of 6 and what is next, every form field has an example and its own plain error, one press does one job, confirm before declining an invitation, 404 page, signed-in screens noindex with own titles, X-Robots-Tag on private paths",
-  "userNote": "The cookie box now keeps even the speed-up copy of the pages off your device until you say yes. The steps banner tells you which step you are on and what comes next. Every box you fill in shows an example and says in plain words what to fix. Pressing a button twice no longer does the job twice."
+  "userNote": "The cookie box now keeps even the speed-up copy of the pages off your device until you say yes. The steps banner tells you which step you are on and what comes next. Every box you fill in shows an example and says in plain words what to fix. Pressing a button twice on the console's own screens no longer does the job twice."
  },
  {
   "version": "0.2.2",

@@ -40,10 +40,14 @@ export const TOTAL = STEPS.length;
 export function stepSummary(stage) {
   const { now, states } = stepsFor(stage);
   if (!now) {
-    return STEPS.every((s) => states[s.n] === "done") ? { now: `All ${TOTAL} steps are done.`, next: "Next: your game runs at its time. Open My games to see it." } : { now: "", next: "" };
+    if (!STEPS.every((s) => states[s.n] === "done")) return { now: "", next: "" };
+    const next = stage === "completed" ? "Next: nothing. This game has finished. Open My games to see it." : stage === "live" ? "Next: nothing. Your game is running now. Open My games to see it." : "Next: your game runs at its time. Open My games to see it.";
+    return { now: `All ${TOTAL} steps are done.`, next };
   }
   const s = STEPS[now - 1], nx = STEPS[now];
-  const nowText = stage === "create" ? `Step ${now} of ${TOTAL}: ${s.name}. It starts when you choose a game below.` : `Step ${now} of ${TOTAL}: ${s.name}.`;
+  const nowText = stage === "create" ? `Step ${now} of ${TOTAL}: ${s.name}. It starts when you choose a game below.`
+    : stage === "draft" ? `Step ${now} of ${TOTAL}: ${s.name}. You may be at an earlier step: open the game to see how far you are.` // the console cannot see inside a draft, so it says so
+    : `Step ${now} of ${TOTAL}: ${s.name}.`;
   const nextText = nx ? `Next: Step ${now + 1} of ${TOTAL}: ${nx.name}.` : "Next: nothing more to do here. The game starts after you pay.";
   return { now: nowText, next: nextText };
 }
@@ -51,6 +55,7 @@ export function stepSummary(stage) {
 /** one plain line for a game row: "You are at step 6 of 6: Pay. Next: nothing more to do here. ..." (empty when there is nothing to say) */
 export function stepLine(stage) {
   const { now, states } = stepsFor(stage);
+  if (stage === "draft") return `This draft may still be at an earlier step. Step ${now} of ${TOTAL} is ${STEPS[now - 1].name}, and then step ${now + 1}, ${STEPS[now].name}.`; // the console cannot see inside a draft, so it does not say where you are
   if (now) { const nx = STEPS[now]; return `You are at step ${now} of ${TOTAL}: ${STEPS[now - 1].name}. ${nx ? `Next: step ${now + 1}, ${nx.name}.` : "Next: nothing more to do here."}`; }
   return STEPS.every((s) => states[s.n] === "done") ? "All six steps are done." : "";
 }

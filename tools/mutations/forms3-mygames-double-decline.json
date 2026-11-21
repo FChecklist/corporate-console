@@ -1,0 +1,1 @@
+{"id": "forms3-mygames-double-decline", "repo": ".", "file": "public/screens/mygames.js", "find": "if (c.querySelector(\".confirm\")) return; if (await confirmPanel(c,", "replace": "if (await confirmPanel(c,", "test": "tests/forms-idiot-proof.test.ts", "note": "a second tap on Decline in My games opens a second Yes / No question"}

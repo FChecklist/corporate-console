@@ -5,6 +5,7 @@ import { currentState } from "./consent.js";
 
 export const CACHE_PREFIX = "console-shell-";
 export const WORKER_URL = "/sw.js";
+const ACK_MS = 400; // how long the page waits for the worker to say "stopped"
 
 /** may the offline worker exist right now? Only after the second answer, and never with a privacy signal. */
 export const offlineAllowed = (state) => !!state && state.answered === true && state.choice === "prefs" && !state.signal;
@@ -18,11 +19,7 @@ export async function syncOffline(o = {}) {
   const store = o.caches !== undefined ? o.caches : (typeof caches !== "undefined" ? caches : null);
   const state = o.state || currentState();
   const sw = nav.serviceWorker;
-  if (!offlineAllowed(state)) {
-    try { if (sw && sw.getRegistrations) for (const r of await sw.getRegistrations()) await r.unregister(); } catch { /* nothing to remove */ }
-    try { if (store && store.keys) for (const k of await store.keys()) if (String(k).startsWith(CACHE_PREFIX)) await store.delete(k); } catch { /* nothing to remove */ }
-    return { registered: false };
-  }
+  if (!offlineAllowed(state)) return removeWorker({ sw, store, reload: o.reload, ackMs: o.ackMs });
   if (!sw || !sw.register) return { registered: false };
   try {
     const reg = await sw.register(WORKER_URL);
@@ -30,6 +27,45 @@ export async function syncOffline(o = {}) {
       if (reg.waiting) o.onUpdate(reg);
       reg.addEventListener && reg.addEventListener("updatefound", () => { const w = reg.installing; w && w.addEventListener("statechange", () => { if (w.state === "installed" && sw.controller) o.onUpdate(reg); }); });
     }
+    try { const go = (w) => w && w.postMessage && w.postMessage("go"); go(reg.active || sw.controller); if (sw.ready && sw.ready.then) sw.ready.then((r) => go(r.active)).catch(() => {}); } catch { /* the worker reads the cookie itself where it can */ } // browsers that cannot show a worker the cookie need this
     return { registered: true, reg };
   } catch { return { registered: false }; } // the console works without the offline worker
+}
+
+/**
+ * Declining (or a privacy signal, or no answer yet): the worker and every console cache go, and no worker that is still running may write them again.
+ * 1. Every worker we can reach is told "stop" (a 0.3.1 worker then stops writing at once, clears its cache and answers "stopped").
+ * 2. The registrations are removed and the console caches deleted.
+ * 3. A page that is still controlled by a worker that did NOT answer is held by an older worker that cannot be told (0.2.2 and 0.3.0 workers): that page is loaded once more,
+ *    which frees it, because a removed worker does not control a new load. (Once only: the reload leaves a mark in the page's history state, nothing is stored.)
+ */
+export async function removeWorker({ sw, store, reload, ackMs } = {}) {
+  let controlledByOld = false;
+  try {
+    const regs = sw && sw.getRegistrations ? await sw.getRegistrations() : [];
+    const targets = new Set([sw && sw.controller, ...regs.flatMap((r) => [r.active, r.waiting, r.installing])].filter(Boolean));
+    let acked = !sw || !sw.controller; // nothing controls this page: nothing to wait for
+    let onMsg;
+    const answer = new Promise((done) => { onMsg = (ev) => { if (ev && ev.data === "stopped") { acked = true; done(); } }; });
+    if (sw && sw.addEventListener) { sw.addEventListener("message", onMsg); if (sw.startMessages) sw.startMessages(); }
+    for (const t of targets) { try { t.postMessage && t.postMessage("stop"); } catch { /* it is already gone */ } }
+    if (!acked && sw.addEventListener) await Promise.race([answer, new Promise((r) => setTimeout(r, ackMs ?? ACK_MS))]);
+    if (sw && sw.removeEventListener) sw.removeEventListener("message", onMsg);
+    controlledByOld = !acked;
+    for (const r of regs) { try { await r.unregister(); } catch { /* nothing to remove */ } }
+  } catch { /* nothing to remove */ }
+  try { if (store && store.keys) for (const k of await store.keys()) if (String(k).startsWith(CACHE_PREFIX)) await store.delete(k); } catch { /* nothing to remove */ }
+  let reloaded = false;
+  if (controlledByOld) {
+    try {
+      const w = typeof window !== "undefined" ? window : null;
+      const mark = w && w.history && w.history.state && w.history.state.cgFreed;
+      if (!mark) { // once only
+        if (w && w.history && w.history.replaceState) w.history.replaceState({ ...(w.history.state || {}), cgFreed: true }, "");
+        (reload || (() => w && w.location && w.location.reload()))();
+        reloaded = true;
+      }
+    } catch { /* the next page load is free of it anyway */ }
+  }
+  return { registered: false, reloaded };
 }
