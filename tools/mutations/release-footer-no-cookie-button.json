@@ -1,0 +1,1 @@
+{"id": "release-footer-no-cookie-button", "repo": ".", "file": "public/core/version.js", "find": "  b.addEventListener(\"click\", () => { const w = doc.defaultView; if (w && w.dispatchEvent) w.dispatchEvent(new w.CustomEvent(\"cg-cookie-choices\")); });\n", "replace": "", "test": "tests/release-0-2-2.test.ts", "note": "the footer's Cookie choices button does nothing"}

@@ -18,7 +18,7 @@ export async function renderPlayerView(outlet, ctx, game, eid) {
   outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "What players see" }), el("p", { class: "lead", text: (names[game] || "") + ". This is the page your players will open, built from the settings you saved. Players choose a Retro or Modern look on their own phone." }),
     el("div", { class: "pvbar" }, seg, el("span", { class: "pvlabel", id: "pv-label", text: PREVIEW_LABEL }), el("a", { class: "btn sm", href: "#/mygames", text: "Back to My games" })), stage)));
   const caps = (await api.capabilities().catch(() => [])).find((c) => c.game === game);
-  if (!game || !eid || !caps || !caps.ok || !caps.caps.features?.preview) { stage.append(emptyNote("This game cannot show that yet.", "Everything else works as usual.")); return; }
+  if (!game || !eid || !caps || !caps.ok || !caps.caps.features?.preview) { stage.append(emptyNote("This game cannot show that yet.", "Everything else works as usual. Press Back to return to My games.")); return; }
   const r = await api.preview(game, eid);
   if (!r.ok) { stage.append(emptyNote("The system could not open the preview.", "Please go back and try again.")); return; }
   function draw() {

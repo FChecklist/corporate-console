@@ -1,0 +1,1 @@
+{"id": "errors-no-next-step", "repo": ".", "file": "public/core/errors.js", "find": " Please choose another game, or write to ${HELP_EMAIL}.`;", "replace": "`;", "test": "tests/plain-errors.test.ts", "note": "'not open yet' with no next step"}

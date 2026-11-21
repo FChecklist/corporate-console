@@ -9,8 +9,8 @@ go.addEventListener("click", async () => {
     const r = await fetch("/auth/link", { method: "POST", headers: { "content-type": "application/json", "x-console": "1" }, body: JSON.stringify({ t }) });
     if (r.ok) { location.replace("/"); return; }
     const j = await r.json().catch(() => ({}));
-    msg.textContent = j.message || "That link has run out. Please ask for a new one.";
-  } catch { msg.textContent = "The system could not reach the server. Please try again."; }
+    msg.textContent = j.message || "That link has run out. Press Back to sign in, then press Get your code for a new one.";
+  } catch { msg.textContent = "The system could not reach the server. Please check your internet connection and press Sign in again."; }
   go.disabled = false;
 });
 

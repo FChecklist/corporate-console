@@ -6,7 +6,8 @@ import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { versionRefs } from "./tools/cache-bust.mjs";
-import { chooserHtml, gamesCss, robotsTxt, sitemapXml } from "./chooser.mjs";
+import { chooserHtml, gamesCss, liveGames } from "./chooser.mjs";
+import { robotsTxt, sitemapXml, llmsTxt, headBlock, applyHead, changesHtml, CHANGES_LD, pageList } from "./seo.mjs";
 
 const ROOT = new URL("./", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
@@ -113,13 +114,19 @@ export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.
   mkdirSync(join(out, "games"), { recursive: true });
   writeFileSync(join(out, "games/index.html"), chooserHtml(withCore(cfg, core), env));
   writeFileSync(join(out, "games/games.css"), gamesCss(cfg));
+  // search and AI-search files and every page's head, all from seo.mjs (0.2.2). A page that has no <!--seo--> marker makes the build stop.
+  const releases = existsSync(join(ROOT, "releases.json")) ? JSON.parse(readFileSync(join(ROOT, "releases.json"), "utf8")) : [];
+  const pl = pageList(cfg), seoKey = { home: "index.html", signin: "signin.html", pay: "pay-link.html", funnel: "owner-funnel/index.html" };
+  for (const [key, file] of Object.entries(seoKey)) writeFileSync(join(out, file), applyHead(readFileSync(join(out, file), "utf8"), headBlock(cfg, env, key), file));
+  writeFileSync(join(out, "changes.html"), applyHead(changesHtml(cfg, env, releases, istText), headBlock(cfg, env, "changes", [CHANGES_LD(cfg, env)]), "changes.html"));
   writeFileSync(join(out, "robots.txt"), robotsTxt(cfg, env));
-  writeFileSync(join(out, "sitemap.xml"), sitemapXml(cfg, env));
+  writeFileSync(join(out, "sitemap.xml"), sitemapXml(cfg, env, releases[0] && releases[0].releasedAt ? String(releases[0].releasedAt).slice(0, 10) : ""));
+  writeFileSync(join(out, "llms.txt"), llmsTxt(cfg, env, liveGames(withCore(cfg, core))));
   const headers = headersFile(cfg, env);
   const problems = lintHeaders(headers);
   if (problems.length) throw new Error("the generated _headers breaks a rule: " + problems.join("; "));
   writeFileSync(join(out, "_headers"), headers);
-  writeFileSync(join(out, "version.json"), JSON.stringify({ version, releasedAt, releasedAtIST: releasedAt ? istText(releasedAt) : "", commit, env, consoleVersion: version, builtAt: new Date().toISOString() }));
+  writeFileSync(join(out, "version.json"), JSON.stringify({ product: "corporate-console", version, releasedAt, releasedAtIST: releasedAt ? istText(releasedAt) : "", commit, env, consoleVersion: version, changes: releases.slice(0, 20).filter((r) => r && r.version).map((r) => ({ version: r.version, releasedAt: r.releasedAt, what: r.userNote || "Small improvements and fixes." })), builtAt: new Date().toISOString() }));
   if (/^[0-9a-f]{7,40}$/.test(commit)) versionRefs(out, commit); // every script and stylesheet address in the shipped pages carries ?v=<commit> (cache safety, 31 Oct 2026)
   return { out, headers };
 }

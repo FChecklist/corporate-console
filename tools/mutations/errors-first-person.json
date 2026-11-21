@@ -1,0 +1,1 @@
+{"id": "errors-first-person", "repo": ".", "file": "public/screens/signin.js", "find": "button(\"Get your code\", { main: true })", "replace": "button(\"Send me a code\", { main: true })", "test": "tests/plain-errors.test.ts", "note": "the console speaks as 'me' again"}

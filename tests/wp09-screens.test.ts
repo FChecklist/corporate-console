@@ -62,7 +62,7 @@ test("MC-10/23/24 Account: says what closing leaves behind and warns about paid 
   await renderAccount(o, { api, names: { bingo: "Bingo" }, email: "demo6@demo-test.invalid", games: [{ origin: "https://housie.test" }] });
   await until(() => !!o.querySelector("#acct-warn .banner"));
   expect(o.querySelector("#acct-warn")!.textContent).toContain("1 paid game still to come");
-  expect(byText(o, "button", "Download my payments first (CSV)")).toBeTruthy();
+  expect(byText(o, "button", "Download your payments first (CSV)")).toBeTruthy();
   expect(o.querySelector("#acct-kept")!.textContent).toContain("365 days");
   expect([...o.querySelectorAll("#acct-legal a")].map((a: any) => a.getAttribute("href"))).toEqual(LEGAL.map(([, p]: string[]) => "https://housie.test" + p));
 });

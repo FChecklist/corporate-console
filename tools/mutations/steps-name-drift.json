@@ -1,0 +1,1 @@
+{"id": "steps-name-drift", "repo": ".", "file": "public/core/steps.js", "find": "name: \"Tickets and prizes\"", "replace": "name: \"Tickets and Prizes\"", "test": "tests/step-banner.test.ts", "note": "a step name differs from the game setup screen"}

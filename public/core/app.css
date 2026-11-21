@@ -230,3 +230,30 @@ body.has-tabbar .updatebar { bottom: 92px; }
 .reviewrow { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--card); }
 .reviewrow b, .reviewrow span { grid-column: 1; } .reviewrow span { color: var(--ink2); font-size: 15px; } .reviewrow .btn { grid-column: 2; grid-row: 1 / span 2; }
 .tile.picked { outline: 3px solid var(--gold); }
+
+/* step banner (0.2.2): the six organizer steps, the current one highlighted; works at 360 px (one column) and wider (two or three columns) */
+.stepbanner { margin: 18px 0 8px; padding: 14px 16px; background: var(--card); border: 1.5px solid var(--line); border-radius: var(--radius); }
+.steptitle { font-size: 18px; margin: 0 0 10px; }
+.steplist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 8px; }
+.step { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; border: 1.5px solid transparent; }
+.step .stepno { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; background: var(--soft); color: var(--ink2); }
+.step .steptxt { display: grid; gap: 2px; min-width: 0; }
+.step .steptxt b { font-size: 15px; }
+.step .steptxt i { font-style: normal; font-weight: 400; color: var(--muted); }
+.step .stepplain { font-size: 14px; color: var(--muted); }
+.step.now { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+.step.now .stepno { background: var(--btn); color: #fff; }
+.step .stephere { font-size: 13px; font-weight: 700; color: var(--accent); }
+.step.done .stepno { background: var(--ok); color: var(--bg); }
+.step .stepdone { font-size: 13px; font-weight: 700; color: var(--ok); }
+.stepcap { margin: 10px 0 0; font-size: 15px; color: var(--ink2); }
+.stepline { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink2); }
+@media (forced-colors: active) { .step.now { outline: 3px solid Highlight; } }
+
+/* what's new page (0.2.2) */
+.changelist { list-style: none; margin: 18px 0; padding: 0; display: grid; gap: 12px; }
+.change { padding: 14px 16px; background: var(--card); border: 1.5px solid var(--line); border-radius: var(--radius); }
+.change h2 { font-size: 20px; }
+.change .when { margin: 2px 0 8px; font-size: 14px; color: var(--muted); }
+.change p { margin: 0 0 4px; }
+@media (max-width: 599px) { .step:not(.now) .stepplain { display: none; } .step { padding: 6px 10px; align-items: center; } .stepbanner { padding: 12px; } } /* on a phone the sentence shows for the current step only, so the six steps do not push the games off the screen */

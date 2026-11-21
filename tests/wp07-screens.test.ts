@@ -31,7 +31,7 @@ test("MC-02/03/04 sign-in: Send is locked while it works, 'Send a new code' open
   (o.querySelector("#si-email") as any).value = "demo5@demo-test.invalid"; (o.querySelector("#si-consent") as any).checked = true;
   submit(form); submit(form); submit(form); // three quick taps
   expect(asked).toBe(1);
-  expect(byText(form, "button", "Send me a code").disabled).toBe(true);
+  expect(byText(form, "button", "Get your code").disabled).toBe(true);
   release({ ok: true, json: {} });
   await until(() => !codeForm.classList.contains("hide"));
   const resend = [...codeForm.querySelectorAll("button")].find((b: any) => /^Send a new code/.test(b.textContent)) as any;
@@ -92,7 +92,7 @@ test("MC-05 a hand-over that fails says why in plain words", async () => {
   const { openError } = await import("../public/core/errors.js");
   expect(openError({ error: "no-key" }, "Bingo")).toBe("Please sign in again.");
   expect(openError({ error: "unreachable" }, "Bingo")).toBe("Bingo is slow, try again.");
-  expect(openError({ error: "not-on-console" }, "Bingo")).toBe("Bingo is not open on the console yet.");
+  expect(openError({ error: "not-on-console" }, "Bingo")).toBe("Bingo is not open on the console yet. Please choose another game, or write to hello@corporatetambola.com.");
   expect(openError({ error: "refused" }, "Bingo")).toBe("The system could not open that game just now. Please try again.");
 });
 

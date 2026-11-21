@@ -1,17 +1,26 @@
 [
  {
+  "version": "0.2.2",
+  "releasedAt": "2026-11-21T00:00:00.000Z",
+  "note": "cookie banner (stores nothing until you answer, honours GPC and DNT), six-step banner, plain error wording with a next step, SEO and AI-search files (meta, canonical, Open Graph, JSON-LD, sitemap, robots, llms.txt), /changes page, footer standard",
+  "userNote": "A cookie box that stores nothing until you answer. A step-by-step banner that shows where your game is. Messages that always say what to do next. A new What's new page. Better listings in search."
+ },
+ {
   "version": "0.2.1",
   "releasedAt": "2026-11-20T00:00:00.000Z",
-  "note": "audit fixes: a game is told only the size Moneypenny says was paid (no item = review), guard tests for every call site, slow-mail screen, runbook guard"
+  "note": "audit fixes: a game is told only the size Moneypenny says was paid (no item = review), guard tests for every call site, slow-mail screen, runbook guard",
+  "userNote": "If the sign-in e-mail is slow, the screen now says so and your code keeps working."
  },
  {
   "version": "0.2.0",
   "releasedAt": "2026-11-20T00:00:00.000Z",
-  "note": "smoke-test fixes (sign-in mail, payee page, pay note) and audit fixes: paid size, pay-route guard, slow mail, runbook"
+  "note": "smoke-test fixes (sign-in mail, payee page, pay note) and audit fixes: paid size, pay-route guard, slow mail, runbook",
+  "userNote": "Sign-in e-mail fixes: a code that arrives late still works, and a test address is told that no e-mail can be sent to it."
  },
  {
   "version": "0.1.0",
   "releasedAt": "2026-11-20T12:33:04.830Z",
-  "note": "first complete master console (local build, not live)"
+  "note": "first complete master console (local build, not live)",
+  "userNote": "The first complete console: one sign-in, My games, Create, Billing and Account for all six games."
  }
 ]

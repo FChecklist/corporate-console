@@ -1,0 +1,1 @@
+{"id": "steps-two-current", "repo": ".", "file": "public/core/steps.js", "find": "{ ...upTo(5, \"done\"), 6: \"now\" }", "replace": "{ ...upTo(4, \"done\"), 5: \"now\", 6: \"now\" }", "test": "tests/step-banner.test.ts", "note": "two steps highlighted at once"}

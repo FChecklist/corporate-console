@@ -1,0 +1,14 @@
+{
+  "//": "Typecheck: npx tsc -p tsconfig.json (no emit). Scope: the Pages functions, the shared packages (TypeScript) and the test files added in 0.2.2. The older test files have ten known type errors (happy-dom Event type, two untyped callbacks) and are not in this scope yet.",
+  "compilerOptions": { "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler", "strict": true, "noEmit": true, "skipLibCheck": true, "types": ["bun"] },
+  "include": [
+    "functions/**/*.ts",
+    "packages/**/*.ts",
+    "tests/support/js-modules.d.ts",
+    "tests/cookie-banner.test.ts",
+    "tests/step-banner.test.ts",
+    "tests/plain-errors.test.ts",
+    "tests/seo.test.ts",
+    "tests/release-0-2-2.test.ts"
+  ]
+}

@@ -1,0 +1,1 @@
+{"id": "release-footer-no-changes-link", "repo": ".", "file": "public/core/version.js", "find": "a.href = \"/changes\";", "replace": "a.href = \"/\";", "test": "tests/release-0-2-2.test.ts", "note": "the footer version does not lead to /changes"}

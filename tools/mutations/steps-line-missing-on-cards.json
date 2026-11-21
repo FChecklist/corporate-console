@@ -1,0 +1,1 @@
+{"id": "steps-line-missing-on-cards", "repo": ".", "file": "public/screens/mygames.js", "find": "g.role === \"organizer\" && stepLine(st) ?", "replace": "g.role === \"organizer\" && false ?", "test": "tests/step-banner.test.ts", "note": "My games cards lose the step line"}

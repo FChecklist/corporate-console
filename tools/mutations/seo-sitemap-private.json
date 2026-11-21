@@ -1,0 +1,1 @@
+{"id": "seo-sitemap-private", "repo": ".", "file": "seo.mjs", "find": "[\"home\", \"games\", \"changes\"].map(row)", "replace": "[\"home\", \"games\", \"changes\", \"signin\"].map(row)", "test": "tests/seo.test.ts", "note": "the sitemap lists the sign-in link page"}

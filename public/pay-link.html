@@ -3,20 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pay for a game</title>
-<meta name="robots" content="noindex">
+<!--seo-->
 <link rel="stylesheet" href="/core/tokens.css">
 <link rel="stylesheet" href="/core/app.css">
 <link rel="stylesheet" href="/pay-link.css">
 <script type="module" src="/pay-link.js"></script>
+<script type="module" src="/core/page-consent.js"></script>
 </head>
 <body>
 <main class="wrap"><div class="page">
   <h1 id="title">Pay for a game</h1>
   <p class="lead" id="msg">One moment, please.</p>
+  <noscript><p class="nojs">This page needs JavaScript to show the amount due. Please turn JavaScript on in your browser settings and open this link again, or write to hello@corporatetambola.com.</p></noscript>
   <p id="due" class="lead"></p>
   <p id="mailrow" hidden><label for="mail">Your e-mail address (only to match your payment)</label><br><input id="mail" type="email" autocomplete="email" maxlength="120"></p>
-  <p><button class="btn main" id="go" type="button" hidden>Pay now</button></p>
+  <p><button class="btn main" id="go" type="button" hidden>Pay now</button> <button class="btn" id="retry" type="button" hidden>Try again</button></p>
+  <p class="small" id="helpnext">Something not working? Press Try again, or ask the person who sent you this link for a new one. You can also write to hello@corporatetambola.com.</p>
   <p class="small" id="note">You don't have to buy software or a subscription or download anything. You only pay per game. Simple and easy.</p>
   <p class="small" id="privacy">No personal details needed. All participant information is deleted within 24 hours of the game. Our games are designed to follow US privacy laws, the EU GDPR and India's DPDP.</p>
 </div></main>

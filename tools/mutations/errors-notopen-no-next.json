@@ -1,0 +1,1 @@
+{"id": "errors-notopen-no-next", "repo": ".", "file": "public/core/errors.js", "find": "? notOpenYet(name) :", "replace": "? `${name} is not open on the console yet.` :", "test": "tests/plain-errors.test.ts", "note": "the hand-over error loses its next step"}

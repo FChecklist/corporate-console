@@ -1,0 +1,1 @@
+{"id": "cookie-dnt-ignored", "repo": ".", "file": "public/core/consent.js", "find": "const dnt = [nav.doNotTrack, win.doNotTrack, nav.msDoNotTrack].some((v) => v === \"1\" || v === \"yes\");", "replace": "const dnt = false;", "test": "tests/cookie-banner.test.ts", "note": "Do Not Track is ignored"}

@@ -1,0 +1,1 @@
+{"id": "seo-jsonld-missing", "repo": ".", "file": "seo.mjs", "find": "    out.push(`<script type=\"application/ld+json\">${ldText(graph)}</script>`);\n", "replace": "", "test": "tests/seo.test.ts", "note": "structured data left out"}

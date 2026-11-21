@@ -1,0 +1,1 @@
+{"id": "seo-robots-open-auth", "repo": ".", "file": "seo.mjs", "find": "\"Disallow: /auth/\", ", "replace": "", "test": "tests/seo.test.ts", "note": "robots.txt no longer closes /auth/"}
