@@ -86,6 +86,7 @@ function updateBar(copy, reg) {
 
 export async function start() {
   const root = document.getElementById("app");
+  clear(root); // the page's first text (for search engines and for visitors without scripts) gives way to the app at once, so a signed-in person never sees a sign-in welcome flash by
   startConsent(); // the cookie banner: stores nothing until the visitor answers
   const copy = await loadCopy();
   app.api = createApi({ games: GAMES, consoleOrigin: location.origin, onExpired: () => { if (app.signedIn) onSignedOut(); } }); // the console sign-in ended: back to the sign-in screen

@@ -151,4 +151,5 @@ test("each page is reachable from the console's own links: the console page link
   expect(rd(live, "core/boot.js")).toContain("startConsent()");
   const html = rd(live, "index.html");
   expect(html).toContain("<h1>Corporate Games console</h1>"); // there is real text in the first page for a crawler that does not run scripts
+  expect(rd(live, "core/boot.js")).toMatch(/const root = document\.getElementById\("app"\);\n  clear\(root\);/); // ...and the app clears it at once
 });
