@@ -33,7 +33,8 @@ test("CHANGELOG.md has the 0.3.0 entry on top, in plain words, with what changed
 
 test("docs/KNOWLEDGE.md says 0.3.0 and names the files that make it", () => {
   const k = read("docs/KNOWLEDGE.md");
-  expect(k).toContain("0.3.0");
+  expect(k).toContain("for version 0.3.0,");
+  expect(k).toContain("## 2b. What 0.3.0 added");
   for (const w of ["offline.js", "forms.js", "page-seo.js", "404.html", "X-Robots-Tag", "cg-consent-changed", "Step N of"]) expect([w, k.includes(w)]).toEqual([w, true]);
 });
 

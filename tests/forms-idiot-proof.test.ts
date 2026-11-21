@@ -35,6 +35,9 @@ test("once(): a second press while the first still works does nothing, the press
   expect(n).toBe(1); expect(b.disabled).toBe(true);
   release(); await wait(10);
   expect(b.disabled).toBe(false);
+  let m = 0; let go2: any; const g2 = new Promise((r) => (go2 = r)); const prog = once(async () => { m++; await g2; });
+  prog(); prog(); prog(); await wait(5); expect(m).toBe(1); // called by code, not by a button: still once
+  go2(); await wait(5);
   b.click(); await wait(5); expect(n).toBe(2);
   const x: any = document.createElement("button"), y: any = document.createElement("button"); document.body.append(x, y);
   let seen: boolean[] = []; await lockAll([x, y], async () => { seen = [x.disabled, y.disabled]; });
@@ -104,7 +107,7 @@ test("the payee page and the owner page: example under the field, error under th
   expect(pay).toMatch(/id="mail-hint"[^>]*>For example: you@yourcompany\.com/);
   expect(pay).toMatch(/id="mail-err"[^>]*role="alert"/);
   expect(payJs).toMatch(/\$\("mail-err"\)/);
-  expect(payJs).toMatch(/aria-invalid/);
+  expect(payJs).toMatch(/setAttribute\("aria-invalid", "true"\)/);
   expect(payJs).toMatch(/if \(go\.disabled\) return;/);
   const fun = read("public/owner-funnel/index.html"), funJs = read("public/owner-funnel/funnel.js");
   for (const id of ["key-hint", "key-err", "range-hint", "range-err"]) expect([id, fun.includes(`id="${id}"`)]).toEqual([id, true]);
