@@ -1,9 +1,10 @@
 // The cookie banner (0.2.2). Rules, in plain words:
 // 1. Before the visitor answers, this page stores NOTHING of its own. The one cookie the console needs (the sign-in cookie) is set by the server only after a sign-in, and is "strictly needed".
-// 2. Two answers, same size, same place: "Only what is needed" and "Also remember your e-mail and layout". Neither is pre-picked. No countdown, no guilt words, no blocking of the page.
+// 2. Two answers, same size, same place: "Only what is needed" (decline all, one tap) and "Also remember your choices". Neither is pre-picked. No countdown, no guilt words, no blocking of the page.
 // 3. A browser that sends Global Privacy Control or Do Not Track gets "only what is needed" at once: no banner, nothing optional is stored, and the answer cannot be switched on here.
 // 4. The answer is remembered in one small cookie (cg_consent, 180 days, this site only). It is written only AFTER a click, and "Cookie choices" in the footer changes it at any time.
-// 5. The optional part is real: with "Also remember ..." the sign-in screen can fill in your e-mail next time (cg-email) and a layout you chose (cg-design) is used. Saying "Only what is needed" erases both.
+// 5. The optional part is real: with "Also remember ..." the sign-in screen can fill in your e-mail next time (cg-email), a layout you chose (cg-design) is used, and the offline worker may keep a copy of the console's pages (public/core/offline.js). Saying "Only what is needed" erases all three.
+// 6. (0.3.0) No worker and no cached file exist before the answer, after "Only what is needed", or with a privacy signal. An older worker or cache is removed at once.
 // No inline style, no inline script, nothing is loaded from outside (the page's policy forbids all three).
 import { el } from "./dom.js";
 
@@ -14,18 +15,18 @@ export const CHOICES = ["needed", "prefs"];
 
 export const WORDS = {
   title: "Cookies on this site",
-  intro: "This site needs one cookie to keep you signed in. It is set only after you sign in. Until you answer, nothing else is stored on your device.",
+  intro: "You decide what this site may keep on your device. Until you answer, nothing is stored. The one cookie the console needs, to keep you signed in, is set only after you sign in.",
   needed: "Only what is needed",
-  prefs: "Also remember your e-mail and layout",
+  prefs: "Also remember your choices",
   more: "What each answer means",
-  moreNeeded: "Only what is needed: the sign-in cookie (after you sign in) and one small note of your answer, so the question is not asked again.",
-  morePrefs: "Also remember your e-mail and layout: the sign-in screen fills in your e-mail next time, and a screen layout you picked is kept. Both stay on this device only.",
+  moreNeeded: "Only what is needed: the sign-in cookie (after you sign in) and one small note of your answer, so the question is not asked again. Nothing else is kept, and anything saved earlier is removed from this device.",
+  morePrefs: "Also remember your choices: the sign-in screen fills in your e-mail next time, a screen layout you picked is kept, and a saved copy of the console's pages lets it open faster and keep working on a weak connection. All of it stays on this device only.",
   moreChange: "You can change your answer at any time with Cookie choices at the bottom of every page. No advertising or tracking cookies are used.",
   signalOn: "Your browser asks sites not to track you (Global Privacy Control or Do Not Track), so only what is needed is used. Nothing else is stored. To change this, change the setting in your browser.",
   signalOk: "OK, close",
-  current: (c) => (c === "prefs" ? "Your answer now: also remember your e-mail and layout." : "Your answer now: only what is needed."),
+  current: (c) => (c === "prefs" ? "Your answer now: also remember your choices." : "Your answer now: only what is needed."),
   footer: "Cookie choices",
-  saved: (c) => (c === "prefs" ? "Saved. Your e-mail and layout will be remembered on this device." : "Saved. Only what is needed is used. Anything else was erased from this device."),
+  saved: (c) => (c === "prefs" ? "Saved. Your choices will be remembered on this device." : "Saved. Only what is needed is used. Anything else was erased from this device."),
 };
 
 /** Global Privacy Control and Do Not Track, read from the browser. Either one means "do not use anything optional". */
@@ -104,6 +105,7 @@ export function startConsent(o = {}) {
     doc.cookie = answerCookie(choice, secure());
     if (choice !== "prefs") clearOptional(o);
     close();
+    try { c.win.dispatchEvent && c.win.dispatchEvent(new (c.win.CustomEvent || CustomEvent)("cg-consent-changed", { detail: { choice } })); } catch { /* the page still has its answer */ } // the offline worker follows the answer
     say(WORDS.saved(choice));
     return choice;
   }

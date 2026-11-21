@@ -9,3 +9,9 @@
 .fun th, .fun td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .fun th:first-child, .fun td:first-child { text-align: left; }
 .fun .note { color: var(--muted); margin: 0 0 8px; }
+
+.hide { display: none !important; }
+.fieldhint { margin: 2px 0 8px; font-size: 14.5px; color: var(--muted, #555); }
+.fielderror { margin: 2px 0 8px; font-size: 15px; font-weight: 600; color: var(--bad, #B3261E); }
+.fun input { max-width: 100%; box-sizing: border-box; min-height: 44px; font-size: 16px; }
+.fun .ctl .fieldhint, .fun .ctl .fielderror { flex: 1 1 100%; margin: 0; }

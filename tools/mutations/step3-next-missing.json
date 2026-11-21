@@ -1,0 +1,1 @@
+{"id": "step3-next-missing", "repo": ".", "file": "public/core/steps.js", "find": "`Next: Step ${now + 1} of ${TOTAL}: ${nx.name}.`", "replace": "\"\"", "test": "tests/step-next.test.ts", "note": "the banner does not say what is next"}

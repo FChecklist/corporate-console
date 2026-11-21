@@ -1,5 +1,11 @@
 [
  {
+  "version": "0.3.0",
+  "releasedAt": "2026-11-21T00:00:00.000Z",
+  "note": "cookie consent order (no offline worker or cached file before the answer; decline removes them), step banner says Step N of 6 and what is next, every form field has an example and its own plain error, one press does one job, confirm before declining an invitation, 404 page, signed-in screens noindex with own titles, X-Robots-Tag on private paths",
+  "userNote": "The cookie box now keeps even the speed-up copy of the pages off your device until you say yes. The steps banner tells you which step you are on and what comes next. Every box you fill in shows an example and says in plain words what to fix. Pressing a button twice no longer does the job twice."
+ },
+ {
   "version": "0.2.2",
   "releasedAt": "2026-11-21T00:00:00.000Z",
   "note": "cookie banner (stores nothing until you answer, honours GPC and DNT), six-step banner, plain error wording with a next step, SEO and AI-search files (meta, canonical, Open Graph, JSON-LD, sitemap, robots, llms.txt), /changes page, footer standard",

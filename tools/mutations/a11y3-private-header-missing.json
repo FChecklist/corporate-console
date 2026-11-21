@@ -1,0 +1,1 @@
+{"id": "a11y3-private-header-missing", "repo": ".", "file": "build.mjs", "find": "\"/pay/*\", \"  X-Robots-Tag: noindex, nofollow\", \"\",", "replace": "\"/pay/*\", \"  Cache-Control: no-store\", \"\",", "test": "tests/accessibility.test.ts", "note": "the pay path has no X-Robots-Tag"}

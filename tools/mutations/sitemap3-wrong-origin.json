@@ -1,0 +1,1 @@
+{"id": "sitemap3-wrong-origin", "repo": ".", "file": "seo.mjs", "find": "const origin = cfg.consoleOrigin[env], pl = pageList(cfg);\n  const row", "replace": "const origin = \"http://console.corporatetambola.com\", pl = pageList(cfg);\n  const row", "test": "tests/sitemap-content.test.ts", "note": "the sitemap uses an insecure address"}

@@ -1,0 +1,1 @@
+{"id": "forms3-create-double-start", "repo": ".", "file": "public/screens/create.js", "find": "if (starting) return;", "replace": "", "test": "tests/forms-idiot-proof.test.ts", "note": "a second tap makes a second draft"}

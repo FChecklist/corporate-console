@@ -1,0 +1,1 @@
+{"id": "step3-last-step-next", "repo": ".", "file": "public/core/steps.js", "find": "}.` : \"Next: nothing more to do here. The game starts after you pay.\";", "replace": "}.` : \"Next: Step 7 of 6.\";", "test": "tests/step-next.test.ts", "note": "the last step points at a step that is not there"}

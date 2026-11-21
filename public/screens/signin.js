@@ -2,6 +2,7 @@
 // Kind to slow mail: the Send button is locked while it works, "Send a new code" opens after 30 seconds, the newest e-mail is the one to use, and there is always a way back.
 import { el, clear } from "../core/dom.js";
 import { button } from "./ui.js";
+import { describeField } from "../core/forms.js";
 import { keepOptional, readOptional } from "../core/consent.js";
 import { HELP_EMAIL } from "../core/errors.js";
 
@@ -17,22 +18,25 @@ export function renderSignIn(outlet, ctx) {
   const say = (text, bad) => { msg.textContent = text; msg.classList.toggle("bad", !!bad); };
   const email = el("input", { id: "si-email", type: "email", autocomplete: "email", inputmode: "email", required: true, placeholder: "you@yourcompany.com", "aria-label": "Your work e-mail" });
   const kept = readOptional("cg-email"); if (kept && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(kept)) email.value = kept; // only after you allowed "remember your e-mail" in the cookie banner
+  const emailF = describeField(email, "For example: you@yourcompany.com");
   const consent = el("input", { id: "si-consent", type: "checkbox" });
+  const consentF = describeField(consent, "Tick the box once you have read the Terms and the Privacy Policy.");
   const terms = ctx.termsUrl || "#";
   const sendBtn = button("Get your code", { main: true });
   sendBtn.type = "submit";
   const form = el("form", { class: "zform", novalidate: true },
-    el("div", { class: "field" }, el("label", { for: "si-email", text: "Your work e-mail" }), email),
-    el("label", { class: "opt" }, consent, el("span", { class: "t" }, el("b", { text: "Tick this box to agree to the Terms of Use and the Privacy Policy." }), el("span", { text: "The system sends one code to this address. No password." }))),
+    el("div", { class: "field" }, el("label", { for: "si-email", text: "Your work e-mail" }), email, emailF.hint, emailF.err),
+    el("label", { class: "opt" }, consent, el("span", { class: "t" }, el("b", { text: "Tick this box to agree to the Terms of Use and the Privacy Policy." }), el("span", { text: "The system sends one code to this address. No password." }))), consentF.hint, consentF.err,
     el("p", { class: "hintline" }, el("a", { href: terms, target: "_blank", rel: "noopener" }, "Read the Terms and the Privacy Policy")),
     sendBtn);
-  const codeBox = el("input", { id: "si-code", inputmode: "numeric", autocomplete: "one-time-code", maxlength: "6", pattern: "[0-9]{6}", "aria-label": "The 6-digit code" });
+  const codeBox = el("input", { id: "si-code", inputmode: "numeric", autocomplete: "one-time-code", maxlength: "6", pattern: "[0-9]{6}", placeholder: "482913", "aria-label": "The 6-digit code" });
+  const codeF = describeField(codeBox, "For example: 482913. The 6 digits are in the e-mail the system sent you.");
   const signBtn = button("Sign in", { main: true });
   signBtn.type = "submit";
   const resendBtn = button("Send a new code", { sm: true, onclick: () => send(true) });
   const backBtn = button("Use a different e-mail", { sm: true, onclick: () => { stopTimer(); codeForm.classList.add("hide"); form.classList.remove("hide"); say(""); email.focus(); } });
   const codeForm = el("form", { class: "zform hide", novalidate: true },
-    el("div", { class: "field" }, el("label", { for: "si-code", text: "The 6-digit code from your e-mail" }), codeBox),
+    el("div", { class: "field" }, el("label", { for: "si-code", text: "The 6-digit code from your e-mail" }), codeBox, codeF.hint, codeF.err),
     signBtn,
     el("p", { class: "hintline", id: "si-newest", text: "Mail can take a minute. If you ask for more than one, use the newest e-mail: older codes stop working. You can also open the link in the e-mail and press the button there." }),
     el("div", { class: "btns" }, resendBtn, backBtn));
@@ -52,8 +56,9 @@ export function renderSignIn(outlet, ctx) {
   }
 
   async function send(again) {
-    if (!consent.checked) return say("Please tick the box to agree, then press Get your code.", true);
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim())) return say("Please type your work e-mail address, for example you@yourcompany.com, then press Get your code.", true);
+    emailF.clear(); consentF.clear(); say("");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim())) return emailF.show("Please type your work e-mail address, for example you@yourcompany.com, then press Get your code.");
+    if (!consent.checked) return consentF.show("Please tick the box to agree, then press Get your code.");
     sendBtn.disabled = true; resendBtn.disabled = true; say("Sending…"); // locked while it works: a second tap would make the first code useless
     const r = await api.auth.request(email.value.trim(), true);
     sendBtn.disabled = false;
@@ -72,10 +77,12 @@ export function renderSignIn(outlet, ctx) {
   codeForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (signBtn.disabled) return;
+    codeF.clear(); say("");
+    if (!/^\d{6}$/.test(codeBox.value.trim())) return codeF.show("The code has 6 digits, for example 482913. Please type all 6 digits from the newest e-mail.");
     signBtn.disabled = true;
     const r = await api.auth.verify(email.value.trim(), codeBox.value.trim());
     signBtn.disabled = false;
-    if (!r.ok) return say(r.json?.message || "That code is not right. Check the newest e-mail and type its 6 digits again, or press Send a new code.", true);
+    if (!r.ok) return codeF.show(r.json?.message || "That code is not right. Check the newest e-mail and type its 6 digits again, or press Send a new code.");
     stopTimer(); keepOptional("cg-email", normEmail(email.value)); say("Signing you in…");
     await onSignedIn();
   });

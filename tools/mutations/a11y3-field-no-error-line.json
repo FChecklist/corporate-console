@@ -1,0 +1,1 @@
+{"id": "a11y3-field-no-error-line", "repo": ".", "file": "public/core/forms.js", "find": "id: id + \"-err\", role: \"alert\" }", "replace": "id: id + \"-err\" }", "test": "tests/accessibility.test.ts", "note": "the error line is not announced"}

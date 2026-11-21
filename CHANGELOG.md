@@ -1,7 +1,37 @@
 # Changelog - corporate-console
 
 Newest first. Rule: every deploy bumps the version and adds an entry here (standard of 20 Nov 2026).
-Numbering: 0.2.2 = this branch (banners, SEO, plain errors). 0.1.1 = PR #4 (bridge tests, no code change). 0.2.0 and 0.2.1 = PR #2 (these entries). They deploy together; the build carries 0.2.1.
+Numbering: 0.3.0 = this branch (consent order, step banner text, forms, 404). 0.2.2 = banners, SEO, plain errors (live). 0.1.1 = PR #4 (bridge tests, no code change). 0.2.0 and 0.2.1 = PR #2 (these entries). They deploy together; the build carries 0.2.1.
+
+## 0.3.0 - 21 Nov 2026 (not deployed; the release time is stamped at deploy)
+Branch `claude/console-0-3-0`, cut from 0.2.2 (`claude/console-banners-seo-v0-2-2`, commit 32e1603, the version that is live). No money flag, no pay contract, no bridge, no pack, no function, no secret touched: `functions/`, `packages/bridge/`, `packages/game-pack/`, `docs/GAME_PAY_CONTRACT.md` are byte for byte as in 0.2.2. The pay flag `PAY_VIA_MONEYPENNY` stays OFF.
+In plain words: the cookie box is stricter, the steps banner tells you what is next, every box you fill in shows an example and says what to fix, and pressing a button twice no longer does the job twice.
+### Changed: cookie consent
+- **No offline worker and no saved page copy before you answer.** Until now the console set up its offline worker (a saved copy of its own pages on your device) on the first visit, before the cookie question was answered. Now `public/core/offline.js` registers it only after the second answer, "Also remember your choices". Before an answer, after "Only what is needed", and with Global Privacy Control or Do Not Track, no worker is registered and no cached file exists; a worker or cache left by an earlier visit is removed at once. `public/core/boot.js` only follows the answer (the banner announces it with the event `cg-consent-changed`).
+- Declining everything is one tap, the same size as accepting (unchanged). The words are warmer and say what each answer means, including the saved copy of the pages. "Cookie choices" in the footer changes your answer at any time.
+- The owner page (`/owner-funnel/`) now starts the banner too: its footer had a "Cookie choices" link that opened nothing.
+### Changed: step banner
+- The banner says **"Step N of 6: name"** and **"Next: Step N+1 of 6: name"** in two lines above the six steps (`stepSummary` in `public/core/steps.js`). On the last step it says nothing more is left; for a cancelled or deleted game it claims nothing. Game rows in My games add "Next: ..." to their one-line step. "Start from an earlier game" shows the same banner.
+### Changed: form fields, one press, confirm
+- Every form field now has an example and its own error line right under it, in plain words, announced by screen readers and marked wrong (not by colour alone): sign-in e-mail, the agree box, the 6-digit code (a wrong shape is told without asking the server), the payee e-mail, the owner key and the two days of the owner page (`public/core/forms.js`, `signin.js`, `pay-link.*`, `owner-funnel/*`).
+- One press does one job (no double sends, no double drafts): Get your code, Sign in, Start / Try a free game / Make it in (all buttons lock together, so no two drafts), open a game, copy, answer an invitation, sign out, close account, the owner page's Show and Download.
+- Saying no to an invitation (Home and My games) asks Yes / No first; a failed answer on Home now says so instead of doing nothing.
+### Changed: search and AI-search
+- Signed-in screens ask search engines to stay away (`noindex,nofollow`) and have their own page title (`public/core/page-seo.js`); signed out, the public head comes back.
+- `X-Robots-Tag: noindex, nofollow` headers on `/auth/`, `/pay/`, the sign-in link page, the pay link page, `/report/`, `/stats/`, the owner page and `/404.html` (in `build.mjs` `headersFile`; they cover static files; the function answers set their own headers, which this release does not touch).
+- New `public/404.html`: says what happened in plain words and links to the console, the games, What's new and the help address (no dead end); built with `noindex`.
+- Already in 0.2.2 and kept, now tested: unique title and description per page, canonical, Open Graph, JSON-LD Organization and WebSite, sitemap.xml (three public pages), robots.txt, llms.txt, no `<img>` without alt.
+### Fixed
+- `tools/heavy-run.mjs` starts the job in its own process group on Linux and Mac, so a job that runs too long is really killed (`tests/heavy-run.test.ts` was red on Linux since 0.2.1; it is green now).
+### Tests
+- New: `tests/consent-order.test.ts`, `accessibility.test.ts`, `sitemap-content.test.ts`, `step-next.test.ts`, `forms-idiot-proof.test.ts`, `release-0-3-0.test.ts`. They were run on the 0.2.2 code first and fail there (see the pull request for the list); mutations in `tools/mutations/` (ids `consent3-*`, `a11y3-*`, `sitemap3-*`, `step3-*`, `forms3-*`, `release3-*`).
+- Updated for the new wording: `step-banner`, `screens`, `plain-errors`, `cookie-banner`, `release-0-2-2`.
+- Browser check at 360 px: `node tools/browser-tests/mobile-360.mjs` (needs a built `dist/`).
+### Not changed / open
+- Audit: pending (two independent audits on the exact head SHA gate every deploy). Rollback id of the previous deploy (live 0.2.2): unknown to this branch, BOSS records it at deploy; before it `706f8e60` (commit 9c57a81).
+- The game setup screens (the pack) have their own fields and are not part of this release; their form wording is the games' own work.
+- The default branch (`claude/master-console-complete-882589`) is still 0.1.1; this branch is cut from the 0.2.2 line. Merging the lines needs the CHANGELOG, releases.json and `docs/GAME_PAY_CONTRACT.md` conflicts resolved (see 0.2.1 notes).
+- `version.json` is made by `node build.mjs` from the first row of `releases.json`; there is no hand-written `version.json` in the repository.
 
 ## 0.2.2 - 21 Nov 2026 (not deployed; the release time is stamped at deploy)
 Branch `claude/console-banners-seo-v0-2-2`, cut from the 0.2.1 line (`claude/console-game-pay-step-91b60a`, commit 395b2cb = PR #2). No money flag, no pay code, no function, no secret touched. Pay flag `PAY_VIA_MONEYPENNY` stays OFF.

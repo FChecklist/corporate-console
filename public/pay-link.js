@@ -52,7 +52,9 @@ const openFrame = (frame) => {
   const go = $("go"); go.hidden = false; let last = null;
   const start = async () => {
     const email = $("mail").value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("msg").textContent = "Please type your e-mail address. The system uses it to match your payment to the right game."; $("mail").focus(); return; }
+    const bad = $("mail-err"); bad.classList.add("hide"); bad.textContent = ""; $("mail").removeAttribute("aria-invalid");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { bad.textContent = "Please type your e-mail address, for example you@yourcompany.com. The system uses it to match your payment to the right game."; bad.classList.remove("hide"); $("mail").setAttribute("aria-invalid", "true"); $("mail").focus(); return; }
+    if (go.disabled) return; // one press starts one payment
     go.disabled = true;
     const s = await call("POST", "/pay/link/start", { t, email });
     go.disabled = false;

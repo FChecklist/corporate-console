@@ -1,0 +1,1 @@
+{"id": "sitemap3-robots-no-sitemap", "repo": ".", "file": "seo.mjs", "find": "`Sitemap: ${origin}/sitemap.xml`, \"\"];", "replace": "\"\"];", "test": "tests/sitemap-content.test.ts", "note": "robots.txt does not name the sitemap"}

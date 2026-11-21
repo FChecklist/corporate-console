@@ -9,16 +9,21 @@
 <link rel="stylesheet" href="/core/chooser.css">
 <link rel="stylesheet" href="/owner-funnel/funnel.css">
 <script type="module" src="/owner-funnel/funnel.js"></script>
+<script type="module" src="/core/page-consent.js"></script>
 </head>
 <body>
 <main class="chooser fun">
 <h1>Funnel, all games</h1>
 <p class="lead">How far organizers get in each game, step by step, day by day. Counts only: no names, no e-mails, no IDs. Owner key needed.</p>
 <form id="f" class="ctl">
-<label>Owner key <input id="key" type="password" autocomplete="off" required></label>
-<label>From <input id="from" type="date"></label>
-<label>To <input id="to" type="date"></label>
-<button class="btn main" type="submit">Show</button>
+<label>Owner key <input id="key" type="password" autocomplete="off" required placeholder="paste the owner key" aria-describedby="key-hint key-err"></label>
+<p class="fieldhint" id="key-hint">Paste the owner key you were given. It is used for this look only and is not saved.</p>
+<p class="fielderror hide" id="key-err" role="alert"></p>
+<label>From <input id="from" type="date" aria-describedby="range-hint range-err"></label>
+<label>To <input id="to" type="date" aria-describedby="range-hint range-err"></label>
+<p class="fieldhint" id="range-hint">Pick the first and the last day, for example 1 Nov 2026 to 30 Nov 2026. The "From" day must come first.</p>
+<p class="fielderror hide" id="range-err" role="alert"></p>
+<button class="btn main" id="show" type="submit">Show</button>
 <button class="btn" type="button" id="csv">Download CSV</button>
 </form>
 <p id="msg" class="line" role="status"></p>

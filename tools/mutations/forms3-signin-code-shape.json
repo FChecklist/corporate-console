@@ -1,0 +1,1 @@
+{"id": "forms3-signin-code-shape", "repo": ".", "file": "public/screens/signin.js", "find": "if (!/^\\d{6}$/.test(codeBox.value.trim())) return codeF.show(", "replace": "if (false) return codeF.show(", "test": "tests/forms-idiot-proof.test.ts", "note": "a code of the wrong shape is sent to the server"}

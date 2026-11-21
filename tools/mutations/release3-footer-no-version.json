@@ -1,0 +1,1 @@
+{"id": "release3-footer-no-version", "repo": ".", "file": "public/core/version.js", "find": "a.textContent = version ? `v${version}: what's new` : \"What's new\";", "replace": "a.textContent = \"What's new\";", "test": "tests/release-0-3-0.test.ts", "note": "the footer does not show the version"}

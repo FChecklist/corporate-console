@@ -36,14 +36,14 @@ test("signed out: only the sign-in form; the consent box is required; the code f
     const forms = o.querySelectorAll("form"); const form = forms[0]!, codeForm = forms[1]!;
     email.value = "demo5@demo-test.invalid";
     submit(form);
-    expect(o.querySelector(".signmsg")!.textContent).toContain("tick the box");
+    expect(o.querySelector("#si-consent-err")!.textContent).toContain("tick the box"); // said right under the box, in the box's own error line
     expect(w.mails.length).toBe(0);
     consent.checked = true; submit(form);
     await until(() => !codeForm.classList.contains("hide"));
     expect(w.mails.length).toBe(1);
     expect(o.querySelector("#si-sent")!.textContent).toContain("demo5@demo-test.invalid");
     (o.querySelector("#si-code") as any).value = "000000"; submit(codeForm);
-    await until(() => /not right|run out/.test(o.querySelector(".signmsg")!.textContent || ""));
+    await until(() => /not right|run out/.test(o.querySelector("#si-code-err")!.textContent || ""));
     expect(signed).toBe(0);
     (o.querySelector("#si-code") as any).value = /code is (\d{6})/.exec(w.mails[0]!)![1]; submit(codeForm);
     await until(() => signed === 1);
@@ -342,9 +342,10 @@ test("sign-in: a wrong code is told on the code step itself (the message is outs
     (o.querySelector("#si-email") as any).value = "demo5@demo-test.invalid"; (o.querySelector("#si-consent") as any).checked = true; submit(form);
     await until(() => !codeForm.classList.contains("hide"));
     (o.querySelector("#si-code") as any).value = "000000"; submit(codeForm);
-    await until(() => /not right|run out/.test(o.querySelector(".signmsg")!.textContent || ""));
+    await until(() => /not right|run out/.test(o.querySelector("#si-code-err")!.textContent || ""));
     expect(form.contains(o.querySelector(".signmsg"))).toBe(false);
     expect(codeForm.contains(o.querySelector(".signmsg"))).toBe(false);
+    expect(codeForm.contains(o.querySelector("#si-code-err"))).toBe(true); // the wrong-code line sits right under the code box, on the visible step
     click(byText(codeForm, "button", "Use a different e-mail"));
     expect(form.classList.contains("hide")).toBe(false);
     expect(codeForm.classList.contains("hide")).toBe(true);

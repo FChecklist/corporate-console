@@ -1,0 +1,1 @@
+{"id": "sitemap3-preview-open", "repo": ".", "file": "seo.mjs", "find": "\"# A trial copy of the console: nothing here is for search.\\nUser-agent: *\\nDisallow: /\\n\"", "replace": "\"# trial\\nUser-agent: *\\nAllow: /\\n\"", "test": "tests/sitemap-content.test.ts", "note": "a trial copy is open to search"}
