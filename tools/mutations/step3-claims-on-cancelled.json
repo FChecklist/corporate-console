@@ -1,0 +1,1 @@
+{"id": "step3-claims-on-cancelled", "repo": ".", "file": "public/core/steps.js", "find": "default: return { states: all(\"\"), now: 0, caption: \"\" };", "replace": "default: return { states: { ...all(\"\"), 1: \"now\" }, now: 1, caption: \"\" };", "test": "tests/step-next.test.ts", "note": "a cancelled game is put on step 1"}

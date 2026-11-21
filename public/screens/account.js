@@ -31,14 +31,24 @@ export async function renderAccount(outlet, ctx) {
   clear(outlet);
   const msg = el("p", { class: "signmsg", role: "status", "aria-live": "polite" });
   const box = el("div", { class: "box", id: "acct-close" });
+  let leaving = false; // one tap signs out once
   const signOut = async (everywhere) => {
+    if (leaving) return;
+    leaving = true;
     const r = await api.signOut({ everywhere });
+    leaving = false;
     if (!r.ok) { msg.classList.add("bad"); msg.textContent = "The system could not sign you out just now. Please try again."; return; } // never pretend
     ctx.onSignedOut && ctx.onSignedOut();
   };
   const warn = el("div", { id: "acct-warn" });
   let paidRows = [];
+  let closing = false; // the confirm panel shows once, and the request is sent once
   const close = async () => {
+    if (closing) return;
+    closing = true;
+    try { await closeAsked(); } finally { closing = false; }
+  };
+  const closeAsked = async () => {
     if (!(await confirmPanel(box, "Close your account now? This cannot be undone.", "Yes, close it", "No"))) return;
     msg.textContent = "One moment."; msg.classList.remove("bad");
     const r = await api.closeAccount();

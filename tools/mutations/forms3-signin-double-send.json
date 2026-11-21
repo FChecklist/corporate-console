@@ -1,0 +1,1 @@
+{"id": "forms3-signin-double-send", "repo": ".", "file": "public/screens/signin.js", "find": "if (!sendBtn.disabled) send(false);", "replace": "send(false);", "test": "tests/forms-idiot-proof.test.ts", "note": "a second press sends a second e-mail"}

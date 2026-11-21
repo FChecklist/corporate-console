@@ -23,10 +23,14 @@ export async function renderCreate(outlet, ctx, opts = {}) {
   const tiles = el("div", { class: "tiles" });
   outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Create a new game" }), el("p", { class: "lead", text: "Choose a game. It opens in its own screen, with the date, size and prizes ready to fill in." }), stepBanner(document, "create"), el("p", {}, el("a", { class: "btn sm", href: "#/create/from", dataset: { from: "earlier" }, text: "Start from an earlier game" })), tiles)));
 
+  let starting = false; // one tap makes one draft: while a game is being made, every Start and Try button on the screen is locked (a double tap, or Start then Try a free game, must not make two drafts)
   async function start(game, btn, o = {}) {
-    btn.disabled = true;
+    if (starting) return;
+    starting = true;
+    const all = [...outlet.querySelectorAll(".tile button")], was = all.map((b) => b.disabled);
+    all.forEach((b) => { b.disabled = true; });
     let r;
-    try { r = await api.startNew(game, o); } catch { r = { ok: false }; } finally { btn.disabled = false; }
+    try { r = await api.startNew(game, o); } catch { r = { ok: false }; } finally { all.forEach((b, i) => { b.disabled = was[i]; }); starting = false; }
     if (!r.ok) return toast(openError(r, (names[game] || "That game")));
     (ctx.go || ((u) => location.assign(u)))(r.url);
   }

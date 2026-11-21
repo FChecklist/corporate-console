@@ -30,19 +30,35 @@ function draw(r) {
     s.append(t); out.append(s);
   }
 }
+const wrong = (id, text) => { const e = $(id + "-err"); e.textContent = text; e.classList.toggle("hide", !text); };
+/** the two checks every press makes first; true = fine. Each problem is said right under its own field. */
+function valid() {
+  wrong("key", ""); wrong("range", ""); $("msg").textContent = "";
+  if (!$("key").value.trim()) { wrong("key", "Please paste the owner key first, then press Show."); $("key").focus(); return false; }
+  if (!$("from").value || !$("to").value) { wrong("range", "Please pick both days, for example 1 Nov 2026 and 30 Nov 2026."); return false; }
+  if ($("from").value > $("to").value) { wrong("range", "The \"From\" day must not be after the \"To\" day. Please swap them."); return false; }
+  return true;
+}
+let busy = false; // one press asks once
 $("f").addEventListener("submit", async (e) => {
-  e.preventDefault(); $("msg").textContent = "One moment.";
+  e.preventDefault();
+  if (busy || !valid()) return;
+  busy = true; $("show").disabled = true; $("msg").textContent = "One moment.";
   try {
     const res = await ask("/stats/games");
-    if (res.status === 401) { $("msg").textContent = "That key is not right."; $("out").replaceChildren(); return; }
-    if (!res.ok) { $("msg").textContent = "The numbers could not be read just now. Try again."; return; }
+    if (res.status === 401) { $("msg").textContent = ""; wrong("key", "That key is not right. Please paste it again, or ask the owner for it."); $("out").replaceChildren(); return; }
+    if (!res.ok) { $("msg").textContent = "The numbers could not be read just now. Press Show to try again."; return; }
     draw(await res.json()); $("msg").textContent = "";
-  } catch { $("msg").textContent = "The numbers could not be read just now. Try again."; }
+  } catch { $("msg").textContent = "The numbers could not be read just now. Press Show to try again."; }
+  finally { busy = false; $("show").disabled = false; }
 });
 $("csv").addEventListener("click", async () => {
+  if (busy || !valid()) return;
+  busy = true; $("csv").disabled = true;
   try {
     const res = await ask("/stats/games.csv");
-    if (!res.ok) { $("msg").textContent = res.status === 401 ? "That key is not right." : "The file could not be made just now."; return; }
+    if (!res.ok) { if (res.status === 401) wrong("key", "That key is not right. Please paste it again, or ask the owner for it."); else $("msg").textContent = "The file could not be made just now. Press Download CSV to try again."; return; }
     const url = URL.createObjectURL(await res.blob()), a = el("a"); a.href = url; a.download = "funnel-games.csv"; a.click(); URL.revokeObjectURL(url);
-  } catch { $("msg").textContent = "The file could not be made just now."; }
+  } catch { $("msg").textContent = "The file could not be made just now. Press Download CSV to try again."; }
+  finally { busy = false; $("csv").disabled = false; }
 });

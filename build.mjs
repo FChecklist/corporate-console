@@ -67,7 +67,14 @@ export function headersFile(cfg, env) {
   const common = ["  X-Content-Type-Options: nosniff", "  Referrer-Policy: no-referrer", `  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(${["self", ...(((cfg.payframeOrigins || {})[env]) || []).map((o) => JSON.stringify(o))].join(" ")})`, "  X-Frame-Options: DENY", `  Content-Security-Policy: ${csp}`];
   return [
     "/*", ...common, "",
-    "/auth/*", "  Cache-Control: no-store", "",
+    "/auth/*", "  Cache-Control: no-store", "  X-Robots-Tag: noindex, nofollow", "",
+    "/pay/*", "  X-Robots-Tag: noindex, nofollow", "",
+    "/pay-link.html", "  X-Robots-Tag: noindex, nofollow", "",
+    "/signin.html", "  X-Robots-Tag: noindex, nofollow", "",
+    "/report/*", "  X-Robots-Tag: noindex, nofollow", "",
+    "/stats/*", "  X-Robots-Tag: noindex, nofollow", "",
+    "/owner-funnel/*", "  X-Robots-Tag: noindex, nofollow", "",
+    "/404.html", "  X-Robots-Tag: noindex, nofollow", "",
     "/sw.js", "  Cache-Control: no-cache", "",
     "/gamesbar.js", "  Cache-Control: no-cache", "",
     "/gamesbar.css", "  Cache-Control: no-cache", "",
@@ -116,7 +123,7 @@ export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.
   writeFileSync(join(out, "games/games.css"), gamesCss(cfg));
   // search and AI-search files and every page's head, all from seo.mjs (0.2.2). A page that has no <!--seo--> marker makes the build stop.
   const releases = existsSync(join(ROOT, "releases.json")) ? JSON.parse(readFileSync(join(ROOT, "releases.json"), "utf8")) : [];
-  const pl = pageList(cfg), seoKey = { home: "index.html", signin: "signin.html", pay: "pay-link.html", funnel: "owner-funnel/index.html" };
+  const pl = pageList(cfg), seoKey = { home: "index.html", signin: "signin.html", pay: "pay-link.html", funnel: "owner-funnel/index.html", notfound: "404.html" };
   for (const [key, file] of Object.entries(seoKey)) writeFileSync(join(out, file), applyHead(readFileSync(join(out, file), "utf8"), headBlock(cfg, env, key), file));
   writeFileSync(join(out, "changes.html"), applyHead(changesHtml(cfg, env, releases, istText), headBlock(cfg, env, "changes", [CHANGES_LD(cfg, env)]), "changes.html"));
   writeFileSync(join(out, "robots.txt"), robotsTxt(cfg, env));

@@ -1,0 +1,1 @@
+{"id": "consent3-old-cache-kept", "repo": ".", "file": "public/core/offline.js", "find": "if (String(k).startsWith(CACHE_PREFIX)) await store.delete(k);", "replace": "if (false) await store.delete(k);", "test": "tests/consent-order.test.ts", "note": "a cache from an earlier visit is kept after a decline"}

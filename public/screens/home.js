@@ -1,7 +1,7 @@
 // Home: exactly three doors (Create a new game, My games, Billing) and no input anywhere. Under them two thin strips that appear only when they have something:
 // "Needs your attention" (waiting for payment, an invitation, starting today) and "Playing now". Nothing else: no prices, no news, no tips.
 import { el, clear } from "../core/dom.js";
-import { withColor, button, whenText, openGame } from "./ui.js";
+import { withColor, button, whenText, openGame, confirmPanel, toast } from "./ui.js";
 import { needsAttention, startsToday, draftStartsSoon, mergeGames } from "../core/merge.js";
 import { gamesFailedLine } from "../core/errors.js";
 
@@ -39,9 +39,16 @@ export async function renderHome(outlet, ctx) {
   if (!l.rows.length && !l.failed.length) strips.append(el("section", { class: "strip", id: "first-game" }, el("h2", { text: "Your first game" }), el("p", { class: "hintline", text: "Keep ready: the date and time, how many people will play, the prizes, and your company name. Then press Create a new game." })));
   if (l.failed.length) strips.append(el("p", { class: "banner", role: "status", text: gamesFailedLine(l.failed.map((id) => names[id] || id)) }));
   const row = (g, label, buttons) => withColor(el("div", { class: "row", dataset: { game: g.game, eid: g.eid } }, el("div", { class: "what" }, el("b", { text: g.name }), el("span", { text: `${label} · ${rowNote(g, names)}` })), el("div", { class: "btns" }, buttons)), colors[g.game] || "#0B3D91");
+  const answering = new Set(); // one tap answers once
   async function answer(g, op, rowEl) {
-    const r = await api.answerInvitation(g.game, g.eid, g.roleId, op);
-    if (r.ok) rowEl.remove();
+    const key = g.game + g.eid;
+    if (answering.has(key) || (op === "decline" && rowEl.querySelector(".confirm"))) return;
+    if (op === "decline" && !(await confirmPanel(rowEl, "Say no to this invitation? You can join only if the organizer invites you again.", "Yes, say no", "No, go back"))) return; // a "no" cannot be taken back by the person
+    answering.add(key);
+    try {
+      const r = await api.answerInvitation(g.game, g.eid, g.roleId, op);
+      if (r.ok) rowEl.remove(); else toast("That did not work. Please try again.");
+    } finally { answering.delete(key); }
   }
   if (attn.length) {
     const sec = el("section", { class: "strip", "aria-labelledby": "h-attn" }, el("h2", { id: "h-attn", text: "Needs your attention" }));

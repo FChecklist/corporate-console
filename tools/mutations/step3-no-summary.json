@@ -1,0 +1,1 @@
+{"id": "step3-no-summary", "repo": ".", "file": "public/core/steps.js", "find": "if (sum.now) {", "replace": "if (false) {", "test": "tests/step-next.test.ts", "note": "the banner shows no Step N of M line"}

@@ -1,0 +1,1 @@
+{"id": "step3-total-hardcoded", "repo": ".", "file": "public/core/steps.js", "find": "export const TOTAL = STEPS.length;", "replace": "export const TOTAL = 7;", "test": "tests/step-next.test.ts", "note": "the total of steps is typed in and wrong"}

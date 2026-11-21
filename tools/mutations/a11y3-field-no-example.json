@@ -1,0 +1,1 @@
+{"id": "a11y3-field-no-example", "repo": ".", "file": "public/pay-link.html", "find": "For example: you@yourcompany.com</span>", "replace": "</span>", "test": "tests/accessibility.test.ts", "note": "the payee e-mail field has no example"}

@@ -1,10 +1,10 @@
 # Knowledge: Corporate Games master console (corporate-console)
 
-Written 20 Nov 2026, updated 21 Nov 2026 for version 0.2.2, for a future AI session that has never seen this repo (standard: marketing-ledger plans/VERSION-AND-KNOWLEDGE-STANDARD-2026-11-20.md). It describes the CURRENT state only, from the code and existing docs. Anything not found is marked "unknown". Do not publish this file on the website.
+Written 20 Nov 2026, updated 21 Nov 2026 for version 0.3.0, for a future AI session that has never seen this repo (standard: marketing-ledger plans/VERSION-AND-KNOWLEDGE-STANDARD-2026-11-20.md). It describes the CURRENT state only, from the code and existing docs. Anything not found is marked "unknown". Do not publish this file on the website.
 
 ## 1. What this is
 One sign-in, six games, billing. The organizer/host website: set up, invite, pay, approve, monitor. Plain static pages plus a small sign-in service on Cloudflare Pages. Also holds the test tools shared by every game repo.
-- Live site: https://console.corporatetambola.com (Cloudflare Pages project `corporate-console`). Live version (owner, 21 Nov 2026): **0.2.1** (PR #2). This branch is **0.2.2** (not deployed). Read `/version.json` on the site for the truth; it now also carries `product` and `changes`.
+- Live site: https://console.corporatetambola.com (Cloudflare Pages project `corporate-console`). Live version (owner, 21 Nov 2026): **0.2.2**. This branch is **0.3.0** (not deployed; it is cut from 0.2.2, commit 32e1603). Read `/version.json` on the site for the truth; it now also carries `product` and `changes`.
 - Other repos and what they are for: `KNOWLEDGE-MAP.md` in the repo root.
 
 ## 2. How it connects
@@ -17,6 +17,14 @@ Players and organizers reach the suite like this: home.corporatetambola.com (log
 - **SEO and AI search**: `seo.mjs` (page list, head block, JSON-LD, robots, sitemap, llms.txt, /changes page) called by `build.mjs`. Every page in `public/` that has a public or private role has a `<!--seo-->` marker in its head; a page without it stops the build. Only a live build says index; the pages.dev build says noindex and `Disallow: /`. Indexed: `/`, `/games/`, `/changes`. Not indexed: sign-in link page, payee page, owner page, `/auth`, `/pay`, `/report`, `/stats`. Training crawlers are told no in robots.txt (list `TRAINING_BOTS`).
 - **/changes**: built from `releases.json`; each row needs a `userNote` (plain words, no security or internal detail). The technical `note` never shows.
 - **Footer standard**: `public/core/version.js` + `footer.css`: line 1 "Version X, released ...", line 2 `vX.Y.Z: what's new` (to /changes), Cookie choices, help address.
+
+## 2b. What 0.3.0 added (21 Nov 2026) and where it lives
+- **Consent order**: `public/core/offline.js` is the ONLY place that registers the offline worker (`/sw.js`). It does so only after the answer "Also remember your choices" (`prefs`); before an answer, after "Only what is needed", and with Global Privacy Control or Do Not Track it registers nothing and removes any worker and any cache starting `console-shell-`. `boot.js` follows the answer through the event `cg-consent-changed` (sent by `consent.js` after a click). A test fails if `boot.js` ever calls `.register(` itself. Every page that shows the footer must start the banner (`page-consent.js` or `boot.js`); a test reads the build.
+- **Step banner**: `stepSummary(stage)` in `public/core/steps.js` gives "Step N of 6: name" and "Next: Step N+1 of 6: name" (`TOTAL` = number of steps). Shown on Create and on "Start from an earlier game"; game rows add "Next: ..." to their line.
+- **Forms**: `public/core/forms.js` (`describeField` = example line + error line + aria-invalid; `once`, `lockAll` = one press does one job). Rule: a new field gets an example and its own error line; a new button that sends something locks itself while it works; something that cannot be undone asks Yes / No first (`confirmPanel` in `public/screens/ui.js`).
+- **Search safety**: `public/core/page-seo.js` (signed-in screens: `noindex,nofollow` and a title of their own); `X-Robots-Tag: noindex, nofollow` in `_headers` for private paths (`build.mjs` `headersFile`; static files only: Pages Functions set their own headers); `public/404.html`.
+- Browser check at 360 px: `node tools/browser-tests/mobile-360.mjs` (a built `dist/` and the pre-installed Chromium).
+- Tests: `consent-order`, `accessibility`, `sitemap-content`, `step-next`, `forms-idiot-proof`, `release-0-3-0`.
 
 ## 3. Map of folders and the files that matter
 public/ (the pages: index.html, signin.html and the screens), functions/ (auth, report, stats, _lib: Cloudflare Pages Functions), migrations/ (0001_console, 0002_report_hold, 0003_funnel_hit), packages/bridge (the one bridge module copied byte for byte into every game), packages/game-pack (shared game setup pack), packages/report (end-of-game PDF report), contract/ and docs/CONTRACT_V1.md (frozen console-game contract), config/games.json, tools/ (falsify-run, heavy-run, baseline, deploy, game-port, fake-game, prices), tests/, vendor/ (vendored corporate-game-core, pinned 0.1.0), build.mjs, releases.json.
@@ -33,7 +41,7 @@ Files that matter: build.mjs; seo.mjs; chooser.mjs; releases.json; config/games.
 
 ## 5. How to run the tests
 `bun test --isolate tests`; `node tools/falsify-run.mjs` (breaks the code on purpose; every case must go red). Heavy runs: `node tools/heavy-run.mjs -- <command>` takes the heavy lock.
-Typecheck: there is no tsconfig in the repo; `npx tsc --noEmit` with strict mode over `functions/` and `packages/` is clean (0 errors); the tests folder has older type errors (83 before 0.2.2, unchanged after). Known failing test on Linux: `tests/heavy-run.test.ts` "a job that runs too long is killed" (tools/heavy-run.mjs spawns without `detached`; one-line fix noted in CHANGELOG 0.2.2).
+Typecheck: `npx tsc -p tsconfig.json` (strict, no emit) over `functions/`, `packages/` and the test files listed in `tsconfig.json` (the 0.2.2 and 0.3.0 ones); older test files are not in its scope yet. `tests/heavy-run.test.ts` is green on Linux since 0.3.0 (the job now runs in its own process group).
 RAM on the owner's laptop is tight: no full builds or browsers without the heavy lock (C:/ct/HEAVY_JOB_PROTOCOL.md).
 
 ## 6. Deploy and roll back
@@ -41,7 +49,7 @@ docs/RELEASE_RECIPE.md: stamp, releases.json last, build, check-dist, deploy to 
 Nothing is deployed from a docs-only change. Cloudflare only, no Vercel. Every deploy needs a version bump and a CHANGELOG entry (standard section 1).
 
 ## 7. Known issues and open failures
-This branch is cut from the 0.2.1 line, not from the repo default branch (which lacks PR #2). Two lines to reconcile before they are one: CHANGELOG, releases.json and docs/GAME_PAY_CONTRACT.md conflict (PR #4, version 0.1.1). The pay flag `PAY_VIA_MONEYPENNY` is OFF; no money moves. Audits of 0.2.2: pending. PR #5 (e2e) clicks "Send me a code" and "Sign me in", which are now "Get your code" and "Sign in". Smoke failure map: `docs/SMOKE-20NOV-CONSOLE.md`.
+This branch is cut from the 0.2.2 line (PR #6), not from the repo default branch (which is 0.1.1 and lacks PR #2 and PR #6). Two lines to reconcile before they are one: CHANGELOG, releases.json and docs/GAME_PAY_CONTRACT.md conflict (PR #4, version 0.1.1). The pay flag `PAY_VIA_MONEYPENNY` is OFF; no money moves. Audits of 0.3.0: pending. PR #5 (e2e) clicks "Send me a code" and "Sign me in", which are now "Get your code" and "Sign in". Smoke failure map: `docs/SMOKE-20NOV-CONSOLE.md`.
 
 ## 8. Owner-only steps still open
 Secrets and keys are the owner's (names only in config/SECRETS_NAMES.md where present). Deploy, domain, payment live mode and the Rs 1 payment test are the owner's decisions via BOSS. Versioning: `version.json` now has `product` and `changes`, the footer shows `vX.Y.Z` linked to /changes, and /changes exists (0.2.2); every deploy still bumps the version and adds a CHANGELOG entry with two audit PASS ids and the previous deploy's rollback id.

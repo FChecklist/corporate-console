@@ -1,0 +1,1 @@
+{"id": "sitemap3-404-listed", "repo": ".", "file": "seo.mjs", "find": "[\"home\", \"games\", \"changes\"].map(row)", "replace": "[\"home\", \"games\", \"changes\", \"notfound\"].map(row)", "test": "tests/sitemap-content.test.ts", "note": "the 404 page is in the sitemap"}

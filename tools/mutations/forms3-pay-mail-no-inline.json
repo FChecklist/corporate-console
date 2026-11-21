@@ -1,0 +1,1 @@
+{"id": "forms3-pay-mail-no-inline", "repo": ".", "file": "public/pay-link.js", "find": "$(\"mail\").setAttribute(\"aria-invalid\", \"true\");", "replace": "", "test": "tests/forms-idiot-proof.test.ts", "note": "the payee e-mail error is not marked on the field"}

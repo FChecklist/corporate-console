@@ -1,0 +1,1 @@
+{"id": "step3-createfrom-no-banner", "repo": ".", "file": "public/screens/createfrom.js", "find": "stepBanner(document, \"create\", { title: \"Where this fits in the six steps\" }), body)));", "replace": "body)));", "test": "tests/step-next.test.ts", "note": "Start from an earlier game has no banner"}

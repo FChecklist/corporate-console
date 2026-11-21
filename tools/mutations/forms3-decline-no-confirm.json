@@ -1,0 +1,1 @@
+{"id": "forms3-decline-no-confirm", "repo": ".", "file": "public/screens/home.js", "find": "if (op === \"decline\" && !(await confirmPanel(", "replace": "if (false && !(await confirmPanel(", "test": "tests/forms-idiot-proof.test.ts", "note": "declining an invitation does not ask first"}

@@ -44,7 +44,13 @@ export function confirmPanel(host, text, yes = "Yes", no = "No") {
 }
 
 /** hand over to a game's own page: the console asks the game for a one-time address and goes there (the game checks it; the console never opens a game by itself) */
+const opening = new WeakSet(); // one tap opens the game once: a second tap while the first is still working is ignored
 export async function openGame(ctx, g, target) {
+  if (opening.has(g)) return false;
+  opening.add(g);
+  try { return await openGameOnce(ctx, g, target); } finally { opening.delete(g); }
+}
+async function openGameOnce(ctx, g, target) {
   const r = await ctx.api.handoff(g.game, { eid: g.eid, target: target || (g.role === "organizer" ? "organizer" : "host") });
   if (!r.ok) { toast(openError(r, (ctx.names && ctx.names[g.game]) || "That game")); return false; }
   (ctx.go || ((u) => location.assign(u)))(r.url);

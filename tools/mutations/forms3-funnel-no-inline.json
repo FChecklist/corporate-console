@@ -1,0 +1,1 @@
+{"id": "forms3-funnel-no-inline", "repo": ".", "file": "public/owner-funnel/funnel.js", "find": "Please paste the owner key first, then press Show.", "replace": "Key.", "test": "tests/forms-idiot-proof.test.ts", "note": "the owner key error does not say what to do"}
