@@ -1,0 +1,1 @@
+{"id": "cookie-needed-not-erasing", "repo": ".", "file": "public/core/consent.js", "find": "if (choice !== \"prefs\") clearOptional(o);", "replace": "/* kept */", "test": "tests/cookie-banner.test.ts", "note": "'only what is needed' leaves the e-mail and layout on the device"}

@@ -6,6 +6,7 @@ import { STATUSES, rowStatus, bannerFor, roleLine, rowActions, approvalNote } fr
 import { gamesFailedLine } from "../core/errors.js";
 import { mergeGames } from "../core/merge.js";
 import { has } from "../core/features.js";
+import { stepLine } from "../core/steps.js";
 
 export const FILTERS = [["all", "All"], ["coming", "Coming up"], ["finished", "Finished"]];
 const OVER = new Set(["finished", "cancelled", "not_started"]);
@@ -61,6 +62,7 @@ export async function renderMyGames(outlet, ctx) {
       el("div", { class: "chips" }, roleChip(g.role), g.nextAction === "accept" ? el("span", { class: "chip ready", text: "Invitation" }) : el("span", { class: "chip " + STATUSES[st].cls, dataset: { status: st }, text: STATUSES[st].label })),
       el("p", { class: "gid", text: "Game ID " + g.eid }),
       g.nextAction === "accept" ? null : el("p", { class: "banner2", dataset: { banner: st }, text: bannerFor(st, g, whenText(g.startMs)) }),
+      g.nextAction !== "accept" && g.role === "organizer" && stepLine(st) ? el("p", { class: "stepline", dataset: { stepline: st }, text: stepLine(st) }) : null, // where the game is on the six steps
       el("ul", { class: "facts" }, el("li", { text: whenText(g.startMs) }), el("li", { text: `up to ${g.cap} people${Number.isInteger(g.joined) ? `, ${g.joined} joined` : ""}${Number.isInteger(g.yourLimit) ? `, you can add up to ${g.yourLimit}` : ""}` })),
       g.role !== "organizer" && g.invitedBy ? el("p", { class: "by", text: `Invited by ${g.invitedBy}` }) : null,
       el("p", { class: "who", dataset: { who: g.role }, text: roleLine(g.role, (ctx.games || []).find((x) => x.id === g.game)) }),

@@ -1,0 +1,1 @@
+{"id": "seo-canonical-wrong", "repo": ".", "file": "seo.mjs", "find": "`<link rel=\"canonical\" href=\"${esc(url)}\">`", "replace": "`<link rel=\"canonical\" href=\"${esc(origin + \"/\")}\">`", "test": "tests/seo.test.ts", "note": "every page names the home page as its canonical"}

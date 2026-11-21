@@ -1,0 +1,1 @@
+{"id": "cookie-stores-before-answer", "repo": ".", "file": "public/core/consent.js", "find": "  if (s0.ask) open(); // answered", "replace": "  if (s0.ask) { doc.cookie = answerCookie(\"needed\", secure()); open(); } // answered", "test": "tests/cookie-banner.test.ts", "note": "a cookie is written before the visitor answers"}

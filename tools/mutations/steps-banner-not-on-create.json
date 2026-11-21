@@ -1,0 +1,1 @@
+{"id": "steps-banner-not-on-create", "repo": ".", "file": "public/screens/create.js", "find": " stepBanner(document, \"create\"),", "replace": "", "test": "tests/step-banner.test.ts", "note": "the Create screen loses its step banner"}

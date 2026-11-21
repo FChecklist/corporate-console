@@ -1,0 +1,1 @@
+{"id": "seo-preview-indexable", "repo": ".", "file": "seo.mjs", "find": "index = p.index && live;", "replace": "index = p.index;", "test": "tests/seo.test.ts", "note": "the trial address asks to be indexed"}

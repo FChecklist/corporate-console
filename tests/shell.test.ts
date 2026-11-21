@@ -39,7 +39,7 @@ test("the header checker refuses a wildcard, an inline-script allowance, framing
 test("the page itself has no inline script, no inline style and no inline event handler", () => {
   for (const f of ["index.html", "signin.html"]) {
     const html = read(f);
-    expect([f, /<script(?![^>]*\bsrc=)[^>]*>/i.test(html)]).toEqual([f, false]);
+    expect([f, /<script(?![^>]*\b(?:src=|type="application\/ld\+json")[^>]*>)[^>]*>/i.test(html)]).toEqual([f, false]); // a JSON-LD block is data, not a script that runs
     expect([f, /\sstyle\s*=/i.test(html)]).toEqual([f, false]);
     expect([f, /\son[a-z]+\s*=/i.test(html)]).toEqual([f, false]);
   }
@@ -52,7 +52,7 @@ test("the menu is exactly Home, My games, Create, Billing, Account (no game name
   expect(labels).toEqual(["Home", "My games", "Create", "Billing", "Account"]);
   expect(copy.mobileBar).toEqual({ home: "Home", mygames: "My games", create: "Create", billing: "Billing", account: "Account" });
   for (const l of labels) expect(/corporate|console/i.test(l)).toBe(false);
-  expect(/<title>([^<]*)<\/title>/.exec(read("index.html"))![1]).toBe("Console");
+  expect(/<title>([^<]*)<\/title>/.exec(read("index.html"))![1]).toBe("Corporate Games console: set up and run your team game"); // each page has its own title (0.2.2); the menu and the app name stay brand-free
 });
 
 test("the privacy strip has the five phrases of the owner's brief", () => {

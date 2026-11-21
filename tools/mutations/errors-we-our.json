@@ -1,0 +1,1 @@
+{"id": "errors-we-our", "repo": ".", "file": "public/screens/control.js", "find": "The report e-mail did not reach somebody. The system will try again by itself.", "replace": "The report e-mail did not reach somebody. We will try again by itself.", "test": "tests/plain-errors.test.ts", "note": "the console says 'we'"}

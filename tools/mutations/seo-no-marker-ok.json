@@ -1,0 +1,1 @@
+{"id": "seo-no-marker-ok", "repo": ".", "file": "seo.mjs", "find": "if (!html.includes(\"<!--seo-->\")) throw", "replace": "if (false) throw", "test": "tests/seo.test.ts", "note": "a page without its SEO marker ships without a head"}

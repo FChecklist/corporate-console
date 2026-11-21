@@ -1,0 +1,1 @@
+{"id": "release-knowledge-stale", "repo": ".", "file": "docs/KNOWLEDGE.md", "find": "`public/core/steps.js`", "replace": "`public/core/step-list.js`", "test": "tests/release-0-2-2.test.ts", "note": "KNOWLEDGE names a file that does not exist"}

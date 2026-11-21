@@ -5,6 +5,7 @@ import { withColor, button, toast } from "./ui.js";
 import { priceLine } from "../core/prices.js";
 import { openError } from "../core/errors.js";
 import { factLines } from "../core/features.js";
+import { stepBanner } from "../core/steps.js";
 
 const WORDS = {
   tambola: "Numbers are called, players mark their tickets.",
@@ -20,7 +21,7 @@ export async function renderCreate(outlet, ctx, opts = {}) {
   clear(outlet);
   const prices = {};
   const tiles = el("div", { class: "tiles" });
-  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Create a new game" }), el("p", { class: "lead", text: "Choose a game. It opens in its own screen, with the date, size and prizes ready to fill in." }), el("p", {}, el("a", { class: "btn sm", href: "#/create/from", dataset: { from: "earlier" }, text: "Start from an earlier game" })), tiles)));
+  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Create a new game" }), el("p", { class: "lead", text: "Choose a game. It opens in its own screen, with the date, size and prizes ready to fill in." }), stepBanner(document, "create"), el("p", {}, el("a", { class: "btn sm", href: "#/create/from", dataset: { from: "earlier" }, text: "Start from an earlier game" })), tiles)));
 
   async function start(game, btn, o = {}) {
     btn.disabled = true;

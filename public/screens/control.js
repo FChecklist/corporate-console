@@ -5,7 +5,7 @@ import { el, clear } from "../core/dom.js";
 import { withColor, roleChip, button, whenText, emptyNote, toast, openGame, copyText } from "./ui.js";
 import { STATUSES, rowStatus as baseStatus } from "../core/status.js";
 import { has, canPause, canStart } from "../core/features.js";
-import { gamesFailedLine } from "../core/errors.js";
+import { gamesFailedLine, notOpenYet } from "../core/errors.js";
 import { mergeGames } from "../core/merge.js";
 
 /** a playing game that the game says is paused: the console keeps its seven status words and shows Paused as its own pill */
@@ -13,8 +13,8 @@ const isPaused = (g, now = Date.now()) => g.paused === true && baseStatus(g, now
 const rowStatus = (g, now = Date.now()) => (isPaused(g, now) ? "paused" : baseStatus(g, now));
 const MINE = new Set(["organizer", "host"]);
 const SHOWN = new Set(["live", "paused", "paid", "free", "pending", "overdue", "completed"]);
-export const REPORT_WORDS = { waiting: "The report is being prepared and goes to every Organizer and Host.", sent: "The report was e-mailed to every Organizer and Host.", held: "The report e-mail did not reach somebody. The system will try again by itself." };
-const ERROR_WORDS = { role: "Only an Organizer or a Host can do that.", state: "The game is not in a state for that just now. Please look again.", unreachable: "The game is slow, try again.", "no-key": "Please sign in again.", "not-on-console": "That game is not open on the console yet." };
+export const REPORT_WORDS = { waiting: "The report is being prepared and goes to every Organizer and Host.", sent: "The report was e-mailed to every Organizer and Host.", held: "The report e-mail did not reach somebody. The system will try again by itself. You do not need to do anything." };
+const ERROR_WORDS = { role: "Only an Organizer or a Host can do that. Please ask the organizer of this game.", state: "The game is not ready for that just now. Please open the Control room again to see where it is.", unreachable: "The game is slow, try again.", "no-key": "Please sign in again.", "not-on-console": notOpenYet("That game") };
 
 /** the games a person controls, in three groups: running now, starting soon, finished (for the report line) */
 export function controlGroups(rows, now = Date.now()) {

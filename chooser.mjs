@@ -1,6 +1,7 @@
-// The public games chooser (/games/), robots.txt and sitemap.xml, made at build time from config/games.json so the addresses can never disagree with the rest of the console.
+// The public games chooser (/games/), made at build time (robots.txt, sitemap.xml and llms.txt are made by seo.mjs) from config/games.json so the addresses can never disagree with the rest of the console.
 // The console app itself (signed in) stays out of search; this one page is for people and search engines. Wording: calm, no "we/our", nothing about deleting beyond the one fixed privacy line.
-export const PRIVACY_LINE = "No personal details needed. All participant information is deleted within 24 hours of the game.";
+import { headBlock, pageList, PRIVACY_LINE as SEO_PRIVACY } from "./seo.mjs";
+export const PRIVACY_LINE = SEO_PRIVACY;
 export const ID_LINE = "A game can be played with only an employee ID or an e-mail.";
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const num = (n) => Number(n).toLocaleString("en-US");
@@ -23,32 +24,23 @@ export const gamesCss = (cfg) => cfg.games.map((g) => `.g-${g.id}{--accent:${/^#
 export function chooserHtml(cfg, env) {
   const consoleOrigin = cfg.consoleOrigin[env];
   const live = liveGames(cfg), soon = cfg.games.filter((g) => !live.includes(g));
-  const title = "Corporate games for teams: Tambola, Bingo, Tic Tac Toe and more";
-  const desc = "Pick a game for your team, create it in a few minutes and share one link. " + ID_LINE;
-  const url = consoleOrigin + "/games/";
+  const page = pageList(cfg).games;
   const card = (g) => `<article class="gcard g-${esc(g.id)}"><h2>${esc(g.name)}</h2><ul>${cardFacts(g).map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p class="btns"><a class="btn main" href="${esc(consoleOrigin)}/#/create/${esc(g.id)}" aria-label="Create a game in ${esc(g.name)}">Create a game</a> <a class="btn" href="${esc(g[env])}/" aria-label="Open ${esc(g.name)}">Open ${esc(g.name.replace(/^Corporate /, ""))}</a></p></article>`;
   const soonCard = (g) => `<article class="gcard soon g-${esc(g.id)}"><h2>${esc(g.name)}</h2><p>Opening soon.</p></article>`;
-  const ld = { "@context": "https://schema.org", "@type": "ItemList", name: "Corporate games", itemListElement: live.map((g, i) => ({ "@type": "ListItem", position: i + 1, name: g.name, url: g[env] + "/" })) };
+  const ld = { "@type": "ItemList", "@id": consoleOrigin + page.path + "#list", name: "Corporate games", itemListElement: live.map((g, i) => ({ "@type": "ListItem", position: i + 1, name: g.name, url: g[env] + "/" })) };
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title>
-<meta name="description" content="${esc(desc)}">
-<meta name="robots" content="index,follow">
-<link rel="canonical" href="${esc(url)}">
-<meta property="og:type" content="website">
-<meta property="og:title" content="${esc(title)}">
-<meta property="og:description" content="${esc(desc)}">
-<meta property="og:url" content="${esc(url)}">
+${headBlock(cfg, env, "games", [ld])}
 <meta name="theme-color" content="#0A2A66">
 <link rel="icon" href="/icons/icon-192.png">
 <link rel="stylesheet" href="/core/tokens.css">
 <link rel="stylesheet" href="/core/chooser.css">
 <link rel="stylesheet" href="/games/games.css">
 <script type="module" src="/core/page-version.js"></script>
-<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
+<script type="module" src="/core/page-consent.js"></script>
 </head>
 <body>
 <main class="chooser">
@@ -65,6 +57,3 @@ ${soon.map(soonCard).join("\n")}
 </html>
 `;
 }
-
-export const robotsTxt = (cfg, env) => `User-agent: *\nAllow: /games/\nDisallow: /auth/\nDisallow: /report/\nDisallow: /stats/\n\nSitemap: ${cfg.consoleOrigin[env]}/sitemap.xml\n`;
-export const sitemapXml = (cfg, env) => `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${cfg.consoleOrigin[env]}/games/</loc></url>\n</urlset>\n`;

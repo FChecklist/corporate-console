@@ -247,7 +247,7 @@ test("Account: Sign out and Sign out on every device end the keys and call back;
     const o = fresh(); let out = 0;
     await renderAccount(o, ctxOf(w, { onSignedOut: () => { out++; } }));
     expect(o.querySelector("#acct-email")!.textContent).toBe("demo5@demo-test.invalid");
-    expect([...o.querySelectorAll("button")].map((b: any) => b.textContent)).toEqual(["Sign out", "Sign out on every device", "Download my payments first (CSV)", "Close my account"]);
+    expect([...o.querySelectorAll("button")].map((b: any) => b.textContent)).toEqual(["Sign out", "Sign out on every device", "Download your payments first (CSV)", "Close your account"]);
     click(byText(o, "button", "Sign out"));
     await until(() => out === 1);
     expect(w.api.vault.size).toBe(0);
@@ -261,7 +261,7 @@ test("Close my account: every game is asked first; one that does not answer is n
     await w.signIn(); await w.api.connect();
     const o = fresh(); let out = 0;
     await renderAccount(o, ctxOf(w, { onSignedOut: () => { out++; } }));
-    const closeAll = async () => { click(byText(o, "button", "Close my account")); await until(() => !!o.querySelector(".confirm")); click(byText(o, "button", "Yes, close it")); };
+    const closeAll = async () => { click(byText(o, "button", "Close your account")); await until(() => !!o.querySelector(".confirm")); click(byText(o, "button", "Yes, close it")); };
     await closeAll();
     await until(() => /did not answer/.test(o.querySelector(".signmsg")!.textContent || ""));
     expect(o.querySelector(".signmsg")!.textContent).toContain("Tic-Tac-Toe");

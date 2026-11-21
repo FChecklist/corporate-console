@@ -1,0 +1,1 @@
+{"id": "seo-llms-missing-game", "repo": ".", "file": "seo.mjs", "find": "const games = liveGames.map(", "replace": "const games = liveGames.slice(1).map(", "test": "tests/seo.test.ts", "note": "llms.txt forgets a game"}

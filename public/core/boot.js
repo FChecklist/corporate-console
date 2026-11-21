@@ -5,13 +5,14 @@ import { el, clear } from "./dom.js";
 import { createApi } from "./api.js";
 import { menuItems, partsOf, menuFor } from "./routes.js";
 import { showVersion } from "./version.js";
+import { startConsent, readOptional } from "./consent.js";
 
 export { menuItems };
 
 export const BREAKPOINT = 900;
 export const designFor = (width, override) => (override === "laptop" || override === "phone" ? (override === "laptop" ? "laptop" : "phone") : width >= BREAKPOINT ? "laptop" : "phone");
 
-const readOverride = () => { try { return localStorage.getItem("cg-design"); } catch { return null; } };
+const readOverride = () => readOptional("cg-design"); // a layout a person picked is used only after they allowed "remember your layout" (cookie banner); otherwise the screen width decides
 
 export async function loadCopy() { return (await fetch("/copy/en.json")).json(); }
 
@@ -57,7 +58,7 @@ export async function mount(root, copy, design) {
   const mod = await import(design === "laptop" ? "../view-laptop/shell.js" : "../view-mobile/shell.js");
   clear(root);
   const outlet = mod.mountShell(root, { copy, items: menuItems(copy), strip: privacyStrip(copy), route: menuFor(route), email: app.email, signedIn: app.signedIn });
-  const help = el("p", { class: "helpline" }, copy.help.text + " ", el("a", { href: "mailto:" + copy.help.email + "?subject=" + encodeURIComponent("Help with my game") }, copy.help.email), " ", copy.help.eventDay);
+  const help = el("p", { class: "helpline" }, copy.help.text + " ", el("a", { href: "mailto:" + copy.help.email + "?subject=" + encodeURIComponent("Help with a game") }, copy.help.email), " ", copy.help.eventDay);
   root.querySelector("main").after(help);
   showVersion(); // the version and release time on every screen, as the owner asked
   await screenFor(route, outlet, copy);
@@ -85,6 +86,8 @@ function updateBar(copy, reg) {
 
 export async function start() {
   const root = document.getElementById("app");
+  clear(root); // the page's first text (for search engines and for visitors without scripts) gives way to the app at once, so a signed-in person never sees a sign-in welcome flash by
+  startConsent(); // the cookie banner: stores nothing until the visitor answers
   const copy = await loadCopy();
   app.api = createApi({ games: GAMES, consoleOrigin: location.origin, onExpired: () => { if (app.signedIn) onSignedOut(); } }); // the console sign-in ended: back to the sign-in screen
   const me = await app.api.auth.me();

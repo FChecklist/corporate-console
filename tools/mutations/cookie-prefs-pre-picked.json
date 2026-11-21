@@ -1,0 +1,1 @@
+{"id": "cookie-prefs-pre-picked", "repo": ".", "file": "public/core/consent.js", "find": "class: \"btn cookiebtn\", id: \"cookie-prefs\"", "replace": "class: \"btn main cookiebtn\", id: \"cookie-prefs\"", "test": "tests/cookie-banner.test.ts", "note": "the 'yes' answer is made the bigger, main button (dark pattern)"}

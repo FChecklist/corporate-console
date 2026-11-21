@@ -1,0 +1,1 @@
+{"id": "seo-title-duplicate", "repo": ".", "file": "seo.mjs", "find": "title: \"Games for your team: Tambola, Bingo, Tic Tac Toe and more\"", "replace": "title: \"Corporate Games console: set up and run your team game\"", "test": "tests/seo.test.ts", "note": "two pages share a title"}

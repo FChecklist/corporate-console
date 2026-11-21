@@ -9,7 +9,7 @@ const call = async (method, path, body) => {
 };
 const money = (d) => d.currency === "USD" ? "US$ " + (d.amountMinor / 100).toFixed(2) : (() => { const r = d.amountMinor / 100; return "₹" + r.toLocaleString("en-IN", { minimumFractionDigits: r % 1 ? 2 : 0, maximumFractionDigits: 2 }); })();
 const PENDING = "Your payment is on its way. It can take a few minutes. You do not need to pay again.";
-const NOTDONE = "The payment did not go through. Nothing has been taken. You can try again.";
+const NOTDONE = "The payment did not go through. Nothing has been taken. Press the payment button to try again.";
 // the secure payment window opens on top of this page (a frame): nobody leaves the console. When the money arrives this page says so by itself.
 let timer = null, listener = null;
 const closeFrame = () => { const o = $("overlay"); if (o) o.remove(); if (listener) { window.removeEventListener("message", listener); listener = null; } };
@@ -43,7 +43,7 @@ const openFrame = (frame) => {
 };
 (async () => {
   const r = await call("GET", "/pay/link/info?t=" + encodeURIComponent(t));
-  if (!r.j.ok) { $("msg").textContent = r.j.message || BUSY; return; }
+  if (!r.j.ok) { $("msg").textContent = (r.j.message || BUSY) + " Press Try again, or ask the person who sent you this link for a new one."; const rt = $("retry"); rt.hidden = false; rt.addEventListener("click", () => location.reload()); return; }
   $("title").textContent = "Pay for " + (r.j.gameName || "a game");
   if (r.j.covered) { $("title").textContent = "Paid"; $("msg").textContent = "This game is already paid for. Thank you."; return; }
   $("msg").textContent = "The organizer asked you to pay for this game. The game starts as soon as the payment is done.";

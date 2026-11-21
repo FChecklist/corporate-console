@@ -1,0 +1,1 @@
+{"id": "seo-changes-leaks-note", "repo": ".", "file": "seo.mjs", "find": "esc(r.userNote || \"Small improvements and fixes.\")", "replace": "esc(r.note)", "test": "tests/seo.test.ts", "note": "/changes shows the technical note"}

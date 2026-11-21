@@ -1,0 +1,1 @@
+{"id": "cookie-gpc-ignored", "repo": ".", "file": "public/core/consent.js", "find": "const gpc = nav.globalPrivacyControl === true;", "replace": "const gpc = false;", "test": "tests/cookie-banner.test.ts", "note": "Global Privacy Control is ignored"}

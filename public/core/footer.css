@@ -1,0 +1,5 @@
+/* footer standard (0.2.2): version line, then what's new / cookie choices / help. Loaded by version.js on every page. */
+.versionline { margin: 18px 16px 4px; text-align: center; font-size: 13px; opacity: .8; }
+.footerlinks { margin: 0 16px 90px; text-align: center; font-size: 14px; color: var(--muted, #5f5359); }
+.footerlinks a, .footerlinks .link { color: var(--accent, #0b3d91); font: inherit; background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; min-height: 44px; display: inline-flex; align-items: center; cursor: pointer; }
+body.consent-open .footerlinks { margin-bottom: 24px; }

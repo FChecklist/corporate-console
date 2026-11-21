@@ -1,0 +1,1 @@
+{"id": "cookie-answer-not-kept", "repo": ".", "file": "public/core/consent.js", "find": "    doc.cookie = answerCookie(choice, secure());\n", "replace": "    /* not kept */\n", "test": "tests/cookie-banner.test.ts", "note": "the answer is never written, so the banner asks every time"}

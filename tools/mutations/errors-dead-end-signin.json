@@ -1,0 +1,1 @@
+{"id": "errors-dead-end-signin", "repo": ".", "file": "public/screens/signin.js", "find": "say(\"Please type your work e-mail address, for example you@yourcompany.com, then press Get your code.\", true)", "replace": "say(\"That e-mail address is not valid.\", true)", "test": "tests/plain-errors.test.ts", "note": "a sign-in error with no next step"}

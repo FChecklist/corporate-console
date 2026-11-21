@@ -4,7 +4,7 @@ import { el, clear } from "../core/dom.js";
 import { button, confirmPanel, toast } from "./ui.js";
 import { billingCsv, downloadCsv, money } from "./billing.js";
 
-export const CLOSE_WORDS = "Close my account removes your e-mail from the console and from the Host and Co-host lists of every game. It does not cancel or delete the games you made, and it does not touch invoices: those stay for the time the law requires.";
+export const CLOSE_WORDS = "Close your account removes your e-mail from the console and from the Host and Co-host lists of every game. It does not cancel or delete the games you made, and it does not touch invoices: those stay for the time the law requires.";
 
 /** one plain table: what is kept, and for how long (only the periods the owner has decided; each game states its exact player-data timing on its own pages) */
 export const KEPT = [
@@ -48,8 +48,8 @@ export async function renderAccount(outlet, ctx) {
     msg.textContent = r.failed && r.failed.length ? `${r.failed.map((id) => names[id] || id).join(", ")} did not answer. You are still signed in; please try again. (Games that did answer have already forgotten your e-mail.)` : "The system could not close the account just now. Please try again.";
     toast("Your account is still open.");
   };
-  box.append(el("h2", { text: "Close my account" }), el("p", { text: CLOSE_WORDS }), warn,
-    el("div", { class: "btns" }, button("Download my payments first (CSV)", { sm: true, onclick: () => downloadCsv("payments.csv", billingCsv(paidRows, names)) }), button("Close my account", { danger: true, onclick: close })));
+  box.append(el("h2", { text: "Close your account" }), el("p", { text: CLOSE_WORDS }), warn,
+    el("div", { class: "btns" }, button("Download your payments first (CSV)", { sm: true, onclick: () => downloadCsv("payments.csv", billingCsv(paidRows, names)) }), button("Close your account", { danger: true, onclick: close })));
   outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Account" }), el("p", { class: "lead", id: "acct-email", text: ctx.email || "" }),
     el("div", { class: "account" },
       el("div", { class: "box" }, el("h2", { text: "Sign out" }), el("div", { class: "btns" }, button("Sign out", { main: true, onclick: () => signOut(false) }), button("Sign out on every device", { onclick: () => signOut(true) }))),

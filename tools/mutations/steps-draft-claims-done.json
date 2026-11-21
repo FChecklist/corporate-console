@@ -1,0 +1,1 @@
+{"id": "steps-draft-claims-done", "repo": ".", "file": "public/core/steps.js", "find": "case \"draft\": return { states: { ...all(\"\"), 5: \"now\" }", "replace": "case \"draft\": return { states: { ...upTo(4, \"done\"), 5: \"now\" }", "test": "tests/step-banner.test.ts", "note": "a draft is shown with steps ticked that nobody can prove are done"}

@@ -1,0 +1,1 @@
+{"id": "steps-colour-only", "repo": ".", "file": "public/core/steps.js", "find": "    if (st === \"now\") txt.append(make(\"span\", { class: \"stephere\" }, stage === \"create\" ? \"Comes next\" : \"You are here\"));\n", "replace": "", "test": "tests/step-banner.test.ts", "note": "the current step is shown by colour only, without the words"}

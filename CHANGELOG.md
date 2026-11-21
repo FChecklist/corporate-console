@@ -1,7 +1,26 @@
 # Changelog - corporate-console
 
 Newest first. Rule: every deploy bumps the version and adds an entry here (standard of 20 Nov 2026).
-Numbering: 0.1.1 = PR #4 (bridge tests, no code change). 0.2.0 and 0.2.1 = PR #2 (these entries). They deploy together; the build carries 0.2.1.
+Numbering: 0.2.2 = this branch (banners, SEO, plain errors). 0.1.1 = PR #4 (bridge tests, no code change). 0.2.0 and 0.2.1 = PR #2 (these entries). They deploy together; the build carries 0.2.1.
+
+## 0.2.2 - 21 Nov 2026 (not deployed; the release time is stamped at deploy)
+Branch `claude/console-banners-seo-v0-2-2`, cut from the 0.2.1 line (`claude/console-game-pay-step-91b60a`, commit 395b2cb = PR #2). No money flag, no pay code, no function, no secret touched. Pay flag `PAY_VIA_MONEYPENNY` stays OFF.
+### Added
+- **Cookie banner** (`public/core/consent.js`, `consent.css`, `page-consent.js`). Until the visitor answers, the page stores nothing of its own (no cookie, nothing in browser storage); the only cookie the console needs, the sign-in cookie, is set by the server after a sign-in. Two answers of the same size ("Only what is needed" / "Also remember your e-mail and layout"), no pre-picked box, no countdown, the page is never blocked. Global Privacy Control and Do Not Track are honoured: no banner, nothing optional stored, and a click cannot switch it on. The answer is one small cookie `cg_consent` (180 days, this site, written only after a click). "Cookie choices" in the footer changes it; "Only what is needed" erases what was kept. Works from 320 px. The optional part is real: the sign-in screen fills in your e-mail (`cg-email`) and a chosen layout (`cg-design`) is used, only with the second answer.
+- **Step banner** (`public/core/steps.js`, styles in `app.css`): the six organizer steps in plain English with the current one marked ("You are here", `aria-current="step"`, not colour alone). Shown on the Create screen; My games shows "You are at step N of 6" on an organizer's own games. The names are the game setup screen's own (`packages/game-pack/zc-flow.js`), a test keeps them equal. A draft claims nothing is done (the console cannot see inside the game's setup).
+- **SEO and AI-search** (`seo.mjs`, made by `build.mjs`): title and description per page, canonical, Open Graph and Twitter tags, JSON-LD Organization and WebSite (plus ItemList on /games/, CollectionPage on /changes), `sitemap.xml` (3 public pages), `robots.txt`, `llms.txt`. Only a LIVE build asks to be indexed; the pages.dev build says noindex and `Disallow: /`. Sign-in link page, payee page and owner page stay noindex. Training crawlers are told no (list in `seo.mjs`); search and answer crawlers follow the general rule.
+- **/changes** ("What's new"): the last 10 releases in plain words (`userNote` of each row of `releases.json`; the technical `note`, ids and audit details never show). `version.json` gains `product` and `changes` (last 20).
+- **Footer standard**: line 1 stays "Version X, released ...", line 2 is `vX.Y.Z: what's new` (to /changes), Cookie choices, and the help address, on every page.
+### Changed
+- Idiot-proofing: every error sentence says what to do next (sign-in, hand-over, Control room, preview, payee page); the payee page has Try again and a help line; pages that need JavaScript say what to do without it; the console page has real text for search before the app starts. Voice: "Send me a code" is now "Get your code", "Sign me in" is "Sign in", "I agree" is "Tick this box to agree", "Close my account" is "Close your account", "Download my payments" is "Download your payments". The menu name "My games" stays (owner-approved label, pinned by tests).
+- Page titles now carry the brand for search ("Corporate Games console: ...", was "Console"); menu and app labels stay brand-free.
+### Tests
+- New: `tests/cookie-banner.test.ts`, `step-banner.test.ts`, `plain-errors.test.ts`, `seo.test.ts`, `release-0-2-2.test.ts`; mutations in `tools/mutations/` (named in each file's first line). Updated for the new wording: `screens`, `wp07-screens`, `wp09-screens`, `shell`.
+### Not changed / open
+- Audit: pending (two independent audits on the exact head SHA gate every deploy). Rollback id of the previous deploy (live 0.2.1): unknown to this branch, BOSS records it at deploy; the one before it is `706f8e60` (commit 9c57a81).
+- `tests/heavy-run.test.ts` "a job that runs too long is killed" fails on Linux on the base too: `tools/heavy-run.mjs` spawns without `detached` so `process.kill(-pid)` kills nothing. Out of this task's files; one-line fix: `detached: process.platform !== "win32"` in its `spawn` call.
+- Branch base: the default branch (`claude/master-console-complete-882589`) is still 0.1.1 and does not have PR #2. Merging both lines needs the CHANGELOG, releases.json and `docs/GAME_PAY_CONTRACT.md` conflicts resolved (see 0.2.1 notes).
+- The e2e suite of PR #5 clicks buttons by their old words ("Send me a code", "Sign me in"): update its two selectors when it is rebased on this.
 
 ## 0.2.1 - 20 Nov 2026 (not deployed yet; the release time is stamped at deploy)
 ### Fixed
