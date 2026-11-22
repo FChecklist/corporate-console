@@ -1,0 +1,1 @@
+{"id": "worker32-go-after-stop", "repo": ".", "file": "public/sw.js", "find": "    if (stopped) { granted = false; await dropCaches(); } // a \"stop\" that came in while this was running wins: nothing stays behind\n", "replace": "", "test": "tests/consent-decline-everywhere.test.ts", "note": "a go that finishes after a stop leaves its marker and files"}

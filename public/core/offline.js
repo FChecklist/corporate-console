@@ -7,6 +7,15 @@ export const CACHE_PREFIX = "console-shell-";
 export const WORKER_URL = "/sw.js";
 const ACK_MS = 400; // how long the page waits for the worker to say "stopped"
 
+/**
+ * Pages that hold something that cannot be asked for again: the e-mailed sign-in link (its one-time code is in the address), the payee page (its link code), the owner page (a key being typed).
+ * The clean-up NEVER reloads such a page (0.3.2): a reload would throw the one-time code away. The worker is still removed and its cache deleted; the page is freed on its next load.
+ */
+export const holdsOneTimeInput = (loc) => {
+  const path = String((loc && loc.pathname) || ""), query = String((loc && loc.search) || "");
+  return /^\/(signin|pay-link|paylink|owner-funnel)(\.html|\/|\/index\.html)?$/.test(path) || /^\/pay\//.test(path) || /[?&]t=/.test(query);
+};
+
 /** may the offline worker exist right now? Only after the second answer, and never with a privacy signal. */
 export const offlineAllowed = (state) => !!state && state.answered === true && state.choice === "prefs" && !state.signal;
 
@@ -38,6 +47,7 @@ export async function syncOffline(o = {}) {
  * 2. The registrations are removed and the console caches deleted.
  * 3. A page that is still controlled by a worker that did NOT answer is held by an older worker that cannot be told (0.2.2 and 0.3.0 workers): that page is loaded once more,
  *    which frees it, because a removed worker does not control a new load. (Once only: the reload leaves a mark in the page's history state, nothing is stored.)
+ *    Not on a page that holds a one-time code or typed input (`holdsOneTimeInput`): there the page keeps running, and is free on its next load.
  */
 export async function removeWorker({ sw, store, reload, ackMs } = {}) {
   let controlledByOld = false;
@@ -60,7 +70,7 @@ export async function removeWorker({ sw, store, reload, ackMs } = {}) {
     try {
       const w = typeof window !== "undefined" ? window : null;
       const mark = w && w.history && w.history.state && w.history.state.cgFreed;
-      if (!mark) { // once only
+      if (!mark && !(w && holdsOneTimeInput(w.location))) { // once only, and never on a page that holds a one-time code
         if (w && w.history && w.history.replaceState) w.history.replaceState({ ...(w.history.state || {}), cgFreed: true }, "");
         (reload || (() => w && w.location && w.location.reload()))();
         reloaded = true;

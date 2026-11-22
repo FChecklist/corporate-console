@@ -1,0 +1,1 @@
+{"id": "signin32-no-confirm", "repo": ".", "file": "public/signin.js", "find": "if (await sessionConfirmed()) {", "replace": "if (true) {", "test": "tests/signin-token-reload.test.ts", "note": "the code leaves the address and the page moves on without the server confirming the sign-in"}

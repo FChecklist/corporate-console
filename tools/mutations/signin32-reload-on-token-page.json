@@ -1,0 +1,1 @@
+{"id": "signin32-reload-on-token-page", "repo": ".", "file": "public/core/offline.js", "find": "if (!mark && !(w && holdsOneTimeInput(w.location))) {", "replace": "if (!mark) {", "test": "tests/consent-decline-everywhere.test.ts", "note": "the clean-up reloads a page that holds a one-time code"}

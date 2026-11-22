@@ -1,0 +1,1 @@
+{"id": "worker32-no-grant-marker", "repo": ".", "file": "public/sw.js", "find": "const hasGrant = async () => granted || (await caches.keys()).includes(GRANT);", "replace": "const hasGrant = async () => granted;", "test": "tests/consent-decline-everywhere.test.ts", "note": "a restarted worker forgets the page's go (no cookieStore)"}

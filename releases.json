@@ -1,5 +1,11 @@
 [
  {
+  "version": "0.3.2",
+  "releasedAt": "2026-11-22T00:00:00.000Z",
+  "note": "audit fixes for 0.3.1: (1) the one-time sign-in link code stays in the address until the server confirms the sign-in (/auth/me), so a page reload before the button is used no longer loses it; the clean-up never reloads the sign-in, pay-link or owner pages; one press sends it once; the worker never keeps an address that carries t=. (2) a browser without cookieStore (Firefox, older Safari): the worker remembers the page's go in a marker cache (console-shell-grant, removed by every decline) so a restarted worker still serves the saved pages, and its install step copies nothing until go",
+  "userNote": "The sign-in link in your e-mail now works even if the page refreshes itself once before you press the button. The page keeps your link safe until you are signed in, and only then clears it from the address bar. The saved copy of the pages also keeps working after the browser pauses it, in browsers like Firefox and older Safari."
+ },
+ {
   "version": "0.3.1",
   "releasedAt": "2026-11-21T00:00:00.000Z",
   "note": "audit fixes for 0.3.0: a decline on ANY page ends the offline worker and clears its cache, and a worker that still holds an open page cannot write again (the worker re-reads the cookie answer before every write, obeys a stop message, and an older worker that cannot be told frees the page with one reload); pages other than the console app (pay link, sign-in link, owner page, 404) follow the answer; one Yes / No question when Decline is tapped twice in My games; the Next line is true for a game that is playing or finished; a draft says it may be at an earlier step; the robots header also covers the addresses without .html; the release note says the double-press rule is for the console screens",

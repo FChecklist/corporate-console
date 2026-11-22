@@ -1,0 +1,1 @@
+{"id": "signin32-token-stripped-early", "repo": ".", "file": "public/signin.js", "find": "let busy = false; // one press, one job", "replace": "history.replaceState(null, \"\", location.pathname); let busy = false;", "test": "tests/signin-token-reload.test.ts", "note": "the one-time code leaves the address at once (the 0.3.1 behaviour)"}
