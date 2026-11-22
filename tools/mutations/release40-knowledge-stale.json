@@ -1,0 +1,1 @@
+{"id": "release40-knowledge-stale", "repo": ".", "file": "docs/KNOWLEDGE.md", "find": "## 2e. What 0.4.0 added", "replace": "## 2e. What 0.3.2 added", "test": "tests/release-0-4-0.test.ts", "note": "KNOWLEDGE.md does not say 0.4.0 for the new part"}

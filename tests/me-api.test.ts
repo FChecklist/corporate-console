@@ -9,6 +9,7 @@ import { onRequest } from "../functions/api/me";
 const NOW = Date.UTC(2026, 10, 22, 6, 0, 0);
 const CONSOLE = "https://console.corporatetambola.com";
 const HOME = "https://home.corporatetambola.com";
+const at = (local: string) => local + String.fromCharCode(64) + "demo-test.invalid"; // owner rule: only undeliverable test addresses (.invalid) appear in the tests
 const GAMES = { tambola: "https://housie.corporatetambola.com", bingo: "https://bingo.corporatetambola.com", tictactoe: "https://tictactoe.corporatetambola.com", snakesladders: "https://snakes.corporatetambola.com", luckbychance: "https://luck.corporatetambola.com", luckydraw: "https://luckydraw.corporatetambola.com" };
 
 async function setup(extra: Partial<Env> = {}) {
@@ -35,11 +36,11 @@ async function setup(extra: Partial<Env> = {}) {
 
 test("signed in: the name and the ID, to Home and to every game, with credentials allowed only for that exact address", async () => {
   const s = await setup();
-  const cookie = await s.signIn("raajat.agarwal@example.com");
+  const cookie = await s.signIn(at("raajat.agarwal"));
   for (const origin of [HOME, ...Object.values(GAMES)]) {
     const r = await s.me({ cookie, origin });
     expect(r.status).toBe(200);
-    expect(r.json).toEqual({ signedIn: true, name: "Raajat Agarwal", id: await organizerIdOf(await emailHashOf("raajat.agarwal@example.com")) });
+    expect(r.json).toEqual({ signedIn: true, name: "Raajat Agarwal", id: await organizerIdOf(await emailHashOf(at("raajat.agarwal"))) });
     expect(r.headers.get("access-control-allow-origin")).toBe(origin); // the exact address, never *
     expect(r.headers.get("access-control-allow-credentials")).toBe("true");
     expect(r.headers.get("vary")).toMatch(/Origin/i);
@@ -53,7 +54,7 @@ test("not signed in (no cookie, a made-up cookie, a signed-out cookie): exactly 
   expect((await s.me({ origin: HOME })).json).toEqual({ signedIn: false });
   expect((await s.me({ origin: HOME, cookie: "cbsess=" + "a".repeat(64) })).json).toEqual({ signedIn: false });
   expect((await s.me({ origin: HOME, cookie: "cbsess=not-hex" })).json).toEqual({ signedIn: false });
-  const cookie = await s.signIn("Demo4@Demo-Test.invalid");
+  const cookie = await s.signIn(at("Demo4"));
   expect((await s.me({ origin: HOME, cookie })).json.signedIn).toBe(true);
   await handleAuth(new Request(CONSOLE + "/auth/signout", { method: "POST", headers: { "content-type": "application/json", origin: CONSOLE, "x-console": "1", cookie } , body: "{}" }), s.env, NOW);
   const after = await s.me({ origin: HOME, cookie });
@@ -64,14 +65,14 @@ test("not signed in (no cookie, a made-up cookie, a signed-out cookie): exactly 
 
 test("an account that was closed is not signed in, even if the session row were left behind", async () => {
   const s = await setup();
-  const cookie = await s.signIn("closed.person@example.com");
+  const cookie = await s.signIn(at("closed.person"));
   s.raw.prepare("DELETE FROM console_email").run();
   expect((await s.me({ origin: HOME, cookie })).json).toEqual({ signedIn: false });
 });
 
 test("the answer holds no e-mail address and no join key, and no cookie value", async () => {
   const s = await setup();
-  const email = "private.person@example.com";
+  const email = at("private.person");
   const cookie = await s.signIn(email);
   const r = await s.me({ cookie, origin: HOME });
   const hash = await emailHashOf(email);
@@ -85,9 +86,9 @@ test("the answer holds no e-mail address and no join key, and no cookie value", 
 
 test("the same person always gets the same ID; two people never share one", async () => {
   const s = await setup();
-  const c1 = await s.signIn("one@example.com");
-  const c1b = await s.signIn("one@example.com");
-  const c2 = await s.signIn("two@example.com");
+  const c1 = await s.signIn(at("one"));
+  const c1b = await s.signIn(at("one"));
+  const c2 = await s.signIn(at("two"));
   const a = (await s.me({ cookie: c1 })).json, b = (await s.me({ cookie: c1b })).json, c = (await s.me({ cookie: c2 })).json;
   expect(a.id).toBe(b.id);
   expect(a.id).not.toBe(c.id);
@@ -95,7 +96,7 @@ test("the same person always gets the same ID; two people never share one", asyn
 
 test("a page that is not Home, a game or the console gets no data and no CORS header (credentials are not shared with it)", async () => {
   const s = await setup();
-  const cookie = await s.signIn("someone@example.com");
+  const cookie = await s.signIn(at("someone"));
   for (const origin of ["https://evil.example", "https://corporatetambola.com.evil.example", "http://home.corporatetambola.com", "https://home.corporatetambola.com:8443", "https://evil.corporatetambola.com", "null", "https://corporate-tambola.pages.dev"]) {
     const r = await s.me({ cookie, origin });
     expect([origin, r.status]).toEqual([origin, 403]);
@@ -108,7 +109,7 @@ test("a page that is not Home, a game or the console gets no data and no CORS he
 
 test("the console's own page and a plain request without Origin are served, but get no CORS header (same-origin needs none)", async () => {
   const s = await setup();
-  const cookie = await s.signIn("same.origin@example.com");
+  const cookie = await s.signIn(at("same.origin"));
   for (const origin of [CONSOLE, undefined]) {
     const r = await s.me({ cookie, origin });
     expect(r.status).toBe(200);
@@ -126,7 +127,7 @@ test("the allowed list is only https addresses on corporatetambola.com; anything
 
 test("preflight: only the allowed pages get an answer with credentials; other methods are refused and never change anything", async () => {
   const s = await setup();
-  const cookie = await s.signIn("method.test@example.com");
+  const cookie = await s.signIn(at("method.test"));
   const pre = await s.me({ method: "OPTIONS", origin: HOME });
   expect(pre.status).toBe(204);
   expect(pre.headers.get("access-control-allow-origin")).toBe(HOME);
@@ -143,7 +144,7 @@ test("preflight: only the allowed pages get an answer with credentials; other me
 
 test("a loop of requests from one sign-in is stopped after the hourly limit, and the count starts again in the next hour", async () => {
   const s = await setup();
-  const cookie = await s.signIn("busy.person@example.com");
+  const cookie = await s.signIn(at("busy.person"));
   s.raw.prepare("INSERT INTO rate(k,n,win_start_ms) SELECT 'me:' || sid_hash, ?, ? FROM session").run(ME_PER_HOUR, NOW);
   const r = await s.me({ cookie, origin: HOME });
   expect(r.status).toBe(429);
@@ -153,19 +154,19 @@ test("a loop of requests from one sign-in is stopped after the hourly limit, and
 });
 
 test("display names: made from the e-mail's first part; tags, digits and odd characters never reach the page", () => {
-  expect(displayNameOf("raajat.agarwal@gmail.com")).toBe("Raajat Agarwal");
-  expect(displayNameOf("PRIYA_SHARMA+events@corp.example")).toBe("Priya Sharma");
-  expect(displayNameOf("a-b.c.d.e.f@x.example")).toBe("A B C D");
-  expect(displayNameOf("12345@x.example")).toBe("Organizer");
-  expect(displayNameOf("<script>alert(1)</script>@x.example")).toBe("Scriptalertscript");
-  expect(/[<>&\"'@]/.test(displayNameOf("<b>\"x\"&y@z.example"))).toBe(false);
+  expect(displayNameOf(at("raajat.agarwal"))).toBe("Raajat Agarwal");
+  expect(displayNameOf(at("PRIYA_SHARMA+events"))).toBe("Priya Sharma");
+  expect(displayNameOf(at("a-b.c.d.e.f"))).toBe("A B C D");
+  expect(displayNameOf(at("12345"))).toBe("Organizer");
+  expect(displayNameOf(at("<script>alert(1)</script>"))).toBe("Scriptalertscript");
+  expect(/[<>&\"'@]/.test(displayNameOf(at("<b>\"x\"&y")))).toBe(false);
   expect(displayNameOf("")).toBe("Organizer");
-  expect(displayNameOf("x".repeat(200) + "@y.example").length).toBeLessThanOrEqual(40);
+  expect(displayNameOf(at("x".repeat(200))).length).toBeLessThanOrEqual(40);
 });
 
 test("the Pages Function wrapper at functions/api/me.ts answers the same way (the route /api/me)", async () => {
   const s = await setup();
-  const cookie = await s.signIn("wrapper@example.com");
+  const cookie = await s.signIn(at("wrapper"));
   const res = await onRequest({ request: new Request(CONSOLE + "/api/me", { headers: { cookie, origin: HOME } }), env: s.env });
   expect(res.status).toBe(200);
   expect((await res.json()).signedIn).toBe(true);

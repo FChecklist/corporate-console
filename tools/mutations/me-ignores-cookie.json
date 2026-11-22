@@ -1,0 +1,1 @@
+{"id": "me-ignores-cookie", "repo": ".", "file": "functions/_lib/me-core.ts", "find": "if (!s) return reply(200, { signedIn: false }, cors);", "replace": "if (false as boolean) return reply(200, { signedIn: false }, cors);", "test": "tests/me-api.test.ts", "note": "no session check"}

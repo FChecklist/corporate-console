@@ -1,0 +1,1 @@
+{"id": "release40-package-version-old", "repo": ".", "file": "package.json", "find": "\"version\": \"0.4.0\",", "replace": "\"version\": \"0.3.2\",", "test": "tests/release-0-4-0.test.ts", "note": "package.json still has the old version"}

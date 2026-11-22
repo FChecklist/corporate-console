@@ -1,5 +1,11 @@
 [
  {
+  "version": "0.4.0",
+  "releasedAt": "2026-11-22T12:30:00.000Z",
+  "note": "stay signed in: new GET /api/me (functions/api/me.ts, functions/_lib/me-core.ts). Reads the one console sign-in cookie (cbsess, HttpOnly, host-only on the console address, SameSite=Lax; Home and the games are the same site so a credentialed fetch carries it) and answers {signedIn:true,name,id} or {signedIn:false}. CORS only for HOME_ORIGIN (default https://home.corporatetambola.com) and the GAME_ORIGINS addresses, https on corporatetambola.com only, with Access-Control-Allow-Credentials only for those; any other Origin gets 403 and no CORS header. GET only, no e-mail and no join key in the answer, no cookie set, hourly limit per sign-in, no-store. No money flag, pay contract, bridge, pack, secret or migration touched.",
+  "userNote": "Sign in once and the rest of Corporate Games knows it is you. Home and your games can now show your name and keep you signed in, so you do not have to sign in again on each page."
+ },
+ {
   "version": "0.3.2",
   "releasedAt": "2026-11-22T10:42:54.422Z",
   "note": "audit fixes for 0.3.1: (1) the one-time sign-in link code stays in the address until the server confirms the sign-in (/auth/me), so a page reload before the button is used no longer loses it; the clean-up never reloads the sign-in, pay-link or owner pages; one press sends it once; the worker never keeps an address that carries t=. (2) a browser without cookieStore (Firefox, older Safari): the worker remembers the page's go in a marker cache (console-shell-grant, removed by every decline) so a restarted worker still serves the saved pages, and its install step copies nothing until go",

@@ -1,0 +1,1 @@
+{"id": "me-leaks-join-key", "repo": ".", "file": "functions/_lib/me-core.ts", "find": "\"org_\" + (await sha256hex(\"organizer|\" + emailHash)).slice(0, 16)", "replace": "\"org_\" + emailHash.slice(0, 16)", "test": "tests/me-api.test.ts", "note": "the join key shows in the ID"}

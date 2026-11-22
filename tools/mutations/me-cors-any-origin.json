@@ -1,0 +1,1 @@
+{"id": "me-cors-any-origin", "repo": ".", "file": "functions/_lib/me-core.ts", "find": "(origin && !allowed.includes(origin) && origin !== env.CONSOLE_ORIGIN) return reply(403", "replace": "(false) return reply(403", "test": "tests/me-api.test.ts", "note": "a foreign page is served"}

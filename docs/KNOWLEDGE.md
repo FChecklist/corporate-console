@@ -1,10 +1,10 @@
 # Knowledge: Corporate Games master console (corporate-console)
 
-Written 20 Nov 2026, updated 22 Nov 2026 for version 0.3.2, for a future AI session that has never seen this repo (standard: marketing-ledger plans/VERSION-AND-KNOWLEDGE-STANDARD-2026-11-20.md). It describes the CURRENT state only, from the code and existing docs. Anything not found is marked "unknown". Do not publish this file on the website.
+Written 20 Nov 2026, updated 22 Nov 2026 for version 0.4.0, for a future AI session that has never seen this repo (standard: marketing-ledger plans/VERSION-AND-KNOWLEDGE-STANDARD-2026-11-20.md). It describes the CURRENT state only, from the code and existing docs. Anything not found is marked "unknown". Do not publish this file on the website.
 
 ## 1. What this is
 One sign-in, six games, billing. The organizer/host website: set up, invite, pay, approve, monitor. Plain static pages plus a small sign-in service on Cloudflare Pages. Also holds the test tools shared by every game repo.
-- Live site: https://console.corporatetambola.com (Cloudflare Pages project `corporate-console`). Live version (owner, 21 Nov 2026): **0.2.2**. This branch is **0.3.2** (not deployed; it is cut from 0.2.2, commit 32e1603; 0.3.0 and 0.3.1 were audited heads and each had a FAIL). Read `/version.json` on the site for the truth; it now also carries `product` and `changes`.
+- Live site: https://console.corporatetambola.com (Cloudflare Pages project `corporate-console`). Live version: **0.3.2** (deployment 6c51d98b, 22 Nov 2026); this branch is **0.4.0** (not deployed; cut from the 0.3.2 line, `claude/console-0-3-0` at 9a70667). Read `/version.json` on the site for the truth; it now also carries `product` and `changes`.
 - Other repos and what they are for: `KNOWLEDGE-MAP.md` in the repo root.
 
 ## 2. How it connects
@@ -37,8 +37,15 @@ Players and organizers reach the suite like this: home.corporatetambola.com (log
 - **Browsers without `cookieStore` (Firefox, older Safari).** `public/sw.js` `answer()` says yes, no or unknown. Unknown = the page's `go` decides, and `go` is remembered in the marker cache `console-shell-grant` (so a restarted worker still serves the saved pages). Install copies nothing until `go`. Every decline removes the marker with the other `console-shell-*` caches. Rule: anything new that makes the worker remember something must live under the `console-shell-` prefix, or a decline will not remove it.
 - Tests: `signin-token-reload`, `consent-decline-everywhere` (new cases), `release-0-3-2`; mutations `signin32-*`, `worker32-*`, `release32-*`.
 
+## 2e. What 0.4.0 added (22 Nov 2026) and where it lives
+- **`GET /api/me`: "who is signed in?" for Home and the games.** `functions/api/me.ts` (route) calls `handleMe` in `functions/_lib/me-core.ts`. It reads the one sign-in cookie `cbsess` (HttpOnly, Secure, SameSite=Lax, host-only on the console address; never widen it with a `Domain`) through `sessionOf`, and answers `{ signedIn: true, name, id }` or exactly `{ signedIn: false }`. Home, games and console are one site, so a credentialed `fetch` with `credentials: "include"` from Home carries the cookie; that is the "one sign-in" rule.
+- **CORS rules (tested).** Only `HOME_ORIGIN` (default `https://home.corporatetambola.com`) and the `GAME_ORIGINS` addresses, each an exact https origin on `corporatetambola.com` (`meOrigins`); they get `Access-Control-Allow-Origin: <that address>` and `Access-Control-Allow-Credentials: true`. Any other Origin: 403, no CORS header. Never `*`. The answer holds no e-mail, no e-mail hash and no cookie value; the route sets no cookie; GET and OPTIONS only; 1200 asks an hour per sign-in (429).
+- **Name and ID.** There is no stored name: `displayNameOf` makes it from the e-mail's first part (letters only, 40 characters at most, "Organizer" as the fallback). `organizerIdOf` = `org_` + 16 hex of `sha256("organizer|" + email hash)`; it is NOT the join key games match on (games get that only in a signed assertion from `/auth/assert`). A real name needs a sign-in form field and a migration: not built.
+- Still to do elsewhere: Home and each game must call the route (their own releases). The live base was not readable from the build session (network refused the console host): check `/version.json` before deploying.
+- Tests: `me-api`, `release-0-4-0`; mutations `me-*`, `release40-*`.
+
 ## 3. Map of folders and the files that matter
-public/ (the pages: index.html, signin.html and the screens), functions/ (auth, report, stats, _lib: Cloudflare Pages Functions), migrations/ (0001_console, 0002_report_hold, 0003_funnel_hit), packages/bridge (the one bridge module copied byte for byte into every game), packages/game-pack (shared game setup pack), packages/report (end-of-game PDF report), contract/ and docs/CONTRACT_V1.md (frozen console-game contract), config/games.json, tools/ (falsify-run, heavy-run, baseline, deploy, game-port, fake-game, prices), tests/, vendor/ (vendored corporate-game-core, pinned 0.1.0), build.mjs, releases.json.
+public/ (the pages: index.html, signin.html and the screens), functions/ (auth, api/me, report, stats, _lib: Cloudflare Pages Functions), migrations/ (0001_console, 0002_report_hold, 0003_funnel_hit), packages/bridge (the one bridge module copied byte for byte into every game), packages/game-pack (shared game setup pack), packages/report (end-of-game PDF report), contract/ and docs/CONTRACT_V1.md (frozen console-game contract), config/games.json, tools/ (falsify-run, heavy-run, baseline, deploy, game-port, fake-game, prices), tests/, vendor/ (vendored corporate-game-core, pinned 0.1.0), build.mjs, releases.json.
 
 Files that matter: build.mjs; seo.mjs; chooser.mjs; releases.json; config/games.json; docs/CONTRACT_V1.md; docs/CONTROL_CONTRACT.md; docs/STATE.md; docs/RELEASE_RECIPE.md; docs/GO_LIVE_RUNBOOK.md; packages/bridge; functions/auth; functions/report.
 

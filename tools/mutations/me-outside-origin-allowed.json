@@ -1,0 +1,1 @@
+{"id": "me-outside-origin-allowed", "repo": ".", "file": "functions/_lib/me-core.ts", "find": "u.hostname === SITE || u.hostname.endsWith(\".\" + SITE)", "replace": "true", "test": "tests/me-api.test.ts", "note": "any host is allowed"}

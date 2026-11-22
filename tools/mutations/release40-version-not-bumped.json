@@ -1,0 +1,1 @@
+{"id": "release40-version-not-bumped", "repo": ".", "file": "releases.json", "find": "\"version\": \"0.4.0\",", "replace": "\"version\": \"0.3.2x\",", "test": "tests/release-0-4-0.test.ts", "note": "the newest release is not 0.4.0"}
