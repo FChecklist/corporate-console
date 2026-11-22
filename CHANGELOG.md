@@ -3,7 +3,7 @@
 Newest first. Rule: every deploy bumps the version and adds an entry here (standard of 20 Nov 2026).
 Numbering: 0.3.2 = this branch (audit fixes for 0.3.1: the one-time sign-in code survives a reload; the offline worker in browsers without `cookieStore`). 0.3.1 = audit fixes for 0.3.0: a decline ends the worker and cache on every page. 0.3.0 = consent order, step banner text, forms, 404 (the same branch; it was audited FAIL on its first head and is not deployed). 0.2.2 = banners, SEO, plain errors (live). 0.1.1 = PR #4 (bridge tests, no code change). 0.2.0 and 0.2.1 = PR #2 (these entries). They deploy together; the build carries 0.2.1.
 
-## 0.3.2 - 22 Nov 2026 (not deployed; the release time is stamped at deploy)
+## 0.3.2 - 22 Nov 2026 (DEPLOYED 22 Nov 2026 16:12 IST, deployment 6c51d98b)
 Branch `claude/console-0-3-0` (PR #7), on top of 0.3.1 (head 7135fec). Of the two independent audits of that head, one passed and one failed (one High, one Medium). This release fixes exactly those two. No money flag, no pay contract, no bridge, no pack, no function, no secret touched: `functions/`, `packages/`, `vendor/`, `contract/`, `config/`, `migrations/` and `docs/GAME_PAY_CONTRACT.md` are byte for byte as in 0.3.1. `PAY_VIA_MONEYPENNY` and `PAY_VIA_CONSOLE` stay OFF; no real payment was made.
 In plain words: the sign-in link in the e-mail no longer breaks if the page reloads itself once, and the saved copy of the pages keeps working in Firefox and older Safari.
 ### Fixed: H1, an automatic reload killed the one-time sign-in code (`public/signin.js`, `public/core/offline.js`)
@@ -20,7 +20,7 @@ In plain words: the sign-in link in the e-mail no longer breaks if the page relo
 ### Not changed on purpose
 - The other Lows of the 0.3.1 audits (path names in `robots.txt` and `llms.txt`, the 24-hour privacy line, the `/404` header on arbitrary addresses, the owner's address in `functions/`) stay as written in 0.3.1: they are owner decisions or outside this fix.
 ### Not changed / open
-- Audit: pending (two independent audits on the exact head SHA gate every deploy). Rollback id of the previous deploy (live 0.2.2): unknown to this branch, BOSS records it at deploy.
+- Audits: two independent AUDIT: PASS on b90d0867880d1ea02f1cc27fb2dec4c8bbfad477 (PR #7). Deployed to Cloudflare Pages project corporate-console as deployment 6c51d98b; build commit b406fd082afc is the audited head plus the release-stamp commit (changes only `releases.json`). Rollback id: 244264ce (0.2.2, commit 32e16034). Live `/version.json` shows 0.3.2.
 
 ## 0.3.1 - 21 Nov 2026 (not deployed; the release time is stamped at deploy)
 Branch `claude/console-0-3-0` (PR #7), on top of 0.3.0 (head 25dca5c), which both independent audits marked FAIL. This release fixes everything they found. No money flag, no pay contract, no bridge, no pack, no function, no secret touched: `functions/`, `packages/bridge/`, `packages/game-pack/`, `docs/GAME_PAY_CONTRACT.md`, `vendor/`, `contract/` and `config/` are byte for byte as in 0.3.0. The pay flag `PAY_VIA_MONEYPENNY` stays OFF.
