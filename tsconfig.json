@@ -1,6 +1,16 @@
 {
-  "//": "Typecheck: npx tsc -p tsconfig.json (no emit). Scope: the Pages functions, the shared packages (TypeScript) and the test files added in 0.2.2. The older test files have ten known type errors (happy-dom Event type, two untyped callbacks) and are not in this scope yet.",
-  "compilerOptions": { "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler", "strict": true, "noEmit": true, "skipLibCheck": true, "types": ["bun"] },
+  "//": "Typecheck: npx tsc -p tsconfig.json (no emit). Scope: the Pages functions, the shared packages (TypeScript) and the test files added in 0.2.2 and 0.3.0. The older test files have ten known type errors (happy-dom Event type, two untyped callbacks) and are not in this scope yet.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": [
+      "bun"
+    ]
+  },
   "include": [
     "functions/**/*.ts",
     "packages/**/*.ts",
@@ -9,6 +19,14 @@
     "tests/step-banner.test.ts",
     "tests/plain-errors.test.ts",
     "tests/seo.test.ts",
-    "tests/release-0-2-2.test.ts"
+    "tests/release-0-2-2.test.ts",
+    "tests/consent-order.test.ts",
+    "tests/accessibility.test.ts",
+    "tests/sitemap-content.test.ts",
+    "tests/step-next.test.ts",
+    "tests/forms-idiot-proof.test.ts",
+    "tests/release-0-3-0.test.ts",
+    "tests/release-0-3-1.test.ts",
+    "tests/consent-decline-everywhere.test.ts"
   ]
 }

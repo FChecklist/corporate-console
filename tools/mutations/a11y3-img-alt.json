@@ -1,0 +1,1 @@
+{"id": "a11y3-img-alt", "repo": ".", "file": "seo.mjs", "find": "<main class=\"wrap\"><div class=\"page changes\">", "replace": "<main class=\"wrap\"><div class=\"page changes\"><img src=\"/icons/icon-192.png\">", "test": "tests/accessibility.test.ts", "note": "an image without alt text"}

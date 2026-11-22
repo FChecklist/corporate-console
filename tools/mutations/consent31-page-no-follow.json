@@ -1,0 +1,1 @@
+{"id": "consent31-page-no-follow", "repo": ".", "file": "public/core/page-consent.js", "find": "window.addEventListener(\"cg-consent-changed\", () => followAnswer());", "replace": "", "test": "tests/consent-decline-everywhere.test.ts", "note": "pages other than the console app ignore the answer (M2)"}

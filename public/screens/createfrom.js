@@ -8,6 +8,7 @@ import { has } from "../core/features.js";
 import { cloneFrom, COPY_PARTS } from "../core/clone.js";
 import { openError, gamesFailedLine } from "../core/errors.js";
 import { mergeGames } from "../core/merge.js";
+import { stepBanner } from "../core/steps.js";
 
 /** the step number inside a game's own flow (1 Game, 2 People, 3 Time, 4 Prizes, 5 Brand and Breaks, 6 Check and publish) for each step name clone.js uses */
 export const STEP_NUMBER = { "Who is this game for": 2, "Date and time": 3, "Tickets and prizes": 4, "Brand & Breaks": 5 };
@@ -33,7 +34,7 @@ export async function renderCreateFrom(outlet, ctx) {
   let data = null, chosen = null;
   clear(outlet);
   const body = el("div", { id: "cf-body" }, el("p", { class: "hintline", text: "One moment." }));
-  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Start from an earlier game" }), el("p", { class: "lead", text: "Pick an earlier game. Its settings, start mode, prizes, roles and look are copied into a new draft. " + NO_PEOPLE_LINE }), body)));
+  outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Start from an earlier game" }), el("p", { class: "lead", text: "Pick an earlier game. Its settings, start mode, prizes, roles and look are copied into a new draft. " + NO_PEOPLE_LINE }), stepBanner(document, "create", { title: "Where this fits in the six steps" }), body)));
   const makeable = (ctx.games || []).filter((g) => (g.status || (g.ready ? "live" : "planned")) === "live" && has(g, "clone"));
 
   function pickList() {
@@ -63,16 +64,21 @@ export async function renderCreateFrom(outlet, ctx) {
       el("div", { class: "btns" }, button(t.id === g.game ? "Same game" : "Make it in " + t.name, { main: t.id === g.game, label: `Make the new game in ${t.name}`, onclick: (e) => make(t, e.currentTarget) }))), colors[t.id] || "#0B3D91")));
     body.append(list, button("Back", { onclick: pickList }));
   }
+  let making = false; // one tap makes one draft
   async function make(target, btn) {
-    btn.disabled = true;
+    if (making) return;
+    making = true;
+    const all = [...body.querySelectorAll("button")], was = all.map((b) => b.disabled);
+    all.forEach((b) => { b.disabled = true; });
     const res = cloneFrom(chosen.old, { id: target.id, startModes: target.startModes });
-    let r; try { r = await api.startFrom(target.id, res.copy, chosen.old.gameName); } catch { r = { ok: false }; } finally { btn.disabled = false; }
+    let r; try { r = await api.startFrom(target.id, res.copy, chosen.old.gameName); } catch { r = { ok: false }; } finally { all.forEach((b, i) => { b.disabled = was[i]; }); making = false; }
     if (!r.ok) return toast(openError(r, target.name));
     review(target, res, r.eid);
   }
   function review(target, res, eid) {
     clear(body);
-    const go = async (to) => { const r = await api.handoff(target.id, { eid, target: to }); if (!r.ok) return toast(openError(r, target.name)); (ctx.go || ((u) => location.assign(u)))(r.url); };
+    let going = false; // one tap opens the game once
+    const go = async (to) => { if (going) return; going = true; const r = await api.handoff(target.id, { eid, target: to }); going = false; if (!r.ok) return toast(openError(r, target.name)); (ctx.go || ((u) => location.assign(u)))(r.url); };
     body.append(el("p", { class: "lead", text: `Your new ${target.name} draft is ready. Check each step.` }));
     body.append(el("ul", { class: "reviewlist" }, reviewLines(res).map((l) => el("li", { class: "reviewrow", dataset: { step: l.step, copied: String(l.copied) } },
       el("b", { text: l.step }), el("span", { text: l.text }),

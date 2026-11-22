@@ -143,7 +143,7 @@ test("works at 360 px: the banner is limited in height and scrolls, buttons are 
 
 test("every page the public can open starts the banner; the console app starts it from boot.js, before anything else is stored", () => {
   for (const f of ["signin.html", "pay-link.html"]) expect([f, pub(f).includes('/core/page-consent.js')]).toEqual([f, true]);
-  expect(pub("core/boot.js")).toContain('import { startConsent, readOptional } from "./consent.js"');
+  expect(pub("core/boot.js")).toContain('import { startConsent, readOptional, currentState } from "./consent.js"');
   const boot = pub("core/boot.js");
   expect(boot.indexOf("startConsent();")).toBeLessThan(boot.indexOf("await loadCopy()")); // the banner is up before the first thing the app does
   expect(boot).not.toMatch(/localStorage\.setItem|sessionStorage\.setItem/); // the console app itself keeps nothing in the browser

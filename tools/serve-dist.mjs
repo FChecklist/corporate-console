@@ -28,6 +28,7 @@ export function startServer({ dir = "dist", port = 0, extra } = {}) {
     log.push(req.method + " " + url.pathname);
     if (extra) { const handled = await extra(req, res, url); if (handled) return; }
     let p = url.pathname === "/" ? "/index.html" : url.pathname;
+    if (p.endsWith("/") && p !== "/") p += "index.html"; // like Pages: an address ending in "/" is that folder's index page
     let file = join(root, p);
     if (!file.startsWith(root) || !existsSync(file) || !statSync(file).isFile()) { if (!extname(p) && existsSync(join(root, p + ".html"))) file = join(root, p + ".html"); else { res.writeHead(404, { "content-type": "text/plain" }); res.end("not found"); return; } }
     const h = { "content-type": TYPES[extname(file)] || "application/octet-stream" };

@@ -1,0 +1,1 @@
+{"id": "release32-version-json-old", "repo": ".", "file": "build.mjs", "find": "product: \"corporate-console\", version, releasedAt,", "replace": "product: \"corporate-console\", version: \"0.3.1\", releasedAt,", "test": "tests/release-0-3-2.test.ts", "note": "the build carries an old version"}

@@ -1,0 +1,1 @@
+{"id": "consent3-page-without-banner", "repo": ".", "file": "public/owner-funnel/index.html", "find": "\n<script type=\"module\" src=\"/core/page-consent.js\"></script>", "replace": "", "test": "tests/consent-order.test.ts", "note": "the owner page shows Cookie choices but starts no banner"}

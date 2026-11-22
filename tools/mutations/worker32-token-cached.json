@@ -1,0 +1,1 @@
+{"id": "worker32-token-cached", "repo": ".", "file": "public/sw.js", "find": " && !url.searchParams.has(\"t\")", "replace": "", "test": "tests/consent-decline-everywhere.test.ts", "note": "an address that carries t= can be kept"}

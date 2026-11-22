@@ -1,0 +1,1 @@
+{"id": "forms3-phone-fields", "repo": ".", "file": "public/core/app.css", "find": ".field input, .field select { width: 100%;", "replace": ".field input, .field select { width: 420px;", "test": "tests/forms-idiot-proof.test.ts", "note": "fields are wider than a 360 px phone"}

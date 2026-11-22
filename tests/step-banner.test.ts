@@ -76,11 +76,11 @@ test("the banner is plain DOM: no inline style, no script, no image; it is a nav
 });
 
 test("stepLine says it in one sentence for a game row", () => {
-  expect(stepLine("pending")).toBe("You are at step 6 of 6: Pay.");
-  expect(stepLine("draft")).toBe("You are at step 5 of 6: Check and publish.");
+  expect(stepLine("pending")).toBe("You are at step 6 of 6: Pay. Next: nothing more to do here.");
+  expect(stepLine("draft")).toBe("This draft may still be at an earlier step. Step 5 of 6 is Check and publish, and then step 6, Pay.");
   expect(stepLine("paid")).toBe("All six steps are done.");
   expect(stepLine("cancelled")).toBe("");
-  expect(stepLine("create")).toBe("You are at step 1 of 6: Date and time.");
+  expect(stepLine("create")).toBe("You are at step 1 of 6: Date and time. Next: step 2, Who is this game for.");
 });
 
 test("the Create screen shows the banner above the game tiles, and My games shows the step line on an organizer's own game only", async () => {
@@ -100,7 +100,7 @@ test("the Create screen shows the banner above the game tiles, and My games show
   const o2: any = document.createElement("div"); document.body.replaceChildren(o2);
   await renderMyGames(o2, { api, names: { bingo: "Bingo" }, colors: {}, games, email: "demo2@demo-test.invalid" });
   const line = (eid: string) => o2.querySelector(`.gcard[data-eid="${eid}"] .stepline`);
-  expect(line("ORG0001")!.textContent).toBe("You are at step 6 of 6: Pay.");
-  expect(line("DRAFT001")!.textContent).toBe("You are at step 5 of 6: Check and publish.");
+  expect(line("ORG0001")!.textContent).toBe("You are at step 6 of 6: Pay. Next: nothing more to do here.");
+  expect(line("DRAFT001")!.textContent).toBe("This draft may still be at an earlier step. Step 5 of 6 is Check and publish, and then step 6, Pay.");
   expect(line("HOST001")).toBeNull(); // a host does not run the six steps: the organizer does
 });

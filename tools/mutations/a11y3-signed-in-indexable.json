@@ -1,0 +1,1 @@
+{"id": "a11y3-signed-in-indexable", "repo": ".", "file": "public/core/page-seo.js", "find": "m.setAttribute(\"content\", \"noindex,nofollow\");", "replace": "m.setAttribute(\"content\", \"index,follow\");", "test": "tests/accessibility.test.ts", "note": "a signed-in screen is open to search"}

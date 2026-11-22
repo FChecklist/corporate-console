@@ -1,0 +1,1 @@
+{"id": "signin32-double-press", "repo": ".", "file": "public/signin.js", "find": "  if (busy) return;\n", "replace": "", "test": "tests/signin-token-reload.test.ts", "note": "a second press while the first works sends the code again"}

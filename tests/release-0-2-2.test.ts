@@ -12,9 +12,8 @@ const releases = JSON.parse(read("releases.json"));
 const win: any = new Window({ url: "https://console.corporatetambola.com/" });
 Object.assign(globalThis, { window: win, document: win.document, CustomEvent: win.CustomEvent });
 
-test("the newest release is 0.2.2 and every row has a version, a time, a technical note and a plain-words sentence for /changes", () => {
-  expect(releases[0].version).toBe("0.2.2");
-  expect(releases.map((r: any) => r.version)).toEqual(["0.2.2", "0.2.1", "0.2.0", "0.1.0"]);
+test("0.2.2 is still in the release list (0.3.0, 0.3.1 and 0.3.2 sit above it) and every row has a version, a time, a technical note and a plain-words sentence for /changes", () => {
+  expect(releases.map((r: any) => r.version)).toEqual(["0.3.2", "0.3.1", "0.3.0", "0.2.2", "0.2.1", "0.2.0", "0.1.0"]);
   for (const r of releases) {
     expect([r.version, /^\d+\.\d+\.\d+$/.test(r.version), /^\d{4}-\d{2}-\d{2}T/.test(r.releasedAt), r.note.length > 20, r.userNote.length > 20]).toEqual([r.version, true, true, true, true]);
     expect([r.version, /audit|commit|rollback|bridge|re-vendor|token|secret/i.test(r.userNote)]).toEqual([r.version, false]); // no security detail or internal word in what the public reads

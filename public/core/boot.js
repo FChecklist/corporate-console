@@ -5,7 +5,9 @@ import { el, clear } from "./dom.js";
 import { createApi } from "./api.js";
 import { menuItems, partsOf, menuFor } from "./routes.js";
 import { showVersion } from "./version.js";
-import { startConsent, readOptional } from "./consent.js";
+import { startConsent, readOptional, currentState } from "./consent.js";
+import { syncOffline } from "./offline.js";
+import { setPageSeo } from "./page-seo.js";
 
 export { menuItems };
 
@@ -54,6 +56,7 @@ export async function mount(root, copy, design) {
   if (current === design + "|" + route + "|" + app.signedIn) return;
   current = design + "|" + route + "|" + app.signedIn;
   document.body.classList.toggle("has-tabbar", design === "phone" && app.signedIn);
+  setPageSeo(document, { signedIn: app.signedIn, route }); // a signed-in screen asks search engines to stay away and has its own title
   document.documentElement.dataset.design = design;
   const mod = await import(design === "laptop" ? "../view-laptop/shell.js" : "../view-mobile/shell.js");
   clear(root);
@@ -98,13 +101,10 @@ export async function start() {
   let t;
   window.addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => mount(root, copy, pick()), 80); });
   window.addEventListener("hashchange", () => { current = null; last = routeOf(); mount(root, copy, pick()); });
-  if ("serviceWorker" in navigator) {
-    try {
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      if (reg.waiting) updateBar(copy, reg);
-      reg.addEventListener("updatefound", () => { const w = reg.installing; w && w.addEventListener("statechange", () => { if (w.state === "installed" && navigator.serviceWorker.controller) updateBar(copy, reg); }); });
-    } catch { /* the console works without the offline worker */ }
-  }
+  // the offline worker follows the cookie answer: none before an answer, none after "Only what is needed", one only after "Also remember your choices" (0.3.0)
+  const worker = () => syncOffline({ state: currentState(), onUpdate: (reg) => updateBar(copy, reg) });
+  window.addEventListener("cg-consent-changed", worker);
+  await worker();
 }
 
 if (typeof document !== "undefined" && document.getElementById("app")) start();

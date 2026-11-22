@@ -1,0 +1,1 @@
+{"id": "a11y3-no-404", "repo": ".", "file": "build.mjs", "find": ", notfound: \"404.html\" }", "replace": " }", "test": "tests/accessibility.test.ts", "note": "the 404 page gets no search head"}

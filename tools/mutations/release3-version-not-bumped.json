@@ -1,0 +1,1 @@
+{"id": "release3-version-not-bumped", "repo": ".", "file": "releases.json", "find": "\"version\": \"0.3.0\",", "replace": "\"version\": \"0.2.9\",", "test": "tests/release-0-3-0.test.ts", "note": "the version is not 0.3.0"}

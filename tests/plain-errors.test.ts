@@ -76,7 +76,7 @@ test("sign-in: every way it can fail tells the person what to do next (empty box
     o.querySelector("#si-email").value = email; o.querySelector("#si-consent").checked = tick;
     submit(f1); await wait();
     if (code) { o.querySelector("#si-code").value = code; submit(f2); await wait(); }
-    return { msg: o.querySelector(".signmsg").textContent as string, sent: o.querySelector("#si-sent").textContent as string, o };
+    return { msg: [o.querySelector(".signmsg").textContent, ...[...o.querySelectorAll(".fielderror")].map((n: any) => n.textContent)].join(" ") as string, sent: o.querySelector("#si-sent").textContent as string, o };
   }
   const ok = async () => ({ ok: true, json: {} });
   const r1 = await run(ok, ok, "demo1@demo-test.invalid", false); expect(r1.msg).toMatch(/tick the box.*press Get your code/i);

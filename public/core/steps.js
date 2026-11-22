@@ -29,10 +29,34 @@ export function stepsFor(stage) {
   }
 }
 
-/** one plain line for a game row: "Next: step 6 of 6, Pay." (empty when there is nothing to say) */
+export const TOTAL = STEPS.length;
+
+/**
+ * The two plain lines at the top of the banner (0.3.0): where you are, and what is next.
+ *   now:  "Step 5 of 6: Check and publish."   (on the Create screen: "Step 1 of 6: Date and time. It starts when you choose a game below.")
+ *   next: "Next: Step 6 of 6: Pay."          (on the last step: "Next: nothing more to do here. The game starts after you pay.")
+ * Both lines are empty when the game is not on a step (cancelled, deleted, unknown): nothing is claimed.
+ */
+export function stepSummary(stage) {
+  const { now, states } = stepsFor(stage);
+  if (!now) {
+    if (!STEPS.every((s) => states[s.n] === "done")) return { now: "", next: "" };
+    const next = stage === "completed" ? "Next: nothing. This game has finished. Open My games to see it." : stage === "live" ? "Next: nothing. Your game is running now. Open My games to see it." : "Next: your game runs at its time. Open My games to see it.";
+    return { now: `All ${TOTAL} steps are done.`, next };
+  }
+  const s = STEPS[now - 1], nx = STEPS[now];
+  const nowText = stage === "create" ? `Step ${now} of ${TOTAL}: ${s.name}. It starts when you choose a game below.`
+    : stage === "draft" ? `Step ${now} of ${TOTAL}: ${s.name}. You may be at an earlier step: open the game to see how far you are.` // the console cannot see inside a draft, so it says so
+    : `Step ${now} of ${TOTAL}: ${s.name}.`;
+  const nextText = nx ? `Next: Step ${now + 1} of ${TOTAL}: ${nx.name}.` : "Next: nothing more to do here. The game starts after you pay.";
+  return { now: nowText, next: nextText };
+}
+
+/** one plain line for a game row: "You are at step 6 of 6: Pay. Next: nothing more to do here. ..." (empty when there is nothing to say) */
 export function stepLine(stage) {
   const { now, states } = stepsFor(stage);
-  if (now) return `You are at step ${now} of 6: ${STEPS[now - 1].name}.`;
+  if (stage === "draft") return `This draft may still be at an earlier step. Step ${now} of ${TOTAL} is ${STEPS[now - 1].name}, and then step ${now + 1}, ${STEPS[now].name}.`; // the console cannot see inside a draft, so it does not say where you are
+  if (now) { const nx = STEPS[now]; return `You are at step ${now} of ${TOTAL}: ${STEPS[now - 1].name}. ${nx ? `Next: step ${now + 1}, ${nx.name}.` : "Next: nothing more to do here."}`; }
   return STEPS.every((s) => states[s.n] === "done") ? "All six steps are done." : "";
 }
 
@@ -53,6 +77,12 @@ export function stepBanner(doc, stage, opts = {}) {
     if (st === "now") txt.append(make("span", { class: "stephere" }, stage === "create" ? "Comes next" : "You are here"));
     if (st === "done") txt.append(make("span", { class: "stepdone" }, "Done"));
     li.append(txt); ol.append(li);
+  }
+  const sum = stepSummary(stage);
+  if (sum.now) { // the two lines a person reads first: where you are and what is next (also set as the banner's own description for screen readers)
+    const box = make("div", { class: "stepsum", role: "group", "aria-label": "Your place in the six steps" });
+    box.append(make("p", { class: "stepnow" }, sum.now), make("p", { class: "stepnext" }, sum.next));
+    nav.append(box);
   }
   nav.append(ol);
   if (caption) nav.append(make("p", { class: "stepcap" }, caption));

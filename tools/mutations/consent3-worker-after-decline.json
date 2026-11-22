@@ -1,0 +1,1 @@
+{"id": "consent3-worker-after-decline", "repo": ".", "file": "public/core/offline.js", "find": "state.answered === true && state.choice === \"prefs\" && !state.signal", "replace": "state.answered === true && !state.signal", "test": "tests/consent-order.test.ts", "note": "the worker may exist after Only what is needed"}

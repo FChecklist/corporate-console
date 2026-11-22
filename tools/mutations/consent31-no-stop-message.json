@@ -1,0 +1,1 @@
+{"id": "consent31-no-stop-message", "repo": ".", "file": "public/core/offline.js", "find": "t.postMessage && t.postMessage(\"stop\");", "replace": "void t;", "test": "tests/consent-decline-everywhere.test.ts", "note": "the page never tells the worker to stop"}

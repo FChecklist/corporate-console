@@ -1,0 +1,1 @@
+{"id": "a11y3-heading-skip", "repo": ".", "file": "public/404.html", "find": "<p class=\"lead\">The address may", "replace": "<h3>Oops</h3><p class=\"lead\">The address may", "test": "tests/accessibility.test.ts", "note": "a heading level is skipped"}

@@ -1,0 +1,1 @@
+{"id": "consent31-old-worker-not-freed", "repo": ".", "file": "public/core/offline.js", "find": "controlledByOld = !acked;", "replace": "controlledByOld = false;", "test": "tests/consent-decline-everywhere.test.ts", "note": "a page held by an older worker is never freed after a decline"}

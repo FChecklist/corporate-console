@@ -22,15 +22,22 @@ export async function renderMyGames(outlet, ctx) {
   outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "My games" }), el("p", { class: "lead", text: "Every game you organize, host or help with, in one list." }), el("p", {}, el("a", { class: "btn sm", href: "#/control", dataset: { to: "control" }, text: "Control room" })), el("ul", { class: "approve", id: "approval-note" }, approvalNote(ctx.games || []).map((l) => el("li", { text: l }))), seg, body)));
 
   const EID = /^[A-Za-z0-9_-]{4,40}$/;
-  async function removeDraft(g, card) {
-    if (!EID.test(g.eid)) return;
+  const working = new Set(); // one tap does the job once: a second tap on the same game's button while it works is ignored
+  const alone = (key, fn) => async (...a) => { if (working.has(key)) return; working.add(key); try { return await fn(...a); } finally { working.delete(key); } };
+  const removeDraft = async (g, card) => { // asked once (a second tap while the question is open does nothing), then done once
+    if (!EID.test(g.eid) || card.querySelector(".confirm")) return;
     if (!(await confirmPanel(card, "Delete this draft? This cannot be undone.", "Yes, delete", "No"))) return;
+    return alone("del:" + g.game + g.eid, _removeDraft)(g);
+  };
+  const copyOf = (g) => alone("copy:" + g.game + g.eid, _copyOf)(g);
+  const answer = (g, op) => alone("ans:" + g.game + g.eid, _answer)(g, op);
+  async function _removeDraft(g) {
     const h = await api.headersFor(g.game, g.eid, "draft-delete");
     if (!h) return toast("Please sign in again.");
     const r = await api.call(`${api.byId[g.game].origin}/api/z/${g.eid}/discard`, { method: "POST", headers: h, body: "{}" });
     if (r.ok) { data.rows = data.rows.filter((x) => !(x.game === g.game && x.eid === g.eid)); draw(); } else toast("That draft could not be deleted. Please try again.");
   }
-  async function copyOf(g) {
+  async function _copyOf(g) {
     if (!EID.test(g.eid)) return;
     const h = await api.headersFor(g.game, g.eid);
     if (!h) return toast("Please sign in again.");
@@ -38,7 +45,7 @@ export async function renderMyGames(outlet, ctx) {
     const id = r.ok && typeof r.json?.id === "string" && EID.test(r.json.id) && r.json.id !== g.eid ? r.json.id : null;
     if (id) await openGame(ctx, { game: g.game, eid: id, role: "organizer" }); else toast("The copy could not be made, so nothing was opened. Please try again."); // never open the original by mistake
   }
-  async function answer(g, op) {
+  async function _answer(g, op) {
     const r = await api.answerInvitation(g.game, g.eid, g.roleId, op);
     if (!r.ok) return toast("That did not work. Please try again.");
     data = await api.listGames(); draw();
@@ -49,7 +56,7 @@ export async function renderMyGames(outlet, ctx) {
     for (const a of rowActions(g, caps[g.game], st)) {
       if (a.id === "copy" && desc && Array.isArray(desc.features) && !has(desc, "clone")) continue; // a game that does not declare copying shows no copy button
       if (a.id === "accept") btns.push(button("Accept", { main: true, sm: true, label: `Accept the invitation to ${g.name}`, onclick: () => answer(g, "accept") }));
-      else if (a.id === "decline") btns.push(button("Decline", { sm: true, label: `Decline the invitation to ${g.name}`, onclick: () => answer(g, "decline") }));
+      else if (a.id === "decline") btns.push(button("Decline", { sm: true, label: `Decline the invitation to ${g.name}`, onclick: async () => { if (c.querySelector(".confirm")) return; if (await confirmPanel(c, "Say no to this invitation? You can join only if the organizer invites you again.", "Yes, say no", "No, go back")) answer(g, "decline"); } })); // declining cannot be taken back by the person, so it is asked once more
       else if (a.id === "open-in-game") btns.push(el("span", { class: "hintline", text: "Open the game itself to answer this invitation." }));
       else if (a.id === "open") btns.push(button(a.label, { main: true, sm: true, label: `Open ${g.name}`, onclick: () => openGame(ctx, g) }));
       else if (a.id === "publish" || a.id === "pay") btns.push(button(a.label, { sm: true, label: `${a.label}: ${g.name}`, onclick: () => openGame(ctx, g, a.target) }));

@@ -1,0 +1,1 @@
+{"id": "sitemap3-private-page-listed", "repo": ".", "file": "seo.mjs", "find": "[\"home\", \"games\", \"changes\"].map(row)", "replace": "[\"home\", \"games\", \"changes\", \"pay\"].map(row)", "test": "tests/sitemap-content.test.ts", "note": "a private page is in the sitemap"}

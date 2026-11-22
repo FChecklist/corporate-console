@@ -1,0 +1,1 @@
+{"id": "worker32-install-copies-unknown", "repo": ".", "file": "public/sw.js", "find": "return a === \"unknown\" ? await hasGrant() : a === \"yes\"; }", "replace": "return a === \"unknown\" ? true : a === \"yes\"; }", "test": "tests/consent-decline-everywhere.test.ts", "note": "where the cookie cannot be read the worker keeps pages before the page said go"}

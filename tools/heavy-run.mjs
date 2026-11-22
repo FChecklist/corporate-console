@@ -53,7 +53,7 @@ export async function heavyRun(cmd, args, o = {}) {
   process.once("SIGINT", onSig); process.once("SIGTERM", onSig);
   try {
     const code = await new Promise((resolve) => {
-      child = spawn(cmd, args, { stdio: o.stdio || "inherit", shell: false, cwd: o.cwd, env: o.env || process.env, windowsHide: true });
+      child = spawn(cmd, args, { stdio: o.stdio || "inherit", shell: false, cwd: o.cwd, env: o.env || process.env, windowsHide: true, detached: process.platform !== "win32" }); // own process group on Linux and Mac so the whole tree can be stopped (process.kill(-pid))
       timer = setTimeout(() => { timedOut = true; killTree(child.pid); }, timeoutMs);
       child.on("error", () => resolve(127));
       child.on("exit", (c) => resolve(c === null ? 1 : c));

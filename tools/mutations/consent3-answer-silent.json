@@ -1,0 +1,1 @@
+{"id": "consent3-answer-silent", "repo": ".", "file": "public/core/consent.js", "find": "\"cg-consent-changed\", { detail: { choice } }", "replace": "\"cg-consent-silent\", { detail: { choice } }", "test": "tests/consent-order.test.ts", "note": "an answer does not tell the offline worker code"}

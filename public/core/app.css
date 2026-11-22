@@ -133,6 +133,10 @@ body.has-tabbar .updatebar { bottom: 92px; }
 .opt input { width: 24px; height: 24px; margin: 3px 0 0; flex: none; }
 .opt .t { display: grid; gap: 2px; }
 .opt .t span { font-size: 14.5px; color: var(--muted); }
+.fieldhint { margin: 0; font-size: 14.5px; color: var(--muted); }
+.fielderror { margin: 0; font-size: 15px; font-weight: 600; color: var(--bad); }
+.field input[aria-invalid="true"] { border-color: var(--bad); border-width: 2px; }
+.field input, .field select { width: 100%; max-width: 100%; box-sizing: border-box; }
 .signmsg { min-height: 1.4em; margin: 0; font-weight: 600; }
 .signmsg.bad { color: var(--bad); }
 
@@ -246,6 +250,9 @@ body.has-tabbar .updatebar { bottom: 92px; }
 .step .stephere { font-size: 13px; font-weight: 700; color: var(--accent); }
 .step.done .stepno { background: var(--ok); color: var(--bg); }
 .step .stepdone { font-size: 13px; font-weight: 700; color: var(--ok); }
+.stepsum { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 8%, var(--card)); border: 1.5px solid var(--line); }
+.stepnow { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
+.stepnext { margin: 2px 0 0; font-size: 15.5px; color: var(--ink2); }
 .stepcap { margin: 10px 0 0; font-size: 15px; color: var(--ink2); }
 .stepline { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink2); }
 @media (forced-colors: active) { .step.now { outline: 3px solid Highlight; } }

@@ -1,0 +1,1 @@
+{"id": "consent3-boot-registers-worker", "repo": ".", "file": "public/core/boot.js", "find": "window.addEventListener(\"cg-consent-changed\", worker);", "replace": "navigator.serviceWorker.register(\"/sw.js\"); window.addEventListener(\"cg-consent-changed\", worker);", "test": "tests/consent-order.test.ts", "note": "the app registers the worker by itself, before any answer"}
