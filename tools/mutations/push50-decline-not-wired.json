@@ -1,0 +1,1 @@
+{"id": "push50-decline-not-wired", "repo": ".", "file": "public/core/offline.js", "find": "try { await endPush({ regs }); } catch { /* nothing to end */ }", "replace": "", "test": "tests/push-optin.test.ts", "note": "removing the worker does not end the opt-in"}

@@ -1,6 +1,7 @@
 // Starts the console: loads the words, chooses the laptop or the phone design, registers the offline worker, and shows 'update ready' when a new version waits.
 // One core, two designs: width 900 and up = laptop, below = phone. A person can override the choice (kept only in this browser, never required).
 import { GAMES } from "./games.config.js";
+import * as CONFIG from "./games.config.js"; // PUSH_API is read from here so an older generated file without it still loads (the notify block then stays off)
 import { el, clear } from "./dom.js";
 import { createApi } from "./api.js";
 import { menuItems, partsOf, menuFor } from "./routes.js";
@@ -38,7 +39,7 @@ export const app = { api: null, signedIn: false, email: null };
 const routeOf = () => location.hash.replace(/^#\/?/, "") || "home";
 
 async function screenFor(route, outlet, copy) {
-  const ctx = { api: app.api, copy, names, colors, games: GAMES, designIsPhone: window.innerWidth < BREAKPOINT, email: app.email, onSignedIn, onSignedOut, termsUrl: GAMES[0].origin + "/terms.html" };
+  const ctx = { api: app.api, copy, names, colors, games: GAMES, designIsPhone: window.innerWidth < BREAKPOINT, email: app.email, onSignedIn, onSignedOut, pushApi: CONFIG.PUSH_API || "", termsUrl: GAMES[0].origin + "/terms.html" };
   if (!app.signedIn) return (await import("../screens/signin.js")).renderSignIn(outlet, ctx);
   const parts = partsOf("#/" + route), first = parts[0];
   if (first === "mygames") return (await import("../screens/mygames.js")).renderMyGames(outlet, ctx);

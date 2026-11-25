@@ -1,0 +1,1 @@
+{"id": "push50-config-not-empty", "repo": ".", "file": "config/games.json", "find": "\"pushApi\": \"\",", "replace": "\"pushApi\": \"https://push.example.com\",", "test": "tests/push-optin.test.ts", "note": "the notify address is set in the shipped config: not dark"}

@@ -1,0 +1,1 @@
+{"id": "push50-worker-no-click", "repo": ".", "file": "public/sw.js", "find": "self.addEventListener('notificationclick', function (event) {", "replace": "self.addEventListener('notificationclickx', function (event) {", "test": "tests/push-optin.test.ts", "note": "the worker has no notification click handler"}

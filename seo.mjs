@@ -22,6 +22,7 @@ export function pageList(cfg) {
     changes: { path: "/changes", file: "changes.html", index: true, title: "What's new in the Corporate Games console", description: "The latest changes to the Corporate Games console, in plain words: what is new for organizers and hosts, newest first." },
     signin: { path: "/signin.html", file: "signin.html", index: false, title: "Finish signing in: Corporate Games console", description: "Press one button to finish signing in to the Corporate Games console." },
     pay: { path: "/pay-link.html", file: "pay-link.html", index: false, title: "Pay for a game: Corporate Games console", description: "A page for paying for one game. It shows only the amount due." },
+    privacy: { path: "/privacy.html", file: "privacy.html", index: false, title: "Privacy: Corporate Games console", description: "What the console keeps when you ask to be told that your game begins: a browser address, and nothing else." },
     notfound: { path: "/404.html", file: "404.html", index: false, title: "Page not found: Corporate Games console", description: "This page could not be found. Go back to the console, see the games, or write to the help address." },
     funnel: { path: "/owner-funnel/", file: "owner-funnel/index.html", index: false, title: "Owner page: Corporate Games console", description: "A page for the owner only. It shows how many visits reach each step of the games." },
   };

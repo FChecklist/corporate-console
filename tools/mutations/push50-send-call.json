@@ -1,0 +1,1 @@
+{"id": "push50-send-call", "repo": ".", "file": "public/core/push-end.js", "find": "api + \"/unsubscribe\"", "replace": "api + \"/send\"", "test": "tests/push-optin.test.ts", "note": "the console calls the service's send route"}

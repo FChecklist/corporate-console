@@ -1,0 +1,1 @@
+{"id": "push50-decline-keeps-subscription", "repo": ".", "file": "public/core/push-end.js", "find": "try { await sub.unsubscribe(); subscriptions++; } catch { /* already gone */ }", "replace": "subscriptions++;", "test": "tests/push-optin.test.ts", "note": "a decline leaves the browser subscription"}

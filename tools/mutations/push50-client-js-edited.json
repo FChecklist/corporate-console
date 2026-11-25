@@ -1,0 +1,1 @@
+{"id": "push50-client-js-edited", "repo": ".", "file": "public/push-optin.js", "find": "var VERSION = '0.2.0';", "replace": "var VERSION = '0.2.1';", "test": "tests/push-optin.test.ts", "note": "the copied client file was edited"}

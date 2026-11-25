@@ -1,0 +1,1 @@
+{"id": "push50-worker-no-push", "repo": ".", "file": "public/sw.js", "find": "self.addEventListener('push', function (event) {", "replace": "self.addEventListener('pushx', function (event) {", "test": "tests/push-optin.test.ts", "note": "the worker has no push handler"}

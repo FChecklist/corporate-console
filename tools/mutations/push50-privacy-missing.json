@@ -1,0 +1,1 @@
+{"id": "push50-privacy-missing", "repo": ".", "file": "public/privacy.html", "find": "not a name, an e-mail address or a phone number", "replace": "a name", "test": "tests/push-optin.test.ts", "note": "the privacy page no longer says what is not kept"}
