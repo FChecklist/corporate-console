@@ -6,7 +6,7 @@
 //    (The notify worker IS the console's offline worker, public/sw.js, which exists only after that answer; the two cannot be separated.)
 //  - Nothing opens the browser's permission prompt or calls the service on load: that happens only on the visitor's own tap on the button (inside push-optin.js).
 //  - A later "Only what is needed" ends it: the block goes now, and public/core/push-end.js (called by removeWorker) deletes the address, the browser's subscription and the notes.
-//  - The console never SENDS a notification (no /send call anywhere): who gets told, and when, is decided by the game, not by this page. See the open question in docs/KNOWLEDGE.md.
+//  - The console never SENDS a notification (it has no call to the service's send route at all): who gets told, and when, is decided by the game, not by this page. See the open question in docs/KNOWLEDGE.md.
 import { currentState } from "./consent.js";
 import { offlineAllowed } from "./offline.js";
 

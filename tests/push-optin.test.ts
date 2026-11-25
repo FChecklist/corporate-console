@@ -1,4 +1,4 @@
-// FALSIFIED BY: push50-client-js-edited, push50-client-css-edited, push50-config-not-empty, push50-block-without-address, push50-block-before-answer, push50-block-after-decline, push50-worker-no-push, push50-worker-no-click, push50-send-call, push50-decline-keeps-subscription, push50-decline-keeps-notes, push50-decline-not-wired, push50-csp-always-open, push50-csp-missing, push50-privacy-missing
+// FALSIFIED BY: push50-client-js-edited, push50-client-css-edited, push50-config-not-empty, push50-block-without-address, push50-block-before-answer, push50-block-after-decline, push50-worker-no-push, push50-worker-no-click, push50-send-call, push50-decline-keeps-subscription, push50-decline-keeps-notes, push50-decline-not-wired, push50-csp-always-open, push50-csp-missing, push50-privacy-missing, push50-privacy-no-head
 // The "Yes, notify me when my game begins" block in the console (0.5.0), shipped DARK. The notify service's own client file (public/push-optin.js, .css) is run here for real in a fake browser;
 // the console's worker (public/sw.js) is run for real in a fake worker; the cookie rules of 0.3.0 to 0.3.2 must hold: nothing loads or is kept before the answer, and a decline leaves no push worker.
 import { test, expect } from "bun:test";
@@ -17,7 +17,7 @@ const O = await import("../public/core/offline.js");
 const B = await import("../public/core/push-block.js");
 const E = await import("../public/core/push-end.js");
 const API = "https://push.example.com";
-const PREFS = "cg_consent=v1.prefs", NEEDED = "cg_consent=v1.needed";
+const PREFS = C.answerCookie("prefs", true), NEEDED = C.answerCookie("needed", true); // the very cookies the banner writes (same path), so a later answer replaces them
 
 const blobSha = (p: string) => { const b = readFileSync(join(root, p)); return createHash("sha1").update("blob " + b.length + String.fromCharCode(0)).update(b).digest("hex"); };
 
@@ -27,6 +27,7 @@ function page(o: { cookie?: string; gpc?: boolean } = {}) {
   Object.assign(globalThis, { window: win, document: win.document, CustomEvent: win.CustomEvent });
   if (o.cookie) win.document.cookie = o.cookie;
   const nav: any = { userAgent: "Mozilla/5.0 Chrome/130", platform: "Win32", maxTouchPoints: 0, globalPrivacyControl: o.gpc ? true : undefined };
+  Object.defineProperty(globalThis, "navigator", { value: nav, configurable: true, writable: true }); // the page's own navigator: currentState() reads the globals, as it does in a browser
   const opts = { doc: win.document, win, nav, store: win.localStorage };
   return { win, doc: win.document, nav, opts, state: () => C.currentState(opts) };
 }
@@ -93,16 +94,20 @@ test("a real build writes PUSH_API into core/games.config.js and ships privacy.h
   expect(readFileSync(join(out, "core/games.config.js"), "utf8")).toContain('export const PUSH_API = "";');
   for (const f of ["privacy.html", "push-optin.js", "push-optin.css"]) expect([f, existsSync(join(out, f))]).toEqual([f, true]);
   expect(readFileSync(join(out, "_headers"), "utf8")).toMatch(/X-Robots-Tag: noindex/);
+  const priv = readFileSync(join(out, "privacy.html"), "utf8"); // the build gives the page its title and its noindex like the other utility pages
+  expect(priv.includes("<title>Privacy: Corporate Games console</title>")).toBe(true);
+  expect(/noindex/.test(priv)).toBe(true);
+  expect(priv.includes("<!--seo-->")).toBe(false);
 });
 
 // ---------------------------------------------------------------- absent when unconfigured
 test("unconfigured: the Home page gets no place for the block, no script and no stylesheet, whatever the cookie answer is", () => {
   for (const cookie of [undefined, PREFS, NEEDED]) {
     const p = page({ cookie });
-    for (const api of ["", undefined as any, "http://push.example.com", "https://push.example.com/send"]) expect([cookie, api, B.pushSection({ pushApi: api }, p.doc)]).toEqual([cookie, api, null]);
-    expect(B.pushSection({}, p.doc)).toBeNull();
-    expect(p.doc.querySelector("[data-push-optin]")).toBeNull();
-    expect(p.doc.querySelector("script[data-push-js], link[data-push-css]")).toBeNull();
+    for (const api of ["", undefined as any, "http://push.example.com", "https://push.example.com/send"]) expect([cookie, api, B.pushSection({ pushApi: api }, p.doc) === null]).toEqual([cookie, api, true]);
+    expect(B.pushSection({}, p.doc) === null).toBe(true);
+    expect(p.doc.querySelector("[data-push-optin]") === null).toBe(true);
+    expect(p.doc.querySelector("script[data-push-js], link[data-push-css]") === null).toBe(true);
     expect(p.win.localStorage.length).toBe(0);
   }
   const home = src("public/screens/home.js");
@@ -114,10 +119,10 @@ test("unconfigured: the Home page gets no place for the block, no script and no 
 test("configured, but before any answer: the place is there, the block is NOT: no script, no stylesheet, nothing kept on the device, no cookie written", () => {
   const p = page();
   const slot = withSlot(p)!;
-  expect(slot).toBeTruthy();
-  expect(slot.querySelector("[data-push-optin]")).toBeNull();
-  expect(p.doc.querySelector("script[data-push-js]")).toBeNull();
-  expect(p.doc.querySelector("link[data-push-css]")).toBeNull();
+  expect(!!slot).toBe(true);
+  expect(slot.querySelector("[data-push-optin]") === null).toBe(true);
+  expect(p.doc.querySelector("script[data-push-js]") === null).toBe(true);
+  expect(p.doc.querySelector("link[data-push-css]") === null).toBe(true);
   expect(p.win.localStorage.length).toBe(0);
   expect(p.doc.cookie).toBe("");
 });
@@ -126,8 +131,8 @@ test("after 'Only what is needed', and with a privacy signal (even with an old '
   for (const o of [{ cookie: NEEDED }, { cookie: PREFS, gpc: true }, { gpc: true }]) {
     const p = page(o);
     const slot = withSlot(p)!;
-    expect([JSON.stringify(o), slot.querySelector("[data-push-optin]")]).toEqual([JSON.stringify(o), null]);
-    expect(p.doc.querySelector("script[data-push-js], link[data-push-css]")).toBeNull();
+    expect([JSON.stringify(o), slot.querySelector("[data-push-optin]") === null]).toEqual([JSON.stringify(o), true]);
+    expect(p.doc.querySelector("script[data-push-js], link[data-push-css]") === null).toBe(true);
     expect(p.win.localStorage.length).toBe(0);
   }
 });
@@ -136,7 +141,7 @@ test("after 'Also remember your choices' the block appears (console wording, the
   const p = page({ cookie: PREFS });
   const slot = withSlot(p)!;
   const block = slot.querySelector("[data-push-optin]")!;
-  expect(block).toBeTruthy();
+  expect(!!block).toBe(true);
   expect(block.getAttribute("data-push-site")).toBe("console");
   expect(block.getAttribute("data-push-api")).toBe(API);
   expect(block.getAttribute("data-push-sw")).toBe("/sw.js");
@@ -152,12 +157,12 @@ test("the answer is followed live: the cookie banner's 'Also remember your choic
   const p = page();
   C.startConsent(p.opts);
   const slot = withSlot(p)!;
-  expect(slot.querySelector("[data-push-optin]")).toBeNull();
+  expect(slot.querySelector("[data-push-optin]") === null).toBe(true);
   p.doc.getElementById("cookie-prefs").click(); await tick();
-  expect(slot.querySelector("[data-push-optin]")).toBeTruthy();
+  expect(!!slot.querySelector("[data-push-optin]")).toBe(true);
   C.openChoices(p.win); await tick();
   p.doc.getElementById("cookie-needed").click(); await tick();
-  expect(slot.querySelector("[data-push-optin]")).toBeNull();
+  expect(slot.querySelector("[data-push-optin]") === null).toBe(true);
 });
 
 // ---------------------------------------------------------------- the real client: no prompt, no request on load; Stop always visible
@@ -167,7 +172,7 @@ test("the real push-optin.js on the console block: it shows the console wording 
   const calls = runClient(p);
   await tick(40);
   const box = slot.querySelector(".cp-optin")!;
-  expect(box).toBeTruthy();
+  expect(!!box).toBe(true);
   expect(box.querySelector(".cp-optin__btn")!.textContent).toBe("Yes, notify me when my game begins");
   const stop = box.querySelector(".cp-optin__stop")!;
   expect(stop.textContent).toBe("Stop notifications");
@@ -282,7 +287,7 @@ test("ending the opt-in: the address is deleted at the service FIRST (the addres
   expect(p.win.localStorage.getItem("corporatePush.v1.console")).toBeNull();
   expect(p.win.localStorage.getItem("corporatePush.v1pending")).toBeNull();
   expect(p.win.localStorage.getItem("cg-design")).toBe("laptop"); // not ours: left to the console's own clean-up
-  expect(slot.querySelector("[data-push-optin]")).toBeNull();
+  expect(slot.querySelector("[data-push-optin]") === null).toBe(true);
 });
 
 test("ending the opt-in still ends it when the service cannot be reached or no address is configured: the browser subscription and the notes go, nothing is sent", async () => {
@@ -337,10 +342,10 @@ test("after the banner's 'Only what is needed' the whole chain holds: block gone
   const sw: any = { controller: null, getRegistrations: async () => [reg], register: async () => { log.push("register"); return { addEventListener() {}, waiting: null }; } };
   const store = { keys: async () => ["console-shell-v1"], delete: async (k: string) => { log.push("delete " + k); return true; } };
   p.win.addEventListener("cg-consent-changed", () => O.syncOffline({ nav: { serviceWorker: sw }, caches: store, state: C.currentState(p.opts) }));
-  expect(slot.querySelector("[data-push-optin]")).toBeTruthy();
+  expect(!!slot.querySelector("[data-push-optin]")).toBe(true);
   C.openChoices(p.win); await tick();
   p.doc.getElementById("cookie-needed").click(); await tick(60);
-  expect(slot.querySelector("[data-push-optin]")).toBeNull();
+  expect(slot.querySelector("[data-push-optin]") === null).toBe(true);
   expect(log.filter((l) => l === "register")).toEqual([]);
   expect(log).toContain("browser-unsubscribe");
   expect(log).toContain("unregister");

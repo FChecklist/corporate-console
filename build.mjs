@@ -135,7 +135,7 @@ export function build({ env = "preview", out = join(ROOT, "dist"), version = "0.
   writeFileSync(join(out, "games/games.css"), gamesCss(cfg));
   // search and AI-search files and every page's head, all from seo.mjs (0.2.2). A page that has no <!--seo--> marker makes the build stop.
   const releases = existsSync(join(ROOT, "releases.json")) ? JSON.parse(readFileSync(join(ROOT, "releases.json"), "utf8")) : [];
-  const pl = pageList(cfg), seoKey = { home: "index.html", signin: "signin.html", pay: "pay-link.html", funnel: "owner-funnel/index.html", notfound: "404.html" };
+  const pl = pageList(cfg), seoKey = { home: "index.html", signin: "signin.html", pay: "pay-link.html", funnel: "owner-funnel/index.html", notfound: "404.html", privacy: "privacy.html" };
   for (const [key, file] of Object.entries(seoKey)) writeFileSync(join(out, file), applyHead(readFileSync(join(out, file), "utf8"), headBlock(cfg, env, key), file));
   writeFileSync(join(out, "changes.html"), applyHead(changesHtml(cfg, env, releases, istText), headBlock(cfg, env, "changes", [CHANGES_LD(cfg, env)]), "changes.html"));
   writeFileSync(join(out, "robots.txt"), robotsTxt(cfg, env));

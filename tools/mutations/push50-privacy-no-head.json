@@ -1,0 +1,1 @@
+{"id": "push50-privacy-no-head", "repo": ".", "file": "build.mjs", "find": ", privacy: \"privacy.html\" };", "replace": " };", "test": "tests/push-optin.test.ts", "note": "the privacy page gets no title and no noindex from the build"}
