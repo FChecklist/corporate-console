@@ -51,6 +51,7 @@ export function chooserHtml(cfg, env) {
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
 </head>
 <body>
+<div class="mark139" lang="hi" aria-hidden="true"><span>१३९</span></div>
 <main class="chooser">
 <h1>Choose a game for your team</h1>
 <p class="lead">Pick a game, create it in a few minutes and share one link. ${esc(ID_LINE)}</p>

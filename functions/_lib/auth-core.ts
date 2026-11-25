@@ -191,7 +191,7 @@ export async function handleAuth(req: Request, env: Env, now: number): Promise<R
   }
 
   if (req.method === "GET" && path === "/auth/link") { // a mail scanner or a curious click: shows where to press, consumes nothing
-    return new Response(`<!doctype html><meta charset="utf-8"><title>Sign in</title><p>To finish signing in, open <a href="${env.CONSOLE_ORIGIN}/signin.html?t=${/^[0-9a-f]{48}$/.test(url.searchParams.get("t") || "") ? url.searchParams.get("t") : ""}">this page</a> and press the button.</p>`, { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+    return new Response(`<!doctype html><meta charset="utf-8"><title>Sign in</title><link rel="stylesheet" href="/core/tokens.css"><body><div class="mark139" lang="hi" aria-hidden="true"><span>१३९</span></div><p>To finish signing in, open <a href="${env.CONSOLE_ORIGIN}/signin.html?t=${/^[0-9a-f]{48}$/.test(url.searchParams.get("t") || "") ? url.searchParams.get("t") : ""}">this page</a> and press the button.</p>`, { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
   }
   if (post && path === "/auth/link") {
     const b = await readJson(req);

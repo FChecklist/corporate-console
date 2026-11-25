@@ -2,6 +2,11 @@
 
 Newest first. Rule: every deploy bumps the version and adds an entry here (standard of 20 Nov 2026).
 
+## 0.1.2 - 25 Nov 2026 (not deployed yet; the release time is stamped at deploy)
+### Added
+- The small mark "१३९" (6px, bold, dark blue #0B2A6B, thin dark red line under it) at the very top centre of every page, once per page, not blocking clicks, hidden from screen readers. Pages: `public/index.html`, `public/signin.html`, `public/pay-link.html`, `public/owner-funnel/index.html`, `packages/game-pack/gamelog.html`, the games chooser page (`chooser.mjs`) and the sign-in link page (`functions/_lib/auth-core.ts`). CSS once in `public/core/tokens.css` and `packages/game-pack/pack.css`.
+- Guard test: `tests/mark139.test.ts`. No payment code touched; money flag unchanged.
+
 ## 0.1.1 - 20 Nov 2026 (not deployed yet; the release time is stamped at deploy)
 ### Fixed
 - A paid notice whose first try failed with a one-off error (for example a busy database) is no longer stuck: the order row stays `marking` only for a 30 second lease; the next try after it takes the row over (one winner) and finishes marking the game. A game that is already paid is never marked again. Where: `packages/bridge/src/bridge.ts` (`MARK_LEASE_MS`, route `/api/console/paid`). The lease itself was added in the pay step (commit eceb9ce, finding C-3); this release adds the regression tests and the note that every game must **re-vendor the bridge** (older vendored copies still answer 409 `in_progress` for ever).
