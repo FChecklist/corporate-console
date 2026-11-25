@@ -1,5 +1,10 @@
 [
  {
+  "version": "0.1.2",
+  "releasedAt": "2026-11-25T00:00:00.000Z",
+  "note": "the small mark 139 at the top centre of every page (owner order, 25 Nov 2026)"
+ },
+ {
   "version": "0.1.1",
   "releasedAt": "2026-11-20T00:00:00.000Z",
   "note": "bridge fix: a paid notice that failed once is finished by the next try after 30 s (re-vendor the bridge into each game)"
