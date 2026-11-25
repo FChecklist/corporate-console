@@ -5,7 +5,7 @@ Newest first. Rule: every deploy bumps the version and adds an entry here (stand
 ## 0.1.2 - 25 Nov 2026 (not deployed yet; the release time is stamped at deploy)
 ### Added
 - The small mark "१३९" (6px, bold, dark blue #0B2A6B, thin dark red line under it) at the very top centre of every page, once per page, not blocking clicks, hidden from screen readers. Pages: `public/index.html`, `public/signin.html`, `public/pay-link.html`, `public/owner-funnel/index.html`, `packages/game-pack/gamelog.html`, the games chooser page (`chooser.mjs`) and the sign-in link page (`functions/_lib/auth-core.ts`). CSS once in `public/core/tokens.css` and `packages/game-pack/pack.css`.
-- Guard test: `tests/mark139.test.ts`. No payment code touched; money flag unchanged.
+- PR #10 (`p1/mark-139-2026-11-25`). Guard test: `tests/mark139.test.ts` (walks every .html page in the repo, plus the generated pages). No payment code touched; money flag unchanged.
 
 ## 0.1.1 - 20 Nov 2026 (not deployed yet; the release time is stamped at deploy)
 ### Fixed
@@ -13,7 +13,7 @@ Newest first. Rule: every deploy bumps the version and adds an entry here (stand
 - Tests: `tests/bridge-stale-marking.test.ts` (database error then retry; wait inside the lease; two retries at once; already paid is a no-op; repeated failures). Checked by breaking the takeover on purpose: the tests go red, then green again.
 ### Changed
 - `docs/GAME_PAY_CONTRACT.md`: re-vendor note.
-- PR: see the pull request for branch `claude/bridge-stale-marking-fix`. Audit: pending. Rollback id of the previous deploy: `706f8e60` (commit 9c57a81); before that `7489a57e-72a7-4a35-b7b5-3e4b824cf23c`.
+- PR #4 (`claude/bridge-stale-marking-fix`). Audit: not done yet. Rollback id of the previous deploy: `706f8e60` (commit 9c57a81); before that `7489a57e-72a7-4a35-b7b5-3e4b824cf23c`.
 
 ## 0.1.0 - 20 Nov 2026
 ### Added
