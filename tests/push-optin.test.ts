@@ -1,7 +1,7 @@
 // FALSIFIED BY: push50-client-js-edited, push50-client-css-edited, push50-config-not-empty, push50-block-without-address, push50-block-before-answer, push50-block-after-decline, push50-worker-no-push, push50-worker-no-click, push50-send-call, push50-decline-keeps-subscription, push50-decline-keeps-notes, push50-decline-not-wired, push50-csp-always-open, push50-csp-missing, push50-privacy-missing, push50-privacy-no-head
 // The "Yes, notify me when my game begins" block in the console (0.5.0), shipped DARK. The notify service's own client file (public/push-optin.js, .css) is run here for real in a fake browser;
 // the console's worker (public/sw.js) is run for real in a fake worker; the cookie rules of 0.3.0 to 0.3.2 must hold: nothing loads or is kept before the answer, and a decline leaves no push worker.
-import { test, expect } from "bun:test";
+import { test, expect, setDefaultTimeout } from "bun:test";
 import { Window } from "happy-dom";
 import { readFileSync, readdirSync, statSync, mkdtempSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { build, pushApiOf, gamesConfigJs, headersFile, lintHeaders } from "../build.mjs";
 
+setDefaultTimeout(30000); // a real build and a walk over the folders can pass 5 seconds on a busy laptop; the tests are fast on their own
 const root = join(import.meta.dir, "..");
 const src = (p: string) => readFileSync(join(root, p), "utf8");
 const tick = (ms = 15) => new Promise((r) => setTimeout(r, ms));
