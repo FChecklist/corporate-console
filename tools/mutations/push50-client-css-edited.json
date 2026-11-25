@@ -1,0 +1,1 @@
+{"id": "push50-client-css-edited", "repo": ".", "file": "public/push-optin.css", "find": "/* corporate-push opt-in block.", "replace": "/* corporate-push opt-in blockx.", "test": "tests/push-optin.test.ts", "note": "the copied stylesheet was edited"}

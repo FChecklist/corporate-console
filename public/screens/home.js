@@ -4,6 +4,7 @@ import { el, clear } from "../core/dom.js";
 import { withColor, button, whenText, openGame, confirmPanel, toast } from "./ui.js";
 import { needsAttention, startsToday, draftStartsSoon, mergeGames } from "../core/merge.js";
 import { gamesFailedLine } from "../core/errors.js";
+import { pushSection } from "../core/push-block.js";
 
 const ICON = {
   create: "M12 4v16M4 12h16",
@@ -26,7 +27,7 @@ export async function renderHome(outlet, ctx) {
       door("#/create", ICON.create, "Create a new game", "Pick the game. It opens in its own screen.", true),
       door("#/mygames", ICON.mine, "My games", "Every game you organize, host or help with."),
       door("#/billing", ICON.bill, "Billing", "What to pay, what you paid, your credit.")),
-    strips)));
+    strips, pushSection(ctx))));
 
   const parts = [];
   const l0 = await api.listGames({ onGame: (r) => { parts.push(r); paint(mergeGames(parts)); } });

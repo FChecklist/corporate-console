@@ -11,16 +11,16 @@ const root = join(import.meta.dir, "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 const releases = JSON.parse(read("releases.json"));
 
-test("0.3.1 is in the release list (0.4.0 and 0.3.2 sit above it), with a time, a technical note and a plain sentence that holds no internal word", () => {
-  const r = releases[2];
+test("0.3.1 is in the release list (0.5.0, 0.4.0 and 0.3.2 sit above it), with a time, a technical note and a plain sentence that holds no internal word", () => {
+  const r = releases[3];
   expect(r.version).toBe("0.3.1");
   expect(/^\d{4}-\d{2}-\d{2}T/.test(r.releasedAt)).toBe(true);
   expect(r.note.length).toBeGreaterThan(40);
   expect(r.userNote.length).toBeGreaterThan(40);
   expect(/audit|commit|rollback|bridge|re-vendor|token|secret|worker|cache/i.test(r.userNote)).toBe(false); // what the public reads says it plainly
   expect(/\b(we|our|us)\b/i.test(r.userNote)).toBe(false);
-  expect(releases[3].version).toBe("0.3.0");
-  expect(releases[3].userNote).toMatch(/console's own screens/); // the double-press rule is for the console screens, and the public note says so
+  expect(releases[4].version).toBe("0.3.0");
+  expect(releases[4].userNote).toMatch(/console's own screens/); // the double-press rule is for the console screens, and the public note says so
 });
 
 test("CHANGELOG.md keeps the 0.3.1 entry (below 0.3.2), in plain words, with what changed, where, the tests, what is not changed, the deploy note and the rollback line", () => {
@@ -40,10 +40,10 @@ test("docs/KNOWLEDGE.md keeps the 0.3.1 part and names the files that make the d
 
 test("a build carries 0.3.1 in version.json, and every page's footer shows it with the what's-new link", async () => {
   const out = mkdtempSync(join(tmpdir(), "rel31-"));
-  build({ env: "live", out, version: releases[2].version, commit: "0123456789ab", releasedAt: releases[2].releasedAt }); // the 0.3.1 build
+  build({ env: "live", out, version: releases[3].version, commit: "0123456789ab", releasedAt: releases[3].releasedAt }); // the 0.3.1 build
   const v = JSON.parse(readFileSync(join(out, "version.json"), "utf8"));
   expect([v.version, v.consoleVersion, v.product]).toEqual(["0.3.1", "0.3.1", "corporate-console"]);
-  expect(v.changes.map((c: any) => c.version).slice(0, 3)).toEqual(["0.4.0", "0.3.2", "0.3.1"]);
+  expect(v.changes.map((c: any) => c.version).slice(0, 4)).toEqual(["0.5.0", "0.4.0", "0.3.2", "0.3.1"]);
   const { showVersion } = await import("../public/core/version.js");
   const doc: any = new Window({ url: "https://console.corporatetambola.com/" }).document;
   await showVersion(doc, async () => ({ json: async () => v }));

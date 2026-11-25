@@ -1,5 +1,11 @@
 [
  {
+  "version": "0.5.0",
+  "releasedAt": "2026-11-25T06:20:00.000Z",
+  "note": "the notify-me block on the organizer's Home, shipped DARK: nothing shows and nothing loads until the owner sets the one value pushApi in config/games.json to a real https address and the visitor has chosen Also remember your choices. public/push-optin.js and push-optin.css are copied byte for byte from corporate-push PR #1 at f1e93f59f45444711edbb66e632fe1333bf8f9cb; public/sw.js gets the push and notificationclick handlers of the service's snippet (no caching or fetch code touched); public/core/push-block.js puts the block (data-push-site console) on Home after the answer and removes it after a decline; public/core/push-end.js, called from removeWorker before the registrations go, deletes the saved browser address at the service, removes the browser subscription and erases the corporatePush notes; build.mjs reads pushApi (bare https only) into core/games.config.js as PUSH_API and adds that one address to connect-src only when set; public/privacy.html is the new privacy page the block links to. The console never calls /send. No money flag, pay contract, bridge, pack, secret or migration touched.",
+  "userNote": "Soon you will be able to ask to be told, on this device, when a game begins. The button is switched off for now, so nothing changes until it is switched on, and stopping will always be one tap."
+ },
+ {
   "version": "0.4.0",
   "releasedAt": "2026-11-22T12:30:00.000Z",
   "note": "stay signed in: new GET /api/me (functions/api/me.ts, functions/_lib/me-core.ts). Reads the one console sign-in cookie (cbsess, HttpOnly, host-only on the console address, SameSite=Lax; Home and the games are the same site so a credentialed fetch carries it) and answers {signedIn:true,name,id} or {signedIn:false}. CORS only for HOME_ORIGIN (default https://home.corporatetambola.com) and the GAME_ORIGINS addresses, https on corporatetambola.com only, with Access-Control-Allow-Credentials only for those; any other Origin gets 403 and no CORS header. GET only, no e-mail and no join key in the answer, no cookie set, hourly limit per sign-in, no-store. No money flag, pay contract, bridge, pack, secret or migration touched.",

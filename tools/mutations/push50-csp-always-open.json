@@ -1,0 +1,1 @@
+{"id": "push50-csp-always-open", "repo": ".", "file": "build.mjs", "find": "(pushApiOf(cfg.pushApi) ? [pushApiOf(cfg.pushApi)] : [])", "replace": "[\"https://push.example.com\"]", "test": "tests/push-optin.test.ts", "note": "the page policy names a notify address even when none is set"}

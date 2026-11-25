@@ -1,0 +1,1 @@
+{"id": "push50-block-after-decline", "repo": ".", "file": "public/core/push-block.js", "find": "if (!pushAllowed(address, st)) { if (have) have.remove(); return { shown: false }; }", "replace": "if (!pushAllowed(address, st)) { return { shown: false }; }", "test": "tests/push-optin.test.ts", "note": "the block stays on the page after a decline"}

@@ -1,0 +1,1 @@
+{"id": "push50-csp-missing", "repo": ".", "file": "build.mjs", "find": "(pushApiOf(cfg.pushApi) ? [pushApiOf(cfg.pushApi)] : [])", "replace": "[]", "test": "tests/push-optin.test.ts", "note": "the page policy never names the notify address, so a set address would be blocked"}

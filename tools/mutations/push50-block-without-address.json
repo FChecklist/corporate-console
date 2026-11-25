@@ -1,0 +1,1 @@
+{"id": "push50-block-without-address", "repo": ".", "file": "public/core/push-block.js", "find": "if (!d || !validPushApi(ctx && ctx.pushApi)) return null;", "replace": "if (!d) return null;", "test": "tests/push-optin.test.ts", "note": "a page gets the block's place even with no address"}

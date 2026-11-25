@@ -2,6 +2,7 @@
 // so: before an answer, and after "Only what is needed", and with a privacy signal (Global Privacy Control or Do Not Track), NO worker is registered and NO cached file exists.
 // A worker or cache left from an earlier visit is removed. Only the answer "Also remember your choices" switches it on.
 import { currentState } from "./consent.js";
+import { endPush } from "./push-end.js";
 
 export const CACHE_PREFIX = "console-shell-";
 export const WORKER_URL = "/sw.js";
@@ -53,6 +54,7 @@ export async function removeWorker({ sw, store, reload, ackMs } = {}) {
   let controlledByOld = false;
   try {
     const regs = sw && sw.getRegistrations ? await sw.getRegistrations() : [];
+    try { await endPush({ regs }); } catch { /* nothing to end */ } // 0.5.0: the notify opt-in ends with the worker (address deleted at the service, browser subscription removed, notes erased); it must run before the registrations are removed
     const targets = new Set([sw && sw.controller, ...regs.flatMap((r) => [r.active, r.waiting, r.installing])].filter(Boolean));
     let acked = !sw || !sw.controller; // nothing controls this page: nothing to wait for
     let onMsg;

@@ -1,0 +1,1 @@
+{"id": "push50-decline-keeps-notes", "repo": ".", "file": "public/core/push-end.js", "find": "const notes = clearPushNotes(o.storage);", "replace": "const notes = 0;", "test": "tests/push-optin.test.ts", "note": "a decline leaves the notes on the device"}
