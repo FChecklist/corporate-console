@@ -1,10 +1,10 @@
 # Knowledge: Corporate Games master console (corporate-console)
 
-Written 20 Nov 2026, updated 22 Nov 2026 for version 0.4.0, for a future AI session that has never seen this repo (standard: marketing-ledger plans/VERSION-AND-KNOWLEDGE-STANDARD-2026-11-20.md). It describes the CURRENT state only, from the code and existing docs. Anything not found is marked "unknown". Do not publish this file on the website.
+Written 20 Nov 2026, updated 27 Nov 2026 for version 0.4.1, for a future AI session that has never seen this repo (standard: marketing-ledger plans/VERSION-AND-KNOWLEDGE-STANDARD-2026-11-20.md). It describes the CURRENT state only, from the code and existing docs. Anything not found is marked "unknown". Do not publish this file on the website.
 
 ## 1. What this is
 One sign-in, six games, billing. The organizer/host website: set up, invite, pay, approve, monitor. Plain static pages plus a small sign-in service on Cloudflare Pages. Also holds the test tools shared by every game repo.
-- Live site: https://console.corporatetambola.com (Cloudflare Pages project `corporate-console`). Live version: **0.3.2** (deployment 6c51d98b, 22 Nov 2026); this branch is **0.4.0** (not deployed; cut from the 0.3.2 line, `claude/console-0-3-0` at 9a70667). Read `/version.json` on the site for the truth; it now also carries `product` and `changes`.
+- Live site: https://console.corporatetambola.com (Cloudflare Pages project `corporate-console`). Live version: **0.4.0** (commit 910d202e4d8a, read from `/version.json` on 27 Nov 2026); this branch is **0.4.1** (not deployed; hides three games; previously 0.4.0 = `claude/quirky-tesla-44pwvj`; cut from the 0.3.2 line, `claude/console-0-3-0` at 9a70667). Read `/version.json` on the site for the truth; it now also carries `product` and `changes`.
 - Other repos and what they are for: `KNOWLEDGE-MAP.md` in the repo root.
 
 ## 2. How it connects
@@ -43,6 +43,12 @@ Players and organizers reach the suite like this: home.corporatetambola.com (log
 - **Name and ID.** There is no stored name: `displayNameOf` makes it from the e-mail's first part (letters only, 40 characters at most, "Organizer" as the fallback). `organizerIdOf` = `org_` + 16 hex of `sha256("organizer|" + email hash)`; it is NOT the join key games match on (games get that only in a signed assertion from `/auth/assert`). A real name needs a sign-in form field and a migration: not built.
 - Still to do elsewhere: Home and each game must call the route (their own releases). The live base was not readable from the build session (network refused the console host): check `/version.json` before deploying.
 - Tests: `me-api`, `release-0-4-0`; mutations `me-*`, `release40-*`.
+
+## 2f. What 0.4.1 added
+(Owner note: the hidden games stay named in the shipped config, CSP and source copy of the games bar, but on no page. Hidden games are still asked by the fan-out so existing games stay reachable, and their errors are silent: see `silent` in `public/core/api.js` and `merge.js`.) (27 Nov 2026) and where it lives
+- **Three games shown, three hidden (boss decision 27 Nov 2026).** The one switch is `"hiddenGames"` in `config/games.json` (tictactoe, snakesladders, luckbychance). `visible-games.mjs` reads it for everything that shows games as a choice: Create screen, "Start from an earlier game" target list, `api.startNew`, public chooser `/games/`, `llms.txt`, JSON-LD, search title and description, and the built games bar (`dist/gamesbar.js`; the canonical `public/gamesbar.js` is never edited).
+- **Nothing deleted.** The hidden games stay in the config, the CSP, the API fan-out, My games, Billing, Control and the player view, so existing games stay reachable. `hiddenGames: []` restores the six-game build exactly (`tests/hidden-games.test.ts`).
+- To show a game again: remove its id from `hiddenGames`, build, deploy. Tests: `tests/hidden-games.test.ts`, `tests/release-0-4-1.test.ts`.
 
 ## 3. Map of folders and the files that matter
 public/ (the pages: index.html, signin.html and the screens), functions/ (auth, api/me, report, stats, _lib: Cloudflare Pages Functions), migrations/ (0001_console, 0002_report_hold, 0003_funnel_hit), packages/bridge (the one bridge module copied byte for byte into every game), packages/game-pack (shared game setup pack), packages/report (end-of-game PDF report), contract/ and docs/CONTRACT_V1.md (frozen console-game contract), config/games.json, tools/ (falsify-run, heavy-run, baseline, deploy, game-port, fake-game, prices), tests/, vendor/ (vendored corporate-game-core, pinned 0.1.0), build.mjs, releases.json.

@@ -1,0 +1,1 @@
+{"id": "hidden3-starts-hidden-game", "repo": ".", "file": "public/core/api.js", "find": "if (byId[game] && byId[game].hidden)", "replace": "if (false)", "test": "tests/hidden-games.test.ts", "note": "a hidden game can still be started from the console"}

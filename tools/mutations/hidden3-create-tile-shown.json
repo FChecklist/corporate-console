@@ -1,0 +1,1 @@
+{"id": "hidden3-create-tile-shown", "repo": ".", "file": "public/screens/create.js", "find": "if (g.hidden) continue;", "replace": "if (false) continue;", "test": "tests/hidden-games.test.ts", "note": "the Create screen still offers the hidden games"}

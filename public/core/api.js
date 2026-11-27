@@ -71,7 +71,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
       for (const s of j.scoped) vault.put(g.id, s.role, s.eid, s.key, s.expiresMs);
       return finish({ game: g.id, ok: true, created: !!j.created, hasAccount: !!j.organizer, scoped: j.scoped.length });
     }));
-    function finish(x) { if (onGame) onGame(x); return x; }
+    function finish(x) { if (byId[x.game] && byId[x.game].hidden) x.silent = true; if (onGame) onGame(x); return x; } // a hidden game is still asked (so a game already made there stays reachable), but its trouble is never shown and never changes the outcome
     return { ok: true, results };
   }
 
@@ -97,6 +97,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
         } catch { return { game: g.id, ok: false, error: "bad-answer" }; }
         return { game: g.id, ok: true, rows: out, credit };
       })();
+      if (byId[g.id] && byId[g.id].hidden) res.silent = true; // a hidden game that is down must not show a line, and must not name itself
       if (onGame) onGame(res);
       return res;
     }));
@@ -107,7 +108,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     /** the person's games from every ready game */
     async listGames({ onGame } = {}) { const results = await fanOut("games", "/api/console/games", {}, (j) => j.games, onGame); return { results, ...mergeGames(results) }; },
     async billing({ onGame } = {}) { const results = await fanOut("billing", "/api/console/billing", {}, (j) => j.rows, onGame); return { results, ...mergeBilling(results) }; },
-    async invited({ onGame } = {}) { const results = await fanOut("invited", "/api/console/invited", {}, (j) => j.cards, onGame); return { results, cards: results.filter((r) => r.ok).flatMap((r) => r.rows), failed: results.filter((r) => !r.ok).map((r) => r.game) }; },
+    async invited({ onGame } = {}) { const results = await fanOut("invited", "/api/console/invited", {}, (j) => j.cards, onGame); return { results, cards: results.filter((r) => r.ok).flatMap((r) => r.rows), failed: results.filter((r) => !r.ok && !r.silent).map((r) => r.game) }; },
     /** public answers: version, sizes, prices (what the game itself says, never a number held here) */
     async capabilities() {
       const out = await Promise.all(ready.map(async (g) => { const r = await call(g.origin + "/api/console/capabilities"); return r.ok ? { game: g.id, ok: true, caps: r.json } : { game: g.id, ok: false, error: r.unreachable ? "unreachable" : "refused" }; }));
@@ -126,6 +127,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     },
     /** "Start a new game": make the person's account in THAT game if it is the first time, then hand over to the game's own Step 1 */
     async startNew(game, { free = false } = {}) {
+      if (byId[game] && byId[game].hidden) return { ok: false, error: "game-hidden" }; // a hidden game cannot be started from the console (existing games stay reachable)
       if (!vault.keyFor(game, null, now())) {
         const c = await connect({ create: true, only: [game] });
         if (!c.ok || !c.results[0]?.ok) return { ok: false, error: c.results?.[0]?.error || "no-account" };

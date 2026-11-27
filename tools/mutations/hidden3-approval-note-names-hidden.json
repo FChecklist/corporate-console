@@ -1,0 +1,1 @@
+{"id": "hidden3-approval-note-names-hidden", "repo": ".", "file": "public/core/status.js", "find": "games.filter((g) => !g.hidden && supports(g, lt))", "replace": "games.filter((g) => supports(g, lt))", "test": "tests/hidden-screens.test.ts", "note": "My games' approval note names a hidden game"}

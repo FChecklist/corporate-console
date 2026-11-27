@@ -1,0 +1,1 @@
+{"id": "hidden3-bar-not-trimmed", "repo": ".", "file": "build.mjs", "find": "hideInGamesBar(readFileSync(bar, \"utf8\"), hiddenIds(cfg))", "replace": "readFileSync(bar, \"utf8\")", "test": "tests/hidden-games.test.ts", "note": "the built games bar still lists the hidden games"}
