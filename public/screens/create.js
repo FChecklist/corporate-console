@@ -49,6 +49,8 @@ export async function renderCreate(outlet, ctx, opts = {}) {
     prices[g.id] = price;
     tiles.append(withColor(el("article", { class: "tile", dataset: { game: g.id } }, el("h3", { text: title }), el("p", { text: WORDS[g.id] || "" }), el("ul", { class: "facts", dataset: { facts: g.id } }, factLines(g).map((l) => el("li", { text: l }))), price, el("div", { class: "btns" }, b, free)), colors[g.id] || "#0B3D91"));
   }
+  const hiddenPick = opts.pick && ctx.games.find((g) => g.hidden && g.id === String(opts.pick)); // a direct link to a hidden game (#/create/<id>): a gentle note, no tile, no way to start it
+  if (hiddenPick) outlet.querySelector(".page").insertBefore(el("p", { class: "banner", role: "status", dataset: { comingSoon: hiddenPick.id }, text: "That game is coming soon. Please choose one of the games below." }), tiles);
   const picked = opts.pick && tiles.querySelector(`[data-game="${String(opts.pick).replace(/[^a-z0-9_-]/gi, "")}"]`); // a link from the games chooser: that game is marked and its Start button is ready
   if (picked) { picked.classList.add("picked"); const s = picked.querySelector("button"); if (s && s.focus) s.focus(); }
   const caps = await api.capabilities().catch(() => []);

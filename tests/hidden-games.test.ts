@@ -104,3 +104,17 @@ test("api.startNew refuses a hidden game without asking any game server", async 
   for (const id of HIDDEN) expect(await api.startNew(id)).toEqual({ ok: false, error: "game-hidden" });
   expect(calls).toEqual([]);
 });
+
+test("a direct link to a hidden game (#/create/tictactoe) shows a gentle coming-soon note, no tile and no Start button for it", async () => {
+  const win = new Window({ url: "http://localhost/" });
+  Object.assign(globalThis, { window: win, document: win.document, location: win.location, innerWidth: 1280 });
+  const { renderCreate } = await import("../public/screens/create.js");
+  const gs = cfg.games.map((g: any) => ({ id: g.id, name: g.name, accent: g.accent, ready: true, status: "live", hidden: HIDDEN.includes(g.id) }));
+  for (const id of [...HIDDEN, "luckydraw"]) {
+    const o = document.createElement("div"); document.body.replaceChildren(o);
+    await renderCreate(o, { api: { capabilities: async () => [], startNew: async () => ({ ok: true, url: "#" }) }, games: gs, names: Object.fromEntries(gs.map((g: any) => [g.id, g.name])), colors: {} } as any, { pick: id });
+    const note = o.querySelector("[data-coming-soon]");
+    expect(HIDDEN.includes(id) ? !!note : !note).toBe(true);
+    expect(o.querySelector(`[data-game="${id}"]`) !== null).toBe(!HIDDEN.includes(id));
+  }
+});
