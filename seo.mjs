@@ -3,6 +3,7 @@
 // Rules: the console app behind the sign-in (every #/screen) and every page that is not for the public (sign-in link, payment link, owner pages, /auth, /pay, /stats, /report) stay OUT of search.
 // Only a LIVE build asks to be indexed: the preview address (pages.dev) and the test build say noindex and Disallow everything, so a trial copy never competes with the real site.
 // Claims stay inside the owner's rules (docs/SUITE_RULES.md section 5): no "100% secure", no "most secure", no "played by major companies".
+import { searchNamesText } from "./visible-games.mjs";
 export const SITE_NAME = "Corporate Games console";
 export const HOME_ORIGIN = "https://home.corporatetambola.com";
 export const HELP_EMAIL = "hello@corporatetambola.com";
@@ -17,8 +18,8 @@ export const TRAINING_BOTS = ["GPTBot", "ClaudeBot", "anthropic-ai", "Google-Ext
 /** the pages of the console and how each one speaks to search. `path` is what a visitor types after the address. */
 export function pageList(cfg) {
   return {
-    home: { path: "/", file: "index.html", index: true, title: "Corporate Games console: set up and run your team game", description: "Sign in with your work e-mail to set up, share, pay for and run a company game. Tambola, Bingo, Tic Tac Toe and more. No password." },
-    games: { path: "/games/", file: "games/index.html", index: true, title: "Games for your team: Tambola, Bingo, Tic Tac Toe and more", description: "Pick a game for your team, create it in a few minutes and share one link. A game can be played with only an employee ID or an e-mail." },
+    home: { path: "/", file: "index.html", index: true, title: "Corporate Games console: set up and run your team game", description: "Sign in with your work e-mail to set up, share, pay for and run a company game. " + searchNamesText(cfg) + ". No password." },
+    games: { path: "/games/", file: "games/index.html", index: true, title: "Games for your team: " + searchNamesText(cfg), description: "Pick a game for your team, create it in a few minutes and share one link. A game can be played with only an employee ID or an e-mail." },
     changes: { path: "/changes", file: "changes.html", index: true, title: "What's new in the Corporate Games console", description: "The latest changes to the Corporate Games console, in plain words: what is new for organizers and hosts, newest first." },
     signin: { path: "/signin.html", file: "signin.html", index: false, title: "Finish signing in: Corporate Games console", description: "Press one button to finish signing in to the Corporate Games console." },
     pay: { path: "/pay-link.html", file: "pay-link.html", index: false, title: "Pay for a game: Corporate Games console", description: "A page for paying for one game. It shows only the amount due." },

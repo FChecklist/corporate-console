@@ -1,0 +1,1 @@
+{"id": "release40-changelog-missing", "repo": ".", "file": "CHANGELOG.md", "find": "## 0.4.0 - ", "replace": "## 0.3.9 - ", "test": "tests/release-0-4-0.test.ts", "note": "CHANGELOG has no 0.4.0 entry"}

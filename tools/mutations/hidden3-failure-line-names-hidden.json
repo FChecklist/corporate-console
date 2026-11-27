@@ -1,0 +1,1 @@
+{"id": "hidden3-failure-line-names-hidden", "repo": ".", "file": "public/core/api.js", "find": "if (byId[g.id] && byId[g.id].hidden) res.silent = true;", "replace": "", "test": "tests/hidden-screens.test.ts", "note": "a hidden game that is down shows a 'could not be reached' line naming it"}

@@ -1,0 +1,1 @@
+{"id": "me-leaks-email", "repo": ".", "file": "functions/_lib/me-core.ts", "find": "{ signedIn: true, name: displayNameOf(email),", "replace": "{ signedIn: true, email, name: displayNameOf(email),", "test": "tests/me-api.test.ts", "note": "the e-mail is returned"}
