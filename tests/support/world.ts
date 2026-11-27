@@ -7,12 +7,12 @@ import { createApi } from "../../public/core/api.js";
 
 export const NAMES: Array<[string, string, string]> = [["tambola", "Tambola", "normal"], ["bingo", "Bingo", "slow"], ["tictactoe", "Tic-Tac-Toe", "down"], ["snakesladders", "Snakes and Ladders", "empty"], ["luckbychance", "Luck by Chance", "many"]];
 
-export async function world(o: { slowMs?: number; timeoutMs?: number } = {}) {
+export async function world(o: { slowMs?: number; timeoutMs?: number; hidden?: string[]; luckydraw?: boolean } = {}) {
   const kp = await makeKeyPair();
   const keys = parseKeyList("k1:" + kp.publicB64u);
   const subs = { alice: await emailHash("demo5@demo-test.invalid"), bob: await emailHash("demo8@demo-test.invalid"), carol: await emailHash("demo9@demo-test.invalid") };
   const servers: any[] = [], games: any[] = [], states: any = {}, headersSeen: Record<string, Set<string>> = {};
-  for (const [id, name, persona] of NAMES) {
+  for (const [id, name, persona] of o.luckydraw ? [...NAMES, ["luckydraw", "Lucky Draw", "normal"] as [string, string, string]] : NAMES) {
     const S: any = newGame({ game: id, name: "Corporate " + name, persona, origin: "", keys });
     Object.defineProperty(S, "nowMs", { get: () => Date.now(), set: () => {} });
     S.slowMs = o.slowMs ?? 3500;
@@ -20,9 +20,9 @@ export async function world(o: { slowMs?: number; timeoutMs?: number } = {}) {
     S.origin = `http://127.0.0.1:${srv.port}`;
     seedGames(S, subs);
     servers.push(srv); states[id] = S;
-    games.push({ id, name, short: name, ready: true, origin: S.origin, freeCap: 10, accent: "#000" });
+    games.push({ id, name, short: name, ready: true, origin: S.origin, freeCap: 10, accent: "#000", ...(o.hidden?.includes(id) ? { hidden: true } : {}) }); // hidden: the same flag the build bakes into games.config.js
   }
-  games.push({ id: "luckydraw", name: "Lucky Draw", short: "Lucky Draw", ready: false, status: "planned", origin: "http://127.0.0.1:1", freeCap: 10, accent: "#000" });
+  if (!o.luckydraw) games.push({ id: "luckydraw", name: "Lucky Draw", short: "Lucky Draw", ready: false, status: "planned", origin: "http://127.0.0.1:1", freeCap: 10, accent: "#000" });
   const { db } = makeD1();
   const mails: string[] = [];
   const env: Env = { DB: db, SESSION_PEPPER: "p", CONSOLE_SIGNING_KEY: btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.exportKey("pkcs8", kp.privateKey)))), CONSOLE_ORIGIN: "", GAME_ORIGINS: JSON.stringify(Object.fromEntries(games.map((g) => [g.id, g.origin]))), MAILER: async (_to, _s, text) => { mails.push(text); } };

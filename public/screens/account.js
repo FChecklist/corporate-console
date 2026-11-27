@@ -55,7 +55,7 @@ export async function renderAccount(outlet, ctx) {
     if (!r.ok && r.error === "console") { msg.classList.add("bad"); msg.textContent = "The system could not close the account just now. Nothing was changed. Please try again."; return; }
     if (r.ok) { ctx.onSignedOut && ctx.onSignedOut(); return; }
     msg.classList.add("bad");
-    msg.textContent = r.failed && r.failed.length ? `${r.failed.map((id) => names[id] || id).join(", ")} did not answer. You are still signed in; please try again. (Games that did answer have already forgotten your e-mail.)` : "The system could not close the account just now. Please try again.";
+    msg.textContent = r.failed && r.failed.length ? `${r.failed.map((id) => ((ctx.games || []).find((x) => x.id === id) || {}).hidden ? "Another game" : names[id] || id).join(", ")} did not answer. You are still signed in; please try again. (Games that did answer have already forgotten your e-mail.)` : "The system could not close the account just now. Please try again.";
     toast("Your account is still open.");
   };
   box.append(el("h2", { text: "Close your account" }), el("p", { text: CLOSE_WORDS }), warn,

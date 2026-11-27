@@ -44,7 +44,8 @@ Players and organizers reach the suite like this: home.corporatetambola.com (log
 - Still to do elsewhere: Home and each game must call the route (their own releases). The live base was not readable from the build session (network refused the console host): check `/version.json` before deploying.
 - Tests: `me-api`, `release-0-4-0`; mutations `me-*`, `release40-*`.
 
-## 2f. What 0.4.1 added (27 Nov 2026) and where it lives
+## 2f. What 0.4.1 added
+(Owner note: the hidden games stay named in the shipped config, CSP and source copy of the games bar, but on no page. Hidden games are still asked by the fan-out so existing games stay reachable, and their errors are silent: see `silent` in `public/core/api.js` and `merge.js`.) (27 Nov 2026) and where it lives
 - **Three games shown, three hidden (boss decision 27 Nov 2026).** The one switch is `"hiddenGames"` in `config/games.json` (tictactoe, snakesladders, luckbychance). `visible-games.mjs` reads it for everything that shows games as a choice: Create screen, "Start from an earlier game" target list, `api.startNew`, public chooser `/games/`, `llms.txt`, JSON-LD, search title and description, and the built games bar (`dist/gamesbar.js`; the canonical `public/gamesbar.js` is never edited).
 - **Nothing deleted.** The hidden games stay in the config, the CSP, the API fan-out, My games, Billing, Control and the player view, so existing games stay reachable. `hiddenGames: []` restores the six-game build exactly (`tests/hidden-games.test.ts`).
 - To show a game again: remove its id from `hiddenGames`, build, deploy. Tests: `tests/hidden-games.test.ts`, `tests/release-0-4-1.test.ts`.

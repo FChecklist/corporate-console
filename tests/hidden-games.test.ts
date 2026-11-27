@@ -36,6 +36,7 @@ test("switch ON: no built page, file or search text offers a hidden game (only t
     if (ALLOWED_TO_KEEP.has(f) || /\.(png|ico|webmanifest)$/.test(f)) continue;
     const t = read(on, f);
     expect([f, NAMES.test(t)]).toEqual([f, false]);
+    if (/\.(html|txt|xml)$/.test(f)) expect([f + " (ids)", /tictactoe|snakesladders|luckbychance/i.test(t)]).toEqual([f + " (ids)", false]); // the ids too, in every page a visitor or a crawler reads
   }
   const chooser = read(on, "games/index.html");
   for (const name of ["Corporate Tambola", "Corporate Bingo", "Corporate Lucky Draw"]) expect(chooser).toContain(name);

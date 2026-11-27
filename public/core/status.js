@@ -89,7 +89,7 @@ export function approverFor(linkType, game) {
 export function approvalNote(games = []) {
   const lines = ["A person who is on your list comes in with nothing else.", approverFor("organizer-link")];
   for (const lt of ["cohost-link", "family-link", "open-link"]) {
-    const who = games.filter((g) => supports(g, lt)).map((g) => g.name);
+    const who = games.filter((g) => !g.hidden && supports(g, lt)).map((g) => g.name); // a hidden game is never named here
     if (who.length) lines.push(who.join(", ") + ": " + approverFor(lt, { approvals: [lt] }));
   }
   return lines;
