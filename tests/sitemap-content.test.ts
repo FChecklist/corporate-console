@@ -38,13 +38,13 @@ test("every address in the sitemap is the canonical address of a page that says 
   for (const bad of ["/signin.html", "/pay-link.html", "/pay/", "/owner-funnel", "/auth/", "/report/", "/stats/", "/404", "#/"]) expect([bad, xml.includes(bad)]).toEqual([bad, false]);
 });
 
-test("lastmod is given only where it is true: What's new carries the date of the newest release (0.4.0), the other pages carry none", () => {
+test("lastmod is given only where it is true: What's new carries the date of the newest release (0.4.1), the other pages carry none", () => {
   const r = rows(rd(live, "sitemap.xml"));
   const newest = String(releases[0].releasedAt).slice(0, 10);
   expect(r.find((x) => x.loc.endsWith("/changes"))!.lastmod).toBe(newest);
   expect(r.filter((x) => !x.loc.endsWith("/changes")).every((x) => x.lastmod === undefined)).toBe(true);
   expect(/^\d{4}-\d{2}-\d{2}$/.test(newest)).toBe(true);
-  expect(releases[0].version).toBe("0.4.0");
+  expect(releases[0].version).toBe("0.4.1");
 });
 
 test("robots.txt: public pages open, private paths closed, training crawlers told no, and the sitemap named with its full live address", () => {

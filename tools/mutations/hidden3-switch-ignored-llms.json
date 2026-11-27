@@ -1,0 +1,1 @@
+{"id": "hidden3-switch-ignored-llms", "repo": ".", "file": "chooser.mjs", "find": "g.ready === true && !hiddenIds(cfg).includes(g.id)", "replace": "g.ready === true", "test": "tests/hidden-games.test.ts", "note": "the chooser, llms.txt and the structured data ignore the switch"}

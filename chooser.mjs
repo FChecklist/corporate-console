@@ -1,13 +1,14 @@
 // The public games chooser (/games/), made at build time (robots.txt, sitemap.xml and llms.txt are made by seo.mjs) from config/games.json so the addresses can never disagree with the rest of the console.
 // The console app itself (signed in) stays out of search; this one page is for people and search engines. Wording: calm, no "we/our", nothing about deleting beyond the one fixed privacy line.
 import { headBlock, pageList, PRIVACY_LINE as SEO_PRIVACY } from "./seo.mjs";
+import { hiddenIds } from "./visible-games.mjs";
 export const PRIVACY_LINE = SEO_PRIVACY;
 export const ID_LINE = "A game can be played with only an employee ID or an e-mail.";
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const num = (n) => Number(n).toLocaleString("en-US");
 
 /** the games people can use today, in the order of the file */
-export const liveGames = (cfg) => cfg.games.filter((g) => g.status === "live" && g.ready === true);
+export const liveGames = (cfg) => cfg.games.filter((g) => g.status === "live" && g.ready === true && !hiddenIds(cfg).includes(g.id));
 
 /** the facts a card shows, only what the game declares */
 export function cardFacts(g) {
@@ -23,7 +24,7 @@ export const gamesCss = (cfg) => cfg.games.map((g) => `.g-${g.id}{--accent:${/^#
 
 export function chooserHtml(cfg, env) {
   const consoleOrigin = cfg.consoleOrigin[env];
-  const live = liveGames(cfg), soon = cfg.games.filter((g) => !live.includes(g));
+  const live = liveGames(cfg), soon = cfg.games.filter((g) => !live.includes(g) && !hiddenIds(cfg).includes(g.id));
   const page = pageList(cfg).games;
   const card = (g) => `<article class="gcard g-${esc(g.id)}"><h2>${esc(g.name)}</h2><ul>${cardFacts(g).map((x) => `<li>${esc(x)}</li>`).join("")}</ul><p class="btns"><a class="btn main" href="${esc(consoleOrigin)}/#/create/${esc(g.id)}" aria-label="Create a game in ${esc(g.name)}">Create a game</a> <a class="btn" href="${esc(g[env])}/" aria-label="Open ${esc(g.name)}">Open ${esc(g.name.replace(/^Corporate /, ""))}</a></p></article>`;
   const soonCard = (g) => `<article class="gcard soon g-${esc(g.id)}"><h2>${esc(g.name)}</h2><p>Opening soon.</p></article>`;

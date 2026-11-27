@@ -70,7 +70,7 @@ test("structured data: Organization and WebSite (JSON-LD) on every public page, 
     expect([f, org.logo, org.contactPoint.email]).toEqual([f, LIVE + "/icons/icon-512.png", "hello@corporatetambola.com"]);
     expect([f, site.name, site.url, site.publisher["@id"], site.inLanguage]).toEqual([f, "Corporate Games console", LIVE + "/", org["@id"], "en"]);
     expect([f, "potentialAction" in site]).toEqual([f, false]); // there is no search box on the site, so none is claimed
-    if (f === "games/index.html") { const list = byType("ItemList")[0]; expect(list.itemListElement.map((i: any) => i.url).sort()).toEqual(cfg.games.filter((x: any) => x.status === "live" && x.ready).map((x: any) => x.live + "/").sort()); }
+    if (f === "games/index.html") { const list = byType("ItemList")[0]; expect(list.itemListElement.map((i: any) => i.url).sort()).toEqual(cfg.games.filter((x: any) => x.status === "live" && x.ready && !(cfg.hiddenGames || []).includes(x.id)).map((x: any) => x.live + "/").sort()); }
     if (f === "changes.html") expect(byType("CollectionPage")[0].url).toBe(LIVE + "/changes");
     expect(/<\/script>/i.test(JSON.stringify(g))).toBe(false); // a script block cannot be closed from inside the data
   }
@@ -106,7 +106,7 @@ test("llms.txt (live): a title, a one-paragraph summary, the pages, every live g
   const t = rd(live, "llms.txt");
   expect(t.startsWith("# Corporate Games console\n\n> ")).toBe(true);
   for (const h of ["## Pages", "## The games", "## Not for assistants or search", "## Help", "## Optional"]) expect([h, t.includes(h)]).toEqual([h, true]);
-  for (const g of cfg.games.filter((x: any) => x.status === "live" && x.ready)) expect([g.id, t.includes(`[${g.name}](${g.live}/)`)]).toEqual([g.id, true]);
+  for (const g of cfg.games.filter((x: any) => x.status === "live" && x.ready && !(cfg.hiddenGames || []).includes(x.id))) expect([g.id, t.includes(`[${g.name}](${g.live}/)`)]).toEqual([g.id, true]);
   for (const p of ["/auth/", "/pay/", "/report/", "/stats/", "/owner-funnel/"]) expect([p, t.includes(LIVE + p)]).toEqual([p, true]);
   expect(t).toContain("No personal details needed. All participant information is deleted within 24 hours of the game.");
   expect(t).toContain("hello@corporatetambola.com");

@@ -35,7 +35,7 @@ export async function renderCreateFrom(outlet, ctx) {
   clear(outlet);
   const body = el("div", { id: "cf-body" }, el("p", { class: "hintline", text: "One moment." }));
   outlet.append(el("div", { class: "wrap" }, el("div", { class: "page" }, el("h1", { text: "Start from an earlier game" }), el("p", { class: "lead", text: "Pick an earlier game. Its settings, start mode, prizes, roles and look are copied into a new draft. " + NO_PEOPLE_LINE }), stepBanner(document, "create", { title: "Where this fits in the six steps" }), body)));
-  const makeable = (ctx.games || []).filter((g) => (g.status || (g.ready ? "live" : "planned")) === "live" && has(g, "clone"));
+  const makeable = (ctx.games || []).filter((g) => !g.hidden && (g.status || (g.ready ? "live" : "planned")) === "live" && has(g, "clone"));
 
   function pickList() {
     clear(body); chosen = null;

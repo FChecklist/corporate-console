@@ -35,6 +35,7 @@ export async function renderCreate(outlet, ctx, opts = {}) {
     (ctx.go || ((u) => location.assign(u)))(r.url);
   }
   for (const g of ctx.games) {
+    if (g.hidden) continue; // a hidden game (config/games.json "hiddenGames") is not offered as a choice; games already made stay in My games
     const title = names[g.id] || g.name;
     const status = g.status || (g.ready ? "live" : "planned");
     if (status !== "live") {

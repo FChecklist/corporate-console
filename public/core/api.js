@@ -126,6 +126,7 @@ export function createApi({ games, consoleOrigin = "", fetchFn = (...a) => fetch
     },
     /** "Start a new game": make the person's account in THAT game if it is the first time, then hand over to the game's own Step 1 */
     async startNew(game, { free = false } = {}) {
+      if (byId[game] && byId[game].hidden) return { ok: false, error: "game-hidden" }; // a hidden game cannot be started from the console (existing games stay reachable)
       if (!vault.keyFor(game, null, now())) {
         const c = await connect({ create: true, only: [game] });
         if (!c.ok || !c.results[0]?.ok) return { ok: false, error: c.results?.[0]?.error || "no-account" };
